@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const UserProfile = () => {
+const Profile = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Profile Screen</Text>
@@ -22,4 +22,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserProfile;
+export default Profile;

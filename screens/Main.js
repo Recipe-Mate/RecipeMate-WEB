@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 const Main = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Home Screen</Text>
+      <Text style={styles.text}>Main Screen</Text>
     </View>
   );
 };

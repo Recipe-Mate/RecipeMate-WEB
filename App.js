@@ -5,10 +5,13 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import Main from './screens/Main';
+import Profile from './screens/Profile';
+
+import Receipt from './screens/Receipt';
 import RecipeSearch from './screens/RecipeSearch';
 import RecipeDetail from './screens/RecipeDetail';
-import UserProfile from './screens/User_Profile';
-import Setting from './screens/Settings';
+import RecipeResult from './screens/RecipeResult';
+import IngredientChange from './screens/IngredientChnage';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -25,6 +28,16 @@ const RecipeStack = () => (
       component={RecipeDetail}
       options={{ title: '레시피 상세', headerShown: true }}
     />
+    <Stack.Screen
+      name="RecipeResult"
+      component={RecipeResult}
+      options={{ title: '검색결과', headerShown: true }}
+    />
+    <Stack.Screen
+      name="IngredientChange"
+      component={IngredientChange}
+      options={{ title: '재료 변동 사항', headerShown: true }}
+    />
   </Stack.Navigator>
 );
 
@@ -40,10 +53,10 @@ const App = () => {
               iconName = 'home-outline';
             } else if (route.name === 'Recipe') {
               iconName = 'book-outline';
+            } else if (route.name === 'Receipt') {
+              iconName = 'camera-outline';
             } else if (route.name === 'Profile') {
               iconName = 'person-outline';
-            } else if (route.name === 'Setting') {
-              iconName = 'settings-outline';
             }
             return <Icon name={iconName} size={size} color={color} />;
           },
@@ -55,8 +68,8 @@ const App = () => {
       >
         <Tab.Screen name="Home" component={Main} />
         <Tab.Screen name="Recipe" component={RecipeStack} />
-        <Tab.Screen name="Profile" component={UserProfile} />
-        <Tab.Screen name="Setting" component={Setting} />
+        <Tab.Screen name="Receipt" component={Receipt} />
+        <Tab.Screen name="Profile" component={Profile} />
       </Tab.Navigator>
     </NavigationContainer>
   );
