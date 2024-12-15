@@ -8,9 +8,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Main from "./screens/Main";
 import RecipeSearch from './screens/RecipeSearch';
 import RecipeDetail from './screens/RecipeDetail';
-import RecipeResult from './screens/RecipeResult';
-import IngredientChange from './screens/IngredientChange';
-import Receipt from "./screens/Receipt_x";
+import Bill from "./screens/Bill";
 import Profile from "./screens/Profile";
 import Badge from "./screens/Badge";
 
@@ -29,24 +27,6 @@ const RecipeStack = () => (
       name="RecipeDetail"
       component={RecipeDetail}
       options={{ title: '레시피 상세', headerShown: true }}
-    />
-    <Stack.Screen
-      name="RecipeResult"
-      component={RecipeResult}
-      options={{ 
-        headerStyle: {
-          backgroundColor: '#333f50', // header color
-        },
-        headerTintColor: '#ffffff', // header text color
-        headerBackTitleStyle: {
-          fontSize: 16,
-        },
-        title: '검색결과', headerShown: true, headerBackTitle: '뒤로' }}
-    />
-    <Stack.Screen
-      name="IngredientChange"
-      component={IngredientChange}
-      options={{ title: '재료 변동 사항', headerShown: true }}
     />
   </Stack.Navigator>
 );
@@ -69,7 +49,7 @@ const ProfileStack = () => (
         headerBackTitleStyle: {
           fontSize: 16,
         },
-        title: '획득한 배지', headerShown: true, headerBackTitle: '뒤로' }}
+        title: '획득한 배지', headerShown: true, headerBackTitle: '뒤로가기' }}
     />
   </Stack.Navigator>
 );
@@ -113,8 +93,8 @@ export default function App() {
           }}
         />
         <Tab.Screen
-          name="Receipt"
-          component={Receipt}
+          name="Bill"
+          component={Bill}
           options={{
             title: '영수증',
             tabBarIcon: ({color, size}) => (
