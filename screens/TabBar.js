@@ -4,11 +4,13 @@ import { StyleSheet, Text, View, FlatList, Button } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import Main from "./Main";
 import RecipeSearch from './RecipeSearch';
 import RecipeDetail from './RecipeDetail';
-import Bill from "./Receipt";
+import Bill from "./Receipt_x";
 import Profile from "./Profile";
+import Badge from "./Badge";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -55,62 +57,59 @@ const ProfileStack = () => (
 
 const TabBar = () => {
     return (
-        <NavigationContainer>
-            <Tab.Navigator
-                screenOptions={{
-                    tabBarStyle: {
-                        backgroundColor: '#333f50',
-                        height: 80,
-                    },
-                    tabBarItemStyle: { paddingTop: 5, },
-                    tabBarActiveTintColor: 'white',
-                    tabBarInactiveTintColor: 'gray',
-                    headerShown: false,
+        <Tab.Navigator
+            screenOptions={{
+                tabBarStyle: {
+                    backgroundColor: '#333f50',
+                    height: 80,
+                },
+                tabBarItemStyle: { paddingTop: 5, },
+                tabBarActiveTintColor: 'white',
+                tabBarInactiveTintColor: 'gray',
+                headerShown: false,
+            }}
+        >
+            <Tab.Screen
+                name="Main"
+                component={Main}
+                options={{
+                    title: '홈',
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name='home' color={color} size={25} />
+                    )
                 }}
-            >
-                <Tab.Screen
-                    name="Main"
-                    component={Main}
-                    options={{
-                        title: '홈',
-                        tabBarIcon: ({ color, size }) => (
-                            <Icon name='home' color={color} size={25} />
-                        )
-                    }}
-                />
-                <Tab.Screen
-                    name="Recipe"
-                    component={RecipeStack}
-                    options={{
-                        title: '레시피',
-                        tabBarIcon: ({ color, size }) => (
-                            <Icon name='restaurant' color={color} size={25} />
-                        )
-                    }}
-                />
-                <Tab.Screen
-                    name="Bill"
-                    component={Bill}
-                    options={{
-                        title: '영수증',
-                        tabBarIcon: ({ color, size }) => (
-                            <Icon name='receipt' color={color} size={25} />
-                        )
-                    }}
-                />
-                <Tab.Screen
-                    name="Profile"
-                    component={ProfileStack}
-                    options={{
-                        title: '프로필',
-                        tabBarIcon: ({ color, size }) => (
-                            <Icon name='person' color={color} size={25} />
-                        )
-                    }}
-                />
-            </Tab.Navigator>
-            <StatusBar barStyle="auto" />
-        </NavigationContainer>
+            />
+            <Tab.Screen
+                name="Recipe"
+                component={RecipeStack}
+                options={{
+                    title: '레시피',
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name='restaurant' color={color} size={25} />
+                    )
+                }}
+            />
+            <Tab.Screen
+                name="Bill"
+                component={Bill}
+                options={{
+                    title: '영수증',
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name='receipt' color={color} size={25} />
+                    )
+                }}
+            />
+            <Tab.Screen
+                name="Profile"
+                component={ProfileStack}
+                options={{
+                    title: '프로필',
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name='person' color={color} size={25} />
+                    )
+                }}
+            />
+        </Tab.Navigator>
     );
 };
 

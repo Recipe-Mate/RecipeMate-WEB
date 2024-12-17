@@ -7,6 +7,9 @@ import TabBar from './TabBar';
 const LogIn = ({ navigation }) => {
   const [userEmail, setEmail] = useState('');
   const [uesrPassword, setPassword] = useState('');
+  const [userId, setUserId] = useState(null); // 서버 응답값 저장
+
+  const [isValidUser, setIsValidUser] = useState(false);  // userId check result
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState('');
 
@@ -20,31 +23,68 @@ const LogIn = ({ navigation }) => {
     };
     // const formBody = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
 
-    fetch('https://b763-182-221-151-160.ngrok-free.app/user/login', {
-      method: 'POST',
-      body: JSON.stringify(dataToSend),
-      headers: {
-        //Header Defination
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((responseJson) => {
-        console.log(responseJson);  // 서버 응답 전체를 확인
-        const userId = responseJson.userId; // 숫자 값 7이 저장됨
-        console.log('Extracted userId:', userId);
+    try {
+      const response = await fetch('https://1828-182-221-151-160.ngrok-free.app/user/login', {
+        method: 'POST',
+        body: JSON.stringify(dataToSend),
+        headers: {
+          //Header Defination
+          'Content-Type': 'application/json',
+        },
+
+      });
+
+      const data = await response.json();
+      console.log('서버 응답: ', data);
+
+      // check userId exists or not
+      if (data && data.userId) {
+        setUserId(data.userId);
+        console.log("41");
+        window.userId = data.userId
         navigation.replace('TabBar');
-        if (responseJson.status === 'success') {
-          AsyncStorage.setItem('userId', responseJson.data.userId);
-          console.log('39', responseJson.data.userID);
-          navigation.replace('TabBar');
-        } else {
-          setErrorText('아이디와 비밀번호를 다시 확인해주세요');
-          console.log('Please check your id or password');
-          console.log('userId', userId);
-        }
-      })
+      } else {
+        console.log("failed");
+        setErrorText('아이디와 비밀번호를 다시 확인해주세요');
+
+      }
+    } catch (error) {
+      console.error('Error: ', error);
+    }
+  };
+
+
+
+
+    // 12/18/2024 ver.
+    // fetch('https://1828-182-221-151-160.ngrok-free.app/user/login', {
+    //   method: 'POST',
+    //   body: JSON.stringify(dataToSend),
+    //   headers: {
+    //     //Header Defination
+    //     'Content-Type': 'application/json',
+    //   },
+    // })
+    //   .then((response) => response.json())
+    //   .then((responseJson) => {
+    //     console.log(responseJson);  // 서버 응답 전체를 확인
+    //     const userId = responseJson.userId; // 숫자 값 7이 저장됨
+    //     console.log('Extracted userId:', userId);
+    //     navigation.replace('TabBar');
+    //     if (responseJson.status === 'success') {
+    //       AsyncStorage.setItem('userId', responseJson.data.userId);
+    //       console.log('39', responseJson.data.userID);
+    //       navigation.replace('TabBar');
+    //     } else {
+    //       setErrorText('아이디와 비밀번호를 다시 확인해주세요');
+    //       console.log('Please check your id or password');
+    //       console.log('44 userId', userId);
+    //     }
+    //   })
       
+
+
+
       // .then((responseJson) => {
       //   //Hide Loader
       //   setLoading(false);
@@ -63,12 +103,12 @@ const LogIn = ({ navigation }) => {
       //     console.log('Please check your id or password');
       //   }
       // })
-      .catch((error) => {
-        //Hide Loader
-        setLoading(false);
-        console.error(error);
-      });
-  };
+      // .catch((error) => {
+      //   //Hide Loader
+      //   setLoading(false);
+      //   console.error(error);
+      // });
+  
     
     
 
@@ -206,7 +246,7 @@ const LogIn = ({ navigation }) => {
         onChangeText={(text) => setPassword(text)}
         secureTextEntry
       />
-      {loading ? <ActivityIndicator size="large" color="#0000ff" /> : null}
+      {loading ? <ActivityIndicator size="large" color="#333f50" /> : null}
       {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
       <Button title="로그인" onPress={handleLogin} />
       <TouchableOpacity

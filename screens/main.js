@@ -9,11 +9,11 @@ const Main = () => {
   const [ingredient, setIngredient] = useState('');
   const [ModalVisible, setModalVisible] = useState(false);  // modal state
 
-  const userId = 7;
+  // const userId = 7;
 
   const fetchFoodList = async () => {
     try {
-      const response = await fetch(`https://1828-182-221-151-160.ngrok-free.app/food/ownlist/7`);
+      const response = await fetch(`https://1828-182-221-151-160.ngrok-free.app/food/ownlist/${userId}`);
       const result = await response.json();
 
 

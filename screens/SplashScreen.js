@@ -1,6 +1,6 @@
 // Import React and Component
 import React, {useState, useEffect} from 'react';
-import {ActivityIndicator, View, StyleSheet, Image} from 'react-native';
+import {ActivityIndicator, View, StyleSheet, Image, Text} from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -22,6 +22,7 @@ const SplashScreen = ({navigation}) => {
 
   return (
     <View style={styles.container}>
+      <Text style={{fontSize: 50}}>SplashScreen</Text>
       {/* <Image
         source={require('../src/viva-logo-with-txt.png')}
         style={{width: wp(55), resizeMode: 'contain', margin: 30}}
