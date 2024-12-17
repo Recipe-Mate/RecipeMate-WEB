@@ -2,30 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, FlatList, StatusBar, TouchableOpacity, Modal, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const ingredient_db = [
-  {key: '대파'},
-  {key: '양파'},
-  {key: '감자'},
-  {key: '고구마'},
-  {key: '무'},
-  {key: '콩나물'},
-  {key: '두부'},
-  {key: '돼지고기'},
-  {key: '소고기'},
-  {key: '닭'},
-  {key: '상추'},
-  {key: '배추'},
-  {key: '깻잎'},
-  {key: '생강'},
-  {key: '마늘'},
-  {key: '브로콜리'},
-  {key: '애호박'},
-  {key: '단호박'},
-  {key: '파인애플'},
-  {key: '오리'},
-  {key: '사과'},
-]
-
 const Main = () => {
   
   const [foodNameList, setFoodNameList] = useState([]);
@@ -37,11 +13,12 @@ const Main = () => {
 
   const fetchFoodList = async () => {
     try {
-      const response = await fetch(`https://60f3-182-221-151-160.ngrok-free.app/food/ownlist?userId=${userId}`);
+      const response = await fetch(`https://1828-182-221-151-160.ngrok-free.app/food/ownlist/7`);
       const result = await response.json();
 
-      setFoodNameList(result.data);
-      console.log(result);
+
+      setFoodNameList(result.ownFoodNameList);
+      console.log(result.ownFoodNameList);
       
 
       // if (result.success) {
@@ -50,7 +27,7 @@ const Main = () => {
       //   throw new Error('Failed to fetch food list');
       // }
     } catch (err) {
-      setError(err.message);
+      setError("55" + err.message);
     } finally {
       setLoading(false);
     }
@@ -143,9 +120,11 @@ const Main = () => {
           </TouchableOpacity>
         </View>
         <FlatList
-          style={{ marginTop: 10}}
-          data={ingredient_db}
-          renderItem={({ item }) => <Text style={styles.ingredient}>{item.key}</Text>}
+          data={foodNameList} // 리스트 데이터
+          keyExtractor={(item, index) => index.toString()} // 각 아이템에 key 설정
+          renderItem={({ item }) => (
+            <Text style={styles.item}>{item}</Text> // 리스트 아이템 출력
+          )}
         />
       </View>
       <View>
