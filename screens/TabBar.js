@@ -8,6 +8,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Main from "./Main";
 import RecipeSearch from './RecipeSearch';
 import RecipeDetail from './RecipeDetail';
+import RecipeResult from './RecipeResult';
+import IngredientChange from './IngredientChange';
 import Bill from "./Receipt_x";
 import Profile from "./Profile";
 import Badge from "./Badge";
@@ -17,18 +19,28 @@ const Stack = createStackNavigator();
 
 const RecipeStack = () => (
     <Stack.Navigator>
-        <Stack.Screen
-            name="RecipeSearch"
-            component={RecipeSearch}
-            options={{ headerShown: false }}
-        />
-        <Stack.Screen
-            name="RecipeDetail"
-            component={RecipeDetail}
-            options={{ title: '레시피 상세', headerShown: true }}
-        />
+      <Stack.Screen
+        name="RecipeSearch"
+        component={RecipeSearch}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="RecipeDetail"
+        component={RecipeDetail}
+        options={{ title: '레시피 상세', headerShown: true }}
+      />
+      <Stack.Screen
+        name="RecipeResult"
+        component={RecipeResult}
+        options={{ title: '검색결과', headerShown: true }}
+      />
+      <Stack.Screen
+        name="IngredientChange"
+        component={IngredientChange}
+        options={{ title: '재료 변동 사항', headerShown: true }}
+      />
     </Stack.Navigator>
-);
+  );
 
 const ProfileStack = () => (
     <Stack.Navigator initialRouteName='Profile'>
