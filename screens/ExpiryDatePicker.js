@@ -8,7 +8,7 @@ const ExpiryDatePicker = () => {
 
   return (
     <View style={styles.container}>
-      <Button title="날짜 선택" onPress={() => setDatePickerVisibility(true)} color="#4D65F9" />
+      <Button title="날짜 선택" onPress={() => setDatePickerVisibility(true)} color="#7886C7" />
       <Text style={styles.dateText}>선택 날짜: {date.toDateString()}</Text>
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
@@ -18,7 +18,7 @@ const ExpiryDatePicker = () => {
           setDatePickerVisibility(false);
         }}
         onCancel={() => setDatePickerVisibility(false)}
-        textColor="black"  // 다크모드 대응
+        textColor="black"
         headerTextIOS="소비기한 선택"
         confirmTextIOS="확인"
         cancelTextIOS="취소"
@@ -35,6 +35,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 17,
     marginVertical: 6,
+    color: '#2D336B',
   },
 });
 

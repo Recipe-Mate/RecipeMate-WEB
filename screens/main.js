@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, FlatList, StatusBar, TouchableOpacity, SafeAreaView } from 'react-native';
+import { LinearGradient } from "expo-linear-gradient";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Main = ({ navigation }) => {
@@ -65,7 +66,11 @@ const Main = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 10 }}>
+      <LinearGradient
+        colors={["#2D336B", "#A9B5DF"]}
+        style={styles.background}
+      />
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Text style={styles.title}>식재료 목록</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
@@ -110,14 +115,20 @@ const styles = StyleSheet.create({
   box: {
     flex: 11,
     backgroundColor: '#ffffff',
-    margin: 15,
+    padding: 20,
+    margin: 10,
+    marginBottom: -30,
     borderRadius: 25,
   },
+  background: {
+    ...StyleSheet.absoluteFillObject, // 배경을 전체 영역에 적용
+  },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: 'bold',
     alignItems: 'center',
-    color: '#fff'
+    color: '#fff',
+    paddingLeft: 15,
   },
   ingredient: {
     marginBottom: 15,
@@ -184,7 +195,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   safeArea: {
-    backgroundColor: "#000",
+    backgroundColor: "#186FF2",
     flex: 1,
   }
 });

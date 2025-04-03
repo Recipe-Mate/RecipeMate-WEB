@@ -30,15 +30,20 @@ const MainStack = () => (
             component={AddIngredient}
             options={{
                 headerStyle: {
-                    backgroundColor: '#4D65F9', // header color
-                    height: 100,
-                    borderRadius: 20
+                    backgroundColor: '#2D336B', // header color
+                    height: 90,
                 },
                 headerTintColor: '#ffffff', // header text color
                 headerBackTitleStyle: {
                     fontSize: 16,
                 },
-                title: '식재료 추가하기', headerShown: true, headerBackTitle: '뒤로가기'
+                headerTitleStyle: {
+                    fontSize: 20, // 🔥 여기서 글자 크기 변경!
+                    fontWeight: "600",
+                  },
+                title: '식재료 추가하기', 
+                headerShown: true, 
+                headerBackTitle: '뒤로'
             }}
         />
     </Stack.Navigator>
@@ -87,7 +92,9 @@ const ProfileStack = () => (
                 headerBackTitleStyle: {
                     fontSize: 16,
                 },
-                title: '획득한 배지', headerShown: true, headerBackTitle: '뒤로가기'
+                title: '획득한 배지', 
+                headerShown: true, 
+                headerBackTitle: '뒤로',
             }}
         />
     </Stack.Navigator>
@@ -99,11 +106,11 @@ const TabBar = () => {
         <Tab.Navigator
             screenOptions={{
                 tabBarStyle: {
-                    backgroundColor: '#fff',
+                    backgroundColor: '#D7DDF0',
                 },
                 tabBarItemStyle: { paddingTop: 10 },
-                tabBarActiveTintColor: '#000',
-                tabBarInactiveTintColor: '#bbb',
+                tabBarActiveTintColor: '#2D336B',
+                tabBarInactiveTintColor: '#9A9FC3',
                 headerShown: false,
             }}
         >
@@ -151,13 +158,5 @@ const TabBar = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    header: {
-        height: 70,
-        backgroundColor: '#ffffff',
-    },
-
-
-});
 
 export default TabBar;

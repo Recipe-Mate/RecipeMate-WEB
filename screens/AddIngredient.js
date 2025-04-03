@@ -1,96 +1,130 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import CategoryPicker from "./CategoryPicker";
 import ExpiryDatePicker from "./ExpiryDatePicker";
+import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 
 export default function AddIngredient() {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedContactTerm, setSelectedContactTerm] = useState([]);
+    const [image, setImage] = useState(null); // 선택한 이미지 저장
 
-    const toggleContactTerm = (item) => {
-        setSelectedContactTerm((prev) =>
-            prev.includes(item) ? prev.filter(term => term !== item) : [...prev, item]
-        );
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+            Alert.alert("권한 필요", "이미지를 선택하려면 갤러리 접근 권한이 필요합니다.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1], // 정사각형 비율
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setImage(result.assets[0].uri); // 선택한 이미지 적용
+        }
     };
 
     return (
-        <View style={styles.screen}>
-            <View style={styles.profile_image}>
+        <SafeAreaView style={styles.safeArea}>
+            <LinearGradient
+                colors={["#2D336B", "#A9B5DF"]}
+                style={styles.background}
+            />
+            <View style={styles.box}>
+                <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                    <TouchableOpacity onPress={pickImage}>
+                        <View style={styles.profile_image}>
+                            {image ? (
+                                <Image source={{ uri: image }} style={styles.image} />
+                            ) : (
+                                <View style={styles.placeholder}>
+                                    <Image source={require("../assets/upload-icon.png")} style={styles.uploadIcon} />
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.divider}></View>
+                <View>
+                    <View style={styles.type_view}>
+                        <View style={styles.text1_view}>
+                            <Text style={styles.text1}>식재료명</Text>
+                        </View>
+                        <View style={styles.type_input_view}>
+                            <TextInput style={styles.type_input} placeholder='재료를 입력하세요' placeholderTextColor="#aaa" />
+                        </View>
+                    </View>
+                    <View style={styles.divider}></View>
+                    <View style={styles.type_view}>
+                        <View style={styles.text1_view}>
+                            <Text style={styles.text1}>카테고리</Text>
+                        </View>
+                        <View style={styles.type_input_view}>
+                            <CategoryPicker onSelect={setSelectedCategory} />
+                        </View>
+                    </View>
+                    <View style={styles.divider}></View>
+                    <View style={styles.type_view}>
+                        <View style={styles.text1_view}>
+                            <Text style={styles.text1}>개수/용량</Text>
+                        </View>
+                        <View style={styles.type_input_view}>
+                            <TextInput style={styles.type_input} placeholder="숫자를 입력하세요" placeholderTextColor="#aaa" />
+                        </View>
+                    </View>
+                    <View style={styles.divider}></View>
+                    <View style={styles.type_view}>
+                        <View style={styles.text1_view}>
+                            <Text style={styles.text1}>소비기한</Text>
+                        </View>
+                        <View style={styles.type_input_view}>
+                            <ExpiryDatePicker onSelect={setSelectedDate} />
+                        </View>
+                    </View>
+                </View>
+                <View style={styles.divider}></View>
+                <View style={styles.save_view}>
+                    <TouchableOpacity
+                        style={styles.save_button}>
+                        <Text style={styles.save_button_text}>저장</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
-            <View style={styles.divider}></View>
-            <View>
-                <View style={styles.type_view}>
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={styles.text1}>식재료명</Text>
-                    </View>
-                    <View style={{ flex: 2.5, justifyContent: 'center' }}>
-                        <TextInput style={styles.type_input} placeholder='재료를 입력하세요' />
-                    </View>
-                </View>
-                <View style={styles.divider}></View>
-                <View style={styles.type_view}>
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={styles.text1}>카테고리</Text>
-                    </View>
-                    <View style={{ flex: 2.5, justifyContent: 'center' }}>
-                        <CategoryPicker onSelect={setSelectedCategory} />
-                    </View>
-                </View>
-                <View style={styles.divider}></View>
-                <View style={styles.type_view}>
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={styles.text1}>개수/용량</Text>
-                    </View>
-                    <View style={{ flex: 2.5, justifyContent: 'center' }}>
-                        <TextInput style={styles.type_input} placeholder='숫자를 입력하세요' />
-                    </View>
-                </View>
-                <View style={styles.divider}></View>
-                <View style={styles.type_view}>
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={styles.text1}>소비기한</Text>
-                    </View>
-                    <View style={{ flex: 2.5, justifyContent: 'center' }}>
-                        <ExpiryDatePicker onSelect={setSelectedDate} />
-                    </View>
-                </View>
-            </View>
-            {/* <View style={styles.divider}></View>
-            <View>
-                <Text style={{ fontSize: 17, fontWeight: 'bold', marginVertical: 9 }}>소비기한</Text>
-                <View style={styles.type_view}>
-                    <View style={{ flex: 2, justifyContent: 'center' }}>
-                        <ExpiryDatePicker onSelect={setSelectedDate} />
-                    </View>
-                </View>
 
-                
-            </View> */}
-            <View style={styles.divider}></View>
-            <View style={styles.add_person_view}>
-                <TouchableOpacity
-                    style={styles.add_person_button}>
-                    <Text style={{ color: '#ffffff', fontSize: 16 }}>저장</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    add_person_view: {
+    save_view: {
         flexDirection: 'row',
         justifyContent: 'center',
-        padding: 30,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        marginTop: 40,
     },
-    add_person_button: {
-        backgroundColor: '#000000',
-        padding: 8,
-        borderRadius: 8,
+    save_button: {
+        backgroundColor: '#2D336B',
+        borderRadius: 10,
         paddingHorizontal: 18,
-        justifyContent: 'center'
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 100,
+        height: 50,
+    },
+    save_button_text: {
+        color: '#ffffff',
+        fontSize: 20,
+        marginHorizontal: 10,
+        marginVertical: 5,
+    },
+    background: {
+        ...StyleSheet.absoluteFillObject,
     },
     buttonText: {
         fontWeight: '600',
@@ -110,8 +144,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12       // space between text and border
     },
     profile_image: {
-        height: 200,
-        backgroundColor: '#ccc'
+        width: 170,
+        height: 170,
+        borderRadius: 20,
+        backgroundColor: "#E0E0E0",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    image: {
+        width: "100%",
+        height: "100%",
+        borderRadius: 20,
+    },
+    placeholder: {
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    uploadIcon: {
+        width: 55,
+        height: 55,
+        opacity: 0.5,
     },
     selectedButton: {
         backgroundColor: 'black',
@@ -127,6 +179,11 @@ const styles = StyleSheet.create({
     text1: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: '#2D336B',
+    },
+    text1_view: {
+        flex: 1,
+        justifyContent: 'center',
     },
     text2: {
         fontSize: 17,
@@ -135,9 +192,25 @@ const styles = StyleSheet.create({
     },
     type_input: {
         marginVertical: 7,
-        fontSize: 16
+        fontSize: 16,
+    },
+    type_input_view: {
+        flex: 2.5,
+        justifyContent: 'center'
     },
     type_view: {
         flexDirection: 'row',
+    },
+    safeArea: {
+        backgroundColor: "#2D336B",
+        flex: 1,
+    },
+    box: {
+        flex: 11,
+        backgroundColor: '#ffffff',
+        padding: 20,
+        borderRadius: 20,
+        margin: 10,
+        marginBottom: -30,
     },
 });

@@ -11,8 +11,6 @@ const CategoryPicker = ({ onSelect }) => {
     { label: "육류", value: "meat" },
     { label: "해산물", value: "seafood" },
     { label: "유제품", value: "dairy" },
-    { label: "곡물", value: "grains" },
-    { label: "향신료", value: "spices" },
     { label: "기타", value: "others" },
   ]);  
 
@@ -28,6 +26,10 @@ const CategoryPicker = ({ onSelect }) => {
           onSelect(val);
         }}
         setItems={setItems}
+        placeholderStyle={{
+          color: "#aaa",  // 원하는 색상 코드 입력 (예: 회색)
+          fontSize: 16,    // 폰트 크기 조절 (선택사항)
+        }}
         placeholder="카테고리를 선택하세요"
         style={{
             height: 40,
@@ -41,7 +43,6 @@ const CategoryPicker = ({ onSelect }) => {
           }}
         zIndex={2000}
         elevation={2}
-
       />
     </View>
   );
