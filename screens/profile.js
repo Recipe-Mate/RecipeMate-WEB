@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { ScrollView } from 'react-native-gesture-handler';
 
 //import Badge from "./Badge";
 
@@ -9,89 +11,114 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 const Profile = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={["#525C99", "#FFF2F2"]}
+        locations={[0.1, 1]}
+        style={styles.background}
+      />
       <View style={styles.user_info}>
         <Image source={require('../assets/Profile_photo.png')} style={styles.photo}></Image>
-        <Text style={styles.nickname}>닉네임</Text>
-        <Text style={styles.email}>이메일</Text>
+        <Text style={styles.nickname}>ABC</Text>
+        <Text style={styles.email}>abc1234@gmail.com</Text>
+      </View>
+      <View style={{ backgroundColor: '#EEF1FA', flex: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
+
+
+        <View style={{ padding: 20 }}>
+          <TouchableOpacity
+            style={{flexDirection:'row', alignItems: 'center'}}
+            onPress={() => { navigation.navigate('CookedRecipes') }}>
+            <Text style={styles.title}>요리한 레시피</Text>
+            <Ionicons name='chevron-forward-outline' size={26} color='#2D336B' />
+          </TouchableOpacity>
+          <ScrollView horizontal={true}>
+            <View style={{ alignItems: 'center' }}>
+              <Image source={require('../assets/pancake.png')} style={styles.recipe_photo}></Image>
+              <Text style={styles.recipe_photo_text}>팬케이크</Text>
+            </View>
+            <View style={{ alignItems: 'center' }}>
+              <Image source={require('../assets/kimchi_stew.png')} style={styles.recipe_photo}></Image>
+              <Text style={styles.recipe_photo_text}>김치찌개</Text>
+            </View>
+          </ScrollView>
+          <View style={styles.divider}></View>
+        </View>
+
+
+
+        {/* <View style={styles.number_view}>
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <Text style={styles.title}>가지고 있는 재료 수</Text>
+            <Text style={styles.number}>5</Text>
+          </View>
+          <View style={styles.vertical_divider} />
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <Text style={styles.title}>만든 레시피 수</Text>
+            <Text style={styles.number}>5</Text>
+          </View>
+        </View> */}
+
+
+        {/* <View style={styles.badge_view}>
+          <Image source={require('../assets/Badge1.png')} style={styles.badge_icon}></Image>
+          <Image source={require('../assets/Badge2.png')} style={styles.badge_icon}></Image>
+          <Image source={require('../assets/Badge3.png')} style={styles.badge_icon}></Image>
+          <TouchableOpacity
+            style={styles.badge_button}
+            onPress={() => { navigation.navigate('Badge') }}>
+            <Ionicons style={{ marginLeft: 20 }} name='add' size={50} color='#ffffff' />
+          </TouchableOpacity>
+        </View> */}
+        <View style={{ flex: 4 }}>
+          <Text style={styles.text1}>정보 수정하기(보류)</Text>
+          <Text style={styles.text2}>계정 로그아웃</Text>
+          <Text style={styles.text3}>탈퇴하기</Text>
+        </View>
       </View>
 
 
-      <View style={{ backgroundColor: '#333f50', height: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <View style={styles.horizontal_divider} />
-      </View>
-      <View style={styles.number_view}>
-        <View style={{ alignItems: 'center', marginTop: 10 }}>
-          <Text style={styles.title}>가지고 있는 재료 수</Text>
-          <Text style={styles.number}>5</Text>
-        </View>
-        <View style={styles.vertical_divider} />
-        <View style={{ alignItems: 'center', marginTop: 10 }}>
-          <Text style={styles.title}>만든 레시피 수</Text>
-          <Text style={styles.number}>5</Text>
-        </View>
-      </View>
-      <View style={{ backgroundColor: '#333f50', height: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <View style={styles.horizontal_divider} />
-      </View>
-      <View style={styles.badge_title_view}>
-        <Text style={styles.badge_title}>지금까지 획득한 배지</Text>
-        <Icon name='label' size={20} color='#ffffff' ></Icon>
-      </View>
-      <View style={styles.badge_view}>
-        <Image source={require('../assets/Badge1.png')} style={styles.badge_icon}></Image>
-        <Image source={require('../assets/Badge2.png')} style={styles.badge_icon}></Image>
-        <Image source={require('../assets/Badge3.png')} style={styles.badge_icon}></Image>
-        <TouchableOpacity
-          style={styles.badge_button}
-          onPress={() => { navigation.navigate('Badge') }}>
-          <Icon style={{ marginLeft: 20 }} name='add' size={50} color='#ffffff' />
-        </TouchableOpacity>
-      </View>
-      <View style={{ flex: 4 }}>
-        <Text style={styles.text1}>정보 수정하기(보류)</Text>
-        <Text style={styles.text2}>계정 로그아웃</Text>
-        <Text style={styles.text3}>탈퇴하기</Text>
-      </View>
-      <StatusBar barStyle="light" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#186FF2",
     flex: 1,
   },
-  header: {
-    height: 60,
-    backgroundColor: '#333f50'
-  },
+  divider: {
+    height: 1.2,
+    backgroundColor: '#C3CBE9',
+    marginVertical: 15,
+},
   user_info: {
     alignItems: 'center',
   },
   nickname: {
     fontSize: 25,
-    color: '#ffffff',
     fontWeight: 'bold',
-    marginVertical: 10,
+    color: '#F7F9FD'
   },
   email: {
     fontSize: 20,
-    color: 'gray',
-    marginVertical: 10,
+    marginTop: 10,
+    marginBottom: 20,
+    color: '#C3CBE9'
   },
   number_view: {
     flex: 1.5,
-    backgroundColor: '#333f50',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     fontSize: 20,
-    color: '#ffffff',
+    color: '#2D336B',
     fontWeight: 'bold',
-    marginTop: -10,
+  },
+  recipe_photo_text: {
+    fontSize: 20,
+    color: '#2D336B',
+    fontWeight: '500',
   },
   number: {
     fontSize: 30,
@@ -160,14 +187,26 @@ const styles = StyleSheet.create({
     color: 'tomato',
   },
   photo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 1,
     borderColor: '#000000',
-    marginTop: 20,
-    marginVertical: 10,
-  }
+    marginTop: 30,
+    marginBottom: 15,
+  },
+  recipe_photo: {
+    width: 120,
+    height: 120,
+    borderWidth: 1,
+    borderRadius: 20,
+    borderColor: '#000000',
+    marginVertical: 15,
+    marginRight: 20,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject, // 배경을 전체 영역에 적용
+  },
 });
 
 export default Profile;

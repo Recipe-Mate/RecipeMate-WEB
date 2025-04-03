@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, StatusBar, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, Button, StyleSheet, FlatList, ScrollView, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -9,6 +9,7 @@ const Main = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [ingredient, setIngredient] = useState('');
   const [ModalVisible, setModalVisible] = useState(false);  // modal state
+  const [selectedRelationship, setSelectedRelationship] = useState("전체");
 
   // const userId = 7;
 
@@ -39,8 +40,6 @@ const Main = ({ navigation }) => {
   // }, []);
 
 
-
-
   const addFood = () => {
     var foodToSend = {
       userId: 7,
@@ -58,11 +57,14 @@ const Main = ({ navigation }) => {
       })
   }
 
+
   const modifyFood = () => {
     if (ingredient.trim() !== '') {
 
     }
   }
+
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -71,8 +73,10 @@ const Main = ({ navigation }) => {
         style={styles.background}
       />
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text style={styles.title}>식재료 목록</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View>
+          <Text style={styles.title}>식재료 목록</Text>
+        </View>
+        <View style={styles.icon}>
           <TouchableOpacity
             style={styles.badge_button}
             onPress={() => { navigation.navigate('AddIngredient') }}>
@@ -85,40 +89,146 @@ const Main = ({ navigation }) => {
             <Icon name='edit' size={30} color='#fff' />
           </TouchableOpacity>
         </View>
-
-
       </View>
       <View style={styles.box}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ justifyContent: 'flex-end' }}>
-            
-          </View>
-          
+        <View style={{ marginBottom: 15 }}>
+          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row' }}>
+              {['전체', '채소', '과일', '육류', '해산물', '유제품', '기타'].map((item) => (
+                <TouchableOpacity
+                  key={item}
+                  style={[
+                    styles.option,
+                    selectedRelationship === item && styles.selectedButton
+                  ]}
+                  onPress={() => setSelectedRelationship(selectedRelationship === item ? null : item)}
+                >
+                  <Text style={[styles.buttonText, selectedRelationship === item && styles.selectedText]}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
         </View>
-        <FlatList
+        <ScrollView>
+          <View style={styles.ingredient_view}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={require("../assets/cucumber.png")}
+                style={styles.photo}
+                resizeMode="cover"
+              />
+              <View style={styles.description}>
+                <Text style={styles.category}>채소</Text>
+                <Text style={styles.name}>오이</Text>
+                <Text style={styles.date}>2025-04-03</Text>
+              </View>
+            </View>
+            <View style={styles.imageContainer}>
+              <Image
+                source={require("../assets/tomato.jpg")}
+                style={styles.photo}
+                resizeMode="cover"
+              />
+              <View style={styles.description}>
+                <Text style={styles.category}>채소</Text>
+                <Text style={styles.name}>토마토</Text>
+                <Text style={styles.date}>2025-04-03</Text>
+              </View>
+            </View>
+            <View style={styles.imageContainer}>
+              <Image
+                source={require("../assets/banana.jpg")}
+                style={styles.photo}
+                resizeMode="cover"
+              />
+              <View style={styles.description}>
+                <Text style={styles.category}>과일</Text>
+                <Text style={styles.name}>바나나</Text>
+                <Text style={styles.date}>2025-04-03</Text>
+              </View>
+            </View>
+          </View>
+
+        </ScrollView>
+
+      </View>
+
+
+      {/* <FlatList
           data={foodNameList} // 리스트 데이터
           keyExtractor={(item, index) => index.toString()} // 각 아이템에 key 설정
           renderItem={({ item }) => (
             <Text style={styles.item}>{item}</Text> // 리스트 아이템 출력
           )}
-        />
-      </View>
-      <View>
+        /> */}
 
-      </View>
-    </SafeAreaView>
+    </SafeAreaView >
 
   );
 }
 
 const styles = StyleSheet.create({
+  description: {
+    padding: 5
+  },
+  category: {
+    marginVertical: 4,
+    color: '#7886C7',
+  },
+  name: {
+    fontWeight: '600',
+    fontSize: 20,
+  },
+  date: {
+    marginVertical: 4,
+    color: '#2D336B',
+  },
+  ingredient_view: {
+    flexDirection: "row",  // 가로 정렬
+    height: 200,  // 전체 높이 지정 (예제)
+    gap: 15,
+  },
+  imageContainer: {
+    flex: 1,   // 균등한 크기 분배
+    aspectRatio: 1,  // 정사각형 유지
+  },
+  photo: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 10,
+    borderColor: '#A9B5DF',
+    borderWidth: 1,
+  },
+  icon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
+    paddingRight: 20
+  },
+  badge_button: {
+    marginLeft: 5,
+  },
+  selectedButton: {
+    backgroundColor: '#1E2550',
+  },
+  selectedText: {
+    color: 'white',
+  },
+  buttonText: {
+    fontWeight: '600',
+    marginVertical: 3,
+  },
   box: {
     flex: 11,
     backgroundColor: '#ffffff',
-    padding: 20,
+    padding: 15,
     margin: 10,
-    marginBottom: -30,
-    borderRadius: 25,
+    borderTopRightRadius: 20,
+    borderTopLeftRadius: 20,
+    marginBottom: -15,
   },
   background: {
     ...StyleSheet.absoluteFillObject, // 배경을 전체 영역에 적용
@@ -197,7 +307,16 @@ const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: "#186FF2",
     flex: 1,
-  }
+  },
+  option: {
+    padding: 5,
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#1E2550',
+    marginHorizontal: 4,
+    paddingHorizontal: 12,
+  },
 });
 
 export default Main;

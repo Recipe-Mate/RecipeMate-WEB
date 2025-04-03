@@ -14,12 +14,13 @@ import Bill from "./Receipt_x";
 import Profile from "./Profile";
 import Badge from "./Badge";
 import AddIngredient from './AddIngredient';
+import CookedRecipes from './CookedRecipes';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const MainStack = () => (
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName='Main'>
         <Stack.Screen
             name="Main"
             component={Main}
@@ -38,11 +39,11 @@ const MainStack = () => (
                     fontSize: 16,
                 },
                 headerTitleStyle: {
-                    fontSize: 20, // 🔥 여기서 글자 크기 변경!
+                    fontSize: 20,
                     fontWeight: "600",
-                  },
-                title: '식재료 추가하기', 
-                headerShown: true, 
+                },
+                title: '식재료 추가하기',
+                headerShown: true,
                 headerBackTitle: '뒤로'
             }}
         />
@@ -92,8 +93,24 @@ const ProfileStack = () => (
                 headerBackTitleStyle: {
                     fontSize: 16,
                 },
-                title: '획득한 배지', 
-                headerShown: true, 
+                title: '획득한 배지',
+                headerShown: true,
+                headerBackTitle: '뒤로',
+            }}
+        />
+        <Stack.Screen
+            name="CookedRecipes"
+            component={CookedRecipes}
+            options={{
+                headerStyle: {
+                    backgroundColor: '#333f50', // header color
+                },
+                headerTintColor: '#ffffff', // header text color
+                headerBackTitleStyle: {
+                    fontSize: 16,
+                },
+                title: '요리한 레시피',
+                headerShown: true,
                 headerBackTitle: '뒤로',
             }}
         />
