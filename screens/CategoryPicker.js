@@ -27,8 +27,8 @@ const CategoryPicker = ({ onSelect }) => {
         }}
         setItems={setItems}
         placeholderStyle={{
-          color: "#aaa",  // 원하는 색상 코드 입력 (예: 회색)
-          fontSize: 16,    // 폰트 크기 조절 (선택사항)
+          color: "#aaa",
+          fontSize: 16,
         }}
         placeholder="카테고리를 선택하세요"
         style={{

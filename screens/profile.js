@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView, Modal, TextInput } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScrollView } from 'react-native-gesture-handler';
@@ -9,57 +9,120 @@ import { ScrollView } from 'react-native-gesture-handler';
 // import profile_photo from "./assets/profile_icon";
 
 const Profile = ({ navigation }) => {
+  const [nickname, setNickname] = useState('Sirius');
+  const [newNickname, setNewNickname] = useState('');
+  const [ModalVisible, setModalVisible] = useState(false);  // modal state
+
+  const handleNicknameChange = () => {
+    if (newNickname.trim() !== '') {
+      setNickname(newNickname); // 닉네임 변경
+      setModalVisible(false); // 모달 닫기
+    }
+  };
+
+
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={["#525C99", "#FFF2F2"]}
-        locations={[0.1, 1]}
-        style={styles.background}
-      />
-      <View style={styles.user_info}>
-        <Image source={require('../assets/Profile_photo.png')} style={styles.photo}></Image>
-        <Text style={styles.nickname}>ABC</Text>
-        <Text style={styles.email}>abc1234@gmail.com</Text>
-      </View>
-      <View style={{ backgroundColor: '#EEF1FA', flex: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
-
-
-        <View style={{ padding: 20 }}>
+    <ScrollView>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={["#525C99", "#FFF2F2"]}
+          locations={[0.1, 1]}
+          style={styles.background}
+        />
+        <View style={styles.user_info}>
+          <Image source={require('../assets/Profile_photo.png')} style={styles.photo}></Image>
           <TouchableOpacity
-            style={{flexDirection:'row', alignItems: 'center'}}
-            onPress={() => { navigation.navigate('CookedRecipes') }}>
-            <Text style={styles.title}>요리한 레시피</Text>
-            <Ionicons name='chevron-forward-outline' size={26} color='#2D336B' />
+            style={styles.badge_button}
+            onPress={() => setModalVisible(true)}>
+            <Text style={styles.nickname}>{nickname}</Text>
           </TouchableOpacity>
-          <ScrollView horizontal={true}>
-            <View style={{ alignItems: 'center' }}>
-              <Image source={require('../assets/pancake.png')} style={styles.recipe_photo}></Image>
-              <Text style={styles.recipe_photo_text}>팬케이크</Text>
+          <Modal
+            animationType='slide'
+            transparent={true}
+            visible={ModalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>닉네임 변경하기</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="변경할 닉네임을 입력하세요"
+                  placeholderTextColor="#333f50"
+
+                  value={newNickname}
+                  onChangeText={setNewNickname}
+                />
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.addButton]}
+                    onPress={handleNicknameChange} // 닉네임 변경 함수 실행
+                  >
+                    <Text style={styles.buttonText1}>변경</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.cancelButton]}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={styles.buttonText2}>취소</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-            <View style={{ alignItems: 'center' }}>
-              <Image source={require('../assets/kimchi_stew.png')} style={styles.recipe_photo}></Image>
-              <Text style={styles.recipe_photo_text}>김치찌개</Text>
-            </View>
-          </ScrollView>
-          <View style={styles.divider}></View>
+          </Modal>
+          <Text style={styles.email}>abc1234@gmail.com</Text>
         </View>
-
-
-
-        {/* <View style={styles.number_view}>
-          <View style={{ alignItems: 'center', marginTop: 10 }}>
-            <Text style={styles.title}>가지고 있는 재료 수</Text>
-            <Text style={styles.number}>5</Text>
+        <View style={{ backgroundColor: '#EEF1FA', flex: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
+          <View style={{ padding: 20 }}>
+            <View style={{ flexDirection: 'row' }}>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={styles.number_title}>가지고 있는 재료 수</Text>
+                <TouchableOpacity
+                  style={styles.badge_button}
+                  onPress={() => { navigation.navigate('MainStack'); }}>
+                  <Text style={styles.number}>3</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={styles.number_title}>요리한 레시피 수</Text>
+                <Text style={styles.number}>3</Text>
+              </View>
+            </View>
+            <View style={styles.divider}></View>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => { navigation.navigate('CookedRecipes') }}>
+              <Text style={styles.title}>요리한 레시피</Text>
+              <Ionicons name='chevron-forward-outline' size={26} color='#2D336B' />
+            </TouchableOpacity>
+            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={styles.recipe}>
+                  <Image source={require('../assets/pancake.png')} style={styles.recipe_photo}></Image>
+                  <Text style={styles.recipe_photo_text}>팬케이크</Text>
+                </View>
+                <View style={styles.recipe}>
+                  <Image source={require('../assets/kimchi_stew.png')} style={styles.recipe_photo}></Image>
+                  <Text style={styles.recipe_photo_text}>김치찌개</Text>
+                </View>
+                <View style={styles.recipe}>
+                  <Image source={require('../assets/chicken_porridge.png')} style={styles.recipe_photo}></Image>
+                  <Text style={styles.recipe_photo_text}>닭죽</Text>
+                </View>
+              </View>
+            </ScrollView>
+            <View style={styles.divider}></View>
+            <Text style={styles.text1}>정보 수정하기</Text>
+            <Text style={styles.text1}>계정 로그아웃</Text>
+            <Text style={styles.text2}>탈퇴하기</Text>
           </View>
-          <View style={styles.vertical_divider} />
-          <View style={{ alignItems: 'center', marginTop: 10 }}>
-            <Text style={styles.title}>만든 레시피 수</Text>
-            <Text style={styles.number}>5</Text>
-          </View>
-        </View> */}
 
 
-        {/* <View style={styles.badge_view}>
+
+
+
+          {/* <View style={styles.badge_view}>
           <Image source={require('../assets/Badge1.png')} style={styles.badge_icon}></Image>
           <Image source={require('../assets/Badge2.png')} style={styles.badge_icon}></Image>
           <Image source={require('../assets/Badge3.png')} style={styles.badge_icon}></Image>
@@ -69,27 +132,88 @@ const Profile = ({ navigation }) => {
             <Ionicons style={{ marginLeft: 20 }} name='add' size={50} color='#ffffff' />
           </TouchableOpacity>
         </View> */}
-        <View style={{ flex: 4 }}>
-          <Text style={styles.text1}>정보 수정하기(보류)</Text>
-          <Text style={styles.text2}>계정 로그아웃</Text>
-          <Text style={styles.text3}>탈퇴하기</Text>
+
         </View>
-      </View>
 
 
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  recipe: {
+    alignItems: 'center',
+    width: 120,
+  },
   safeArea: {
     flex: 1,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#7886C7',
+    borderRadius: 5,
+    padding: 10,
+    width: '100%',
+    height: 45,
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 반투명 배경
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: 15,
+    gap: 15,
+  },
+  addButton: {
+    flex: 1,
+    padding: 9,
+    alignItems: 'center',
+    borderRadius: 5,
+    backgroundColor: '#2D336B',
+    height: 40,
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 9,
+    alignItems: 'center',
+    borderRadius: 5,
+    backgroundColor: '#C3CBE9',
+    height: 40,
+    justifyContent: 'center',
+  },
+  buttonText1: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  buttonText2: {
+    color: '#2D336B',
+    fontWeight: 'bold',
+    fontSize: 18,
   },
   divider: {
     height: 1.2,
     backgroundColor: '#C3CBE9',
     marginVertical: 15,
-},
+  },
   user_info: {
     alignItems: 'center',
   },
@@ -99,8 +223,8 @@ const styles = StyleSheet.create({
     color: '#F7F9FD'
   },
   email: {
-    fontSize: 20,
-    marginTop: 10,
+    fontSize: 18,
+    marginTop: 5,
     marginBottom: 20,
     color: '#C3CBE9'
   },
@@ -116,15 +240,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   recipe_photo_text: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#2D336B',
     fontWeight: '500',
+    flexWrap: 'wrap',
+    textAlign: 'center',
   },
   number: {
     fontSize: 30,
-    color: '#ffffff',
     fontWeight: 'bold',
-    marginTop: 10,
+    marginVertical: 5,
   },
   vertical_divider: {
     height: '100%',
@@ -168,20 +293,12 @@ const styles = StyleSheet.create({
     borderColor: '#000000',
   },
   text1: {
-    marginTop: 30,
-    marginLeft: 25,
+    marginBottom: 15,
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#2D336B'
   },
   text2: {
-    marginTop: 20,
-    marginLeft: 25,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  text3: {
-    marginTop: 20,
-    marginLeft: 25,
     fontSize: 20,
     fontWeight: 'bold',
     color: 'tomato',
@@ -200,12 +317,14 @@ const styles = StyleSheet.create({
     height: 120,
     borderWidth: 1,
     borderRadius: 20,
-    borderColor: '#000000',
+    borderColor: '#2D336B',
     marginVertical: 15,
-    marginRight: 20,
   },
   background: {
-    ...StyleSheet.absoluteFillObject, // 배경을 전체 영역에 적용
+    ...StyleSheet.absoluteFillObject,
+  },
+  number_title: {
+    fontSize: 16,
   },
 });
 
