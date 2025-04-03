@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, StatusBar, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, Button, StyleSheet, FlatList, StatusBar, TouchableOpacity, SafeAreaView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const Main = () => {
-  
+const Main = ({ navigation }) => {
+
   const [foodNameList, setFoodNameList] = useState([]);
   const [error, setError] = useState(null);
   const [ingredient, setIngredient] = useState('');
@@ -11,31 +11,31 @@ const Main = () => {
 
   // const userId = 7;
 
-  const fetchFoodList = async () => {
-    try {
-      const response = await fetch(`https://1828-182-221-151-160.ngrok-free.app/food/ownlist/${userId}`);
-      const result = await response.json();
+  // const fetchFoodList = async () => {
+  //   try {
+  //     const response = await fetch(`https://1828-182-221-151-160.ngrok-free.app/food/ownlist/${userId}`);
+  //     const result = await response.json();
 
 
-      setFoodNameList(result.ownFoodNameList);
-      console.log(result.ownFoodNameList);
-      
+  //     setFoodNameList(result.ownFoodNameList);
+  //     console.log(result.ownFoodNameList);
 
-      // if (result.success) {
-      //   setFoodNameList(result.data); // 서버에서 받은 리스트를 상태에 저장
-      // } else {
-      //   throw new Error('Failed to fetch food list');
-      // }
-    } catch (err) {
-      setError("55" + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    fetchFoodList();
-  }, []);
+  //     // if (result.success) {
+  //     //   setFoodNameList(result.data); // 서버에서 받은 리스트를 상태에 저장
+  //     // } else {
+  //     //   throw new Error('Failed to fetch food list');
+  //     // }
+  //   } catch (err) {
+  //     setError("55" + err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchFoodList();
+  // }, []);
 
 
 
@@ -59,65 +59,36 @@ const Main = () => {
 
   const modifyFood = () => {
     if (ingredient.trim() !== '') {
-      
+
     }
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.header}></View>
-      <View style={styles.box}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 10 }}>
+        <Text style={styles.title}>식재료 목록</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View>
-            <Text style={styles.title}>식재료 목록</Text>
-          </View>
-          <View style={{ alignItems: 'flex', alignItems: 'center'}}>
-            {/* <Button title="Add Ingredient" onPress={() => setModalVisible(true)} /> */}
-            <TouchableOpacity
-              style={styles.badge_button}
-              onPress={() => setModalVisible(true)}>
-              <Icon name='add' size={40} color='black' />
-            </TouchableOpacity>
-            
-            <Modal
-              animationType='slide'
-              transparent={true}
-              visible={ModalVisible}
-              onRequestClose={() => setModalVisible(false)}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                  <Text style={styles.modalTitle}>식재료 추가</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="식재료를 입력하세요"
-                    placeholderTextColor="#333f50"
-                    value={ingredient}
-                    onChangeText={setIngredient}
-                  />
-                  <View style={styles.modalButtons}>
-                    <TouchableOpacity
-                      style={[styles.button, styles.addButton]}
-                      onPress={addFood}
-                    >
-                      <Text style={styles.buttonText1}>추가</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.button, styles.cancelButton]}
-                      onPress={() => setModalVisible(false)}
-                    >
-                      <Text style={styles.buttonText2}>취소</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </Modal>
-          </View>
+          <TouchableOpacity
+            style={styles.badge_button}
+            onPress={() => { navigation.navigate('AddIngredient') }}>
+            {/* onPress={() => setModalVisible(true)}> */}
+            <Icon name='add' size={40} color='#fff' />
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.badge_button}
             onPress={() => setModalVisible(true)}>
-            <Icon name='edit' size={30} color='black' />
+            <Icon name='edit' size={30} color='#fff' />
           </TouchableOpacity>
+        </View>
+
+
+      </View>
+      <View style={styles.box}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ justifyContent: 'flex-end' }}>
+            
+          </View>
+          
         </View>
         <FlatList
           data={foodNameList} // 리스트 데이터
@@ -128,27 +99,25 @@ const Main = () => {
         />
       </View>
       <View>
-        
+
       </View>
-      <StatusBar style="auto" />
-    </View>
+    </SafeAreaView>
+
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    height: 40,
-    backgroundColor: '#ffffff',
-  },
   box: {
     flex: 11,
     backgroundColor: '#ffffff',
-    padding: 20,
+    margin: 15,
+    borderRadius: 25,
   },
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    alignItems: 'center'
+    alignItems: 'center',
+    color: '#fff'
   },
   ingredient: {
     marginBottom: 15,
@@ -214,7 +183,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-
+  safeArea: {
+    backgroundColor: "#000",
+    flex: 1,
+  }
 });
 
 export default Main;

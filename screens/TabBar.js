@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, FlatList, Button } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Ionicons } from "@expo/vector-icons";
 import Main from "./Main";
 import RecipeSearch from './RecipeSearch';
 import RecipeDetail from './RecipeDetail';
@@ -13,34 +13,61 @@ import IngredientChange from './IngredientChange';
 import Bill from "./Receipt_x";
 import Profile from "./Profile";
 import Badge from "./Badge";
+import AddIngredient from './AddIngredient';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+const MainStack = () => (
+    <Stack.Navigator>
+        <Stack.Screen
+            name="Main"
+            component={Main}
+            options={{ headerShown: false }}
+        />
+        <Stack.Screen
+            name="AddIngredient"
+            component={AddIngredient}
+            options={{
+                headerStyle: {
+                    backgroundColor: '#4D65F9', // header color
+                    height: 100,
+                    borderRadius: 20
+                },
+                headerTintColor: '#ffffff', // header text color
+                headerBackTitleStyle: {
+                    fontSize: 16,
+                },
+                title: '식재료 추가하기', headerShown: true, headerBackTitle: '뒤로가기'
+            }}
+        />
+    </Stack.Navigator>
+);
+
 const RecipeStack = () => (
     <Stack.Navigator>
-      <Stack.Screen
-        name="RecipeSearch"
-        component={RecipeSearch}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="RecipeDetail"
-        component={RecipeDetail}
-        options={{ title: '레시피 상세', headerShown: true }}
-      />
-      <Stack.Screen
-        name="RecipeResult"
-        component={RecipeResult}
-        options={{ title: '검색결과', headerShown: true }}
-      />
-      <Stack.Screen
-        name="IngredientChange"
-        component={IngredientChange}
-        options={{ title: '재료 변동 사항', headerShown: true }}
-      />
+        <Stack.Screen
+            name="RecipeSearch"
+            component={RecipeSearch}
+            options={{ headerShown: false }}
+        />
+        <Stack.Screen
+            name="RecipeDetail"
+            component={RecipeDetail}
+            options={{ title: '레시피 상세', headerShown: true }}
+        />
+        <Stack.Screen
+            name="RecipeResult"
+            component={RecipeResult}
+            options={{ title: '검색결과', headerShown: true }}
+        />
+        <Stack.Screen
+            name="IngredientChange"
+            component={IngredientChange}
+            options={{ title: '재료 변동 사항', headerShown: true }}
+        />
     </Stack.Navigator>
-  );
+);
 
 const ProfileStack = () => (
     <Stack.Navigator initialRouteName='Profile'>
@@ -72,22 +99,21 @@ const TabBar = () => {
         <Tab.Navigator
             screenOptions={{
                 tabBarStyle: {
-                    backgroundColor: '#333f50',
-                    height: 80,
+                    backgroundColor: '#fff',
                 },
-                tabBarItemStyle: { paddingTop: 5, },
-                tabBarActiveTintColor: 'white',
-                tabBarInactiveTintColor: 'gray',
+                tabBarItemStyle: { paddingTop: 10 },
+                tabBarActiveTintColor: '#000',
+                tabBarInactiveTintColor: '#bbb',
                 headerShown: false,
             }}
         >
             <Tab.Screen
-                name="Main"
-                component={Main}
+                name="MainStack"
+                component={MainStack}
                 options={{
-                    title: '홈',
+                    tabBarShowLabel: false,
                     tabBarIcon: ({ color, size }) => (
-                        <Icon name='home' color={color} size={25} />
+                        <Ionicons name='home' color={color} size={28} />
                     )
                 }}
             />
@@ -95,9 +121,9 @@ const TabBar = () => {
                 name="Recipe"
                 component={RecipeStack}
                 options={{
-                    title: '레시피',
+                    tabBarShowLabel: false,
                     tabBarIcon: ({ color, size }) => (
-                        <Icon name='restaurant' color={color} size={25} />
+                        <Ionicons name='restaurant' color={color} size={28} />
                     )
                 }}
             />
@@ -105,9 +131,9 @@ const TabBar = () => {
                 name="Bill"
                 component={Bill}
                 options={{
-                    title: '영수증',
+                    tabBarShowLabel: false,
                     tabBarIcon: ({ color, size }) => (
-                        <Icon name='receipt' color={color} size={25} />
+                        <Ionicons name='receipt' color={color} size={28} />
                     )
                 }}
             />
@@ -115,9 +141,9 @@ const TabBar = () => {
                 name="Profile"
                 component={ProfileStack}
                 options={{
-                    title: '프로필',
+                    tabBarShowLabel: false,
                     tabBarIcon: ({ color, size }) => (
-                        <Icon name='person' color={color} size={25} />
+                        <Ionicons name='person-circle' color={color} size={31} />
                     )
                 }}
             />
@@ -126,25 +152,12 @@ const TabBar = () => {
 };
 
 const styles = StyleSheet.create({
-  header: {
-    height: 70,
-    backgroundColor: '#ffffff',
-  },
-  box: {
-    flex: 10,
-    backgroundColor: '#ffffff',
-  },
-  title: {
-    marginLeft: 30,
-    marginBottom: 30,
-    fontSize: 30,
-    fontWeight: 900,
-  },
-  ingredient: {
-    marginLeft: 30,
-    marginBottom: 15,
-    fontSize: 20,
-  },
+    header: {
+        height: 70,
+        backgroundColor: '#ffffff',
+    },
+
+
 });
 
 export default TabBar;
