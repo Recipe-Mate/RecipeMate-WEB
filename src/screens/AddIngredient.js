@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import CategoryPicker from "../service/CategoryPicker";
 import ExpiryDatePicker from "../service/ExpiryDatePicker";
@@ -32,6 +33,7 @@ export default function AddIngredient() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
+            <StatusBar style="light" />
             <LinearGradient
                 colors={["#2D336B", "#A9B5DF"]}
                 style={styles.background}

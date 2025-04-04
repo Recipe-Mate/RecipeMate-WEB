@@ -38,7 +38,7 @@ const Profile = ({ navigation }) => {
             <Text style={styles.nickname}>{nickname}</Text>
           </TouchableOpacity>
           <Modal
-            animationType='slide'
+            animationType='fade'
             transparent={true}
             visible={ModalVisible}
             onRequestClose={() => setModalVisible(false)}

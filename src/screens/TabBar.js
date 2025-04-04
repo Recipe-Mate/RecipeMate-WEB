@@ -1,9 +1,7 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, FlatList, Button } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from "@expo/vector-icons";
 import Main from "./Main";
 import RecipeSearch from './RecipeSearch';
@@ -31,20 +29,21 @@ const MainStack = () => (
             component={AddIngredient}
             options={{
                 headerStyle: {
-                    backgroundColor: '#2D336B', // header color
-                    height: 90,
+                    backgroundColor: '#2D336B',
+                    height: 80,
                 },
-                headerTintColor: '#ffffff', // header text color
+                headerTintColor: '#ffffff',
                 headerBackTitleStyle: {
                     fontSize: 16,
                 },
+                title: '식재료 추가하기',
                 headerTitleStyle: {
                     fontSize: 20,
                     fontWeight: "600",
                 },
-                title: '식재료 추가하기',
                 headerShown: true,
-                headerBackTitle: '뒤로'
+                headerShadowVisible: false,
+                headerBackTitle: '뒤로',
             }}
         />
     </Stack.Navigator>
@@ -87,9 +86,9 @@ const ProfileStack = () => (
             component={Badge}
             options={{
                 headerStyle: {
-                    backgroundColor: '#333f50', // header color
+                    backgroundColor: '#333f50',
                 },
-                headerTintColor: '#ffffff', // header text color
+                headerTintColor: '#ffffff',
                 headerBackTitleStyle: {
                     fontSize: 16,
                 },
@@ -102,16 +101,27 @@ const ProfileStack = () => (
             name="CookedRecipes"
             component={CookedRecipes}
             options={{
-                headerStyle: {
-                    backgroundColor: '#333f50', // header color
-                },
-                headerTintColor: '#ffffff', // header text color
+                headerBackground: () => (
+                    <LinearGradient
+                        colors={['#2D336B', '#525C99']}
+                        style={{ flex: 1, borderRadius: 10, height: 90, }}
+                    />
+                ),
+                headerTintColor: '#ffffff',
                 headerBackTitleStyle: {
                     fontSize: 16,
                 },
-                title: '요리한 레시피',
-                headerShown: true,
+                title: '요리한 레시피 목록',
+                headerTitleStyle: {
+                    fontSize: 20,
+                    fontWeight: "600",
+                    paddingBottom: 10,
+                },
                 headerBackTitle: '뒤로',
+                headerShown: true,
+                headerLeftContainerStyle: {
+                    paddingBottom: 10,
+                },
             }}
         />
     </Stack.Navigator>
@@ -142,7 +152,7 @@ const TabBar = () => {
                 }}
             />
             <Tab.Screen
-                name="Recipe"
+                name="RecipeStack"
                 component={RecipeStack}
                 options={{
                     tabBarShowLabel: false,
@@ -162,7 +172,7 @@ const TabBar = () => {
                 }}
             />
             <Tab.Screen
-                name="Profile"
+                name="ProfileStack"
                 component={ProfileStack}
                 options={{
                     tabBarShowLabel: false,
