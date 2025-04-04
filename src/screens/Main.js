@@ -72,7 +72,7 @@ const Main = ({ navigation }) => {
         colors={["#2D336B", "#A9B5DF"]}
         style={styles.background}
       />
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', height: 40 }}>
         <View>
           <Text style={styles.title}>식재료 목록</Text>
         </View>
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     marginBottom: -15,
   },
   background: {
-    ...StyleSheet.absoluteFillObject, // 배경을 전체 영역에 적용
+    ...StyleSheet.absoluteFillObject,
   },
   title: {
     fontSize: 28,

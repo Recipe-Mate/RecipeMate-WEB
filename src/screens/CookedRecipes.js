@@ -1,4 +1,5 @@
 import React from 'react';
+import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, SafeAreaView, Image, TextInput } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { ScrollView } from 'react-native-gesture-handler';
@@ -7,6 +8,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 const CookedRecipes = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="light" />
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#777" style={styles.icon} />
         <TextInput
@@ -38,24 +40,27 @@ const CookedRecipes = () => {
 
 const styles = StyleSheet.create({
   searchContainer: {
-    flexDirection: "row", // 아이콘과 입력창을 가로로 배치
-    alignItems: "center", // 세로 정렬
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#ffffff",
     borderColor: '#7886C7',
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 10,
-    margin: 15
+    margin: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
   icon: {
-    marginRight: 8, // 아이콘과 입력창 간격
+    marginRight: 8,
     color: '#7886C7'
   },
   input: {
-    flex: 1, // 입력창이 남은 공간을 차지하도록 설정
+    flex: 1,
     height: 40,
-    fontSize: 16,
-    color: "#333",
+    fontSize: 18,
   },
   safeArea: {
     backgroundColor: "#EEF1FA",
@@ -87,7 +92,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   recipe_text: {
-    paddingLeft: 15,
+    paddingLeft: 18,
     fontSize: 23,
     fontWeight: 'bold',
     color: '#2D336B',

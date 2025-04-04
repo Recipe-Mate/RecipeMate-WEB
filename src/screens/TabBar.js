@@ -104,7 +104,7 @@ const ProfileStack = () => (
                 headerBackground: () => (
                     <LinearGradient
                         colors={['#2D336B', '#525C99']}
-                        style={{ flex: 1, borderRadius: 10, height: 90, }}
+                        style={{ flex: 1, borderBottomRightRadius: 10, borderBottomLeftRadius: 10, }}
                     />
                 ),
                 headerTintColor: '#ffffff',

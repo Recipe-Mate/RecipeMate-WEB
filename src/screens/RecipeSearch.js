@@ -1,15 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  Switch,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Alert, Switch, ScrollView, SafeAreaView, } from 'react-native';
 
 const RecipeSearch = ({ navigation }) => {
   const [conditions, setConditions] = useState({
@@ -31,7 +22,7 @@ const RecipeSearch = ({ navigation }) => {
       setIngredients([...ingredients, newIngredient.trim()]);
       setNewIngredient('');
     } else {
-      Alert.alert('Error', '재료를 입력하세요.');
+      Alert.alert('재료를 입력하세요.');
     }
   };
 
@@ -44,18 +35,25 @@ const RecipeSearch = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}></View>
-      
-      <Text style={styles.title}>레시피 검색</Text>
-
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={["#2D336B", "#A9B5DF"]}
+        style={styles.background}
+      />
+      <View style={{ flexDirection: 'row', alignItems: 'center', height: 40 }}>
+        <Text style={styles.title}>레시피 검색</Text>
+      </View>
       <ScrollView>
-        {/* 조건 섹션 */}
-        <View style={styles.conditionView}>
-          <View style={styles.conditions}>
-            <Text style={styles.sectionTitle}>조건 선택</Text>
-            {Object.keys(conditions).map((key, index) => (
-              <View key={index} style={styles.conditionItem}>
+        <View style={styles.box}>
+          <Text style={styles.sectionTitle}>조건 선택</Text>
+          <View style={{marginBottom: -10}}>
+            {Object.keys(conditions).map((key, index, array) => (
+              <View
+                key={index}
+                style={[
+                  styles.conditionItem,
+                  index === array.length - 1 && { borderBottomWidth: 0 },
+                ]}>
                 <Text style={styles.conditionText}>{`조건 ${index + 1}`}</Text>
                 <Switch
                   value={conditions[key]}
@@ -64,9 +62,9 @@ const RecipeSearch = ({ navigation }) => {
               </View>
             ))}
           </View>
-
-          {/* 재료 입력 및 리스트 */}
-          <View style={styles.ingredients}>
+        </View>
+        <View style={styles.box}>
+          <View>
             <Text style={styles.sectionTitle}>재료 추가</Text>
             <FlatList
               data={ingredients}
@@ -84,6 +82,7 @@ const RecipeSearch = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="재료를 입력하세요"
+                placeholderTextColor="#7886C7"
                 value={newIngredient}
                 onChangeText={setNewIngredient}
               />
@@ -93,10 +92,6 @@ const RecipeSearch = ({ navigation }) => {
             </View>
           </View>
         </View>
-        
-
-
-        
 
         {/* 검색 버튼 */}
         <View style={styles.btnArea}>
@@ -106,11 +101,18 @@ const RecipeSearch = ({ navigation }) => {
         </View>
 
       </ScrollView>
-    </View>
+
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -122,21 +124,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: 'bold',
-    alignItems: 'center'
+    alignItems: 'center',
+    color: '#fff',
+    paddingLeft: 15,
   },
-  conditionView: {
-    //padding: 16,
+  box: {
+    backgroundColor: '#EEF1FA',
+    padding: 15,
+    margin: 10,
+    borderRadius: 20,
+    marginBottom: 3,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#555',
-    marginTop: 20,
-  },
-  conditions: {
-    marginBottom: 20,
+    color: '#2D336B',
   },
   conditionItem: {
     flexDirection: 'row',
@@ -144,31 +148,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#A9B5DF',
   },
   conditionText: {
-    fontSize: 16,
-    color: '#444',
-  },
-  ingredients: {
-    marginBottom: 20,
+    fontSize: 18,
+    color: '#2D336B',
   },
   ingredientItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#fff',
+    borderRadius: 10,
     padding: 12,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    marginBottom: 8,
+    marginTop: 12,
   },
   ingredientText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 18,
+    color: '#2D336B',
   },
   deleteButton: {
     fontSize: 16,
@@ -176,34 +173,37 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     marginTop: 10,
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#7886C7',
     borderRadius: 8,
     padding: 10,
-    fontSize: 16,
+    fontSize: 18,
     backgroundColor: '#fff',
     marginRight: 10,
   },
   addButton: {
-    backgroundColor: '#333f50',
+    height: 40,
+    backgroundColor: '#2D336B',
     borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
   },
   addButtonText: {
-    fontSize: 20,
+    fontSize: 30,
     color: '#fff',
     fontWeight: 'bold',
+    lineHeight: 30,
   },
   btnArea: {
-    backgroundColor: '#333f50',
+    backgroundColor: '#2D336B',
     height: 50,
-    borderRadius: 30,
+    borderRadius: 20,
+    margin: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

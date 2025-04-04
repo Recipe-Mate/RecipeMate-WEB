@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScrollView } from 'react-native-gesture-handler';
+import NicknameModal from '../service/NicknameModal';
 
 //import Badge from "./Badge";
 
@@ -17,14 +18,15 @@ const Profile = ({ navigation }) => {
     if (newNickname.trim() !== '') {
       setNickname(newNickname); // 닉네임 변경
       setModalVisible(false); // 모달 닫기
+    } else {
+      Alert.alert('닉네임을 입력하세요.');
     }
   };
-
-
 
   return (
     <ScrollView>
       <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="light" />
         <LinearGradient
           colors={["#525C99", "#FFF2F2"]}
           locations={[0.1, 1]}
@@ -37,40 +39,14 @@ const Profile = ({ navigation }) => {
             onPress={() => setModalVisible(true)}>
             <Text style={styles.nickname}>{nickname}</Text>
           </TouchableOpacity>
-          <Modal
-            animationType='fade'
-            transparent={true}
+          <NicknameModal
             visible={ModalVisible}
-            onRequestClose={() => setModalVisible(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>닉네임 변경하기</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="변경할 닉네임을 입력하세요"
-                  placeholderTextColor="#333f50"
-
-                  value={newNickname}
-                  onChangeText={setNewNickname}
-                />
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.addButton]}
-                    onPress={handleNicknameChange} // 닉네임 변경 함수 실행
-                  >
-                    <Text style={styles.buttonText1}>변경</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.cancelButton]}
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <Text style={styles.buttonText2}>취소</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
+            setVisible={setModalVisible}
+            newNickname={newNickname}
+            setNewNickname={setNewNickname}
+            handleNicknameChange={handleNicknameChange}
+            styles={styles}
+          />
           <Text style={styles.email}>abc1234@gmail.com</Text>
         </View>
         <View style={{ backgroundColor: '#EEF1FA', flex: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
@@ -113,7 +89,19 @@ const Profile = ({ navigation }) => {
               </View>
             </ScrollView>
             <View style={styles.divider}></View>
-            <Text style={styles.text1}>정보 수정하기</Text>
+            <TouchableOpacity
+              style={styles.badge_button}
+              onPress={() => setModalVisible(true)}>
+              <Text style={styles.text1}>정보 수정하기</Text>
+            </TouchableOpacity>
+            <NicknameModal
+              visible={ModalVisible}
+              setVisible={setModalVisible}
+              newNickname={newNickname}
+              setNewNickname={setNewNickname}
+              handleNicknameChange={handleNicknameChange}
+              styles={styles}
+            />
             <Text style={styles.text1}>계정 로그아웃</Text>
             <Text style={styles.text2}>탈퇴하기</Text>
           </View>
@@ -162,7 +150,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 반투명 배경
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
     width: '80%',
