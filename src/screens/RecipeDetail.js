@@ -49,7 +49,7 @@ const RecipeDetail = ({ navigation }) => {
         {/* 메뉴 사진 및 즐겨찾기 */}
         <View style={styles.imageSection}>
           <Image
-            source={require('../assets/kimchi_stew.png')}
+            source={require('../../assets/kimchi_stew.png')}
             style={styles.menuImage}
           />
           <TouchableOpacity style={styles.favoriteButton} onPress={toggleFavorite}>

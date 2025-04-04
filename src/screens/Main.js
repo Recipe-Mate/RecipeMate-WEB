@@ -115,7 +115,7 @@ const Main = ({ navigation }) => {
           <View style={styles.ingredient_view}>
             <View style={styles.imageContainer}>
               <Image
-                source={require("../assets/cucumber.png")}
+                source={require("../../assets/cucumber.png")}
                 style={styles.photo}
                 resizeMode="cover"
               />
@@ -127,7 +127,7 @@ const Main = ({ navigation }) => {
             </View>
             <View style={styles.imageContainer}>
               <Image
-                source={require("../assets/tomato.jpg")}
+                source={require("../../assets/tomato.jpg")}
                 style={styles.photo}
                 resizeMode="cover"
               />
@@ -139,7 +139,7 @@ const Main = ({ navigation }) => {
             </View>
             <View style={styles.imageContainer}>
               <Image
-                source={require("../assets/banana.jpg")}
+                source={require("../../assets/banana.jpg")}
                 style={styles.photo}
                 resizeMode="cover"
               />

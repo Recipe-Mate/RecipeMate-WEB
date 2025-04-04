@@ -21,19 +21,19 @@ const RecipeResult = ({ route, navigation }) => {
       {
         id: '1',
         title: '김치찌개',
-        image: require('../assets/kimchi_stew.png'),
+        image: require('../../assets/kimchi_stew.png'),
         steps: ['참기름에 돼지고기와 김치 볶기', '멸치 육수 넣고 끓이기'],
       },
       {
         id: '2',
         title: '닭죽',
-        image: require('../assets/chicken_porridge.png'),
+        image: require('../../assets/chicken_porridge.png'),
         steps: ['닭과 물을 넣고 끓이기', '쌀 넣고 저으면서 끓이기'],
       },
       {
         id: '3',
         title: '햄버거',
-        image: require('../assets/burger.png'),
+        image: require('../../assets/burger.png'),
         steps: ['고기 패티 중불에 굽기'],
       },
     ]);

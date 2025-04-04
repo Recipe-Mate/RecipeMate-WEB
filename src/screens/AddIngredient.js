@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image } from 'react-native';
-import CategoryPicker from "./CategoryPicker";
-import ExpiryDatePicker from "./ExpiryDatePicker";
+import CategoryPicker from "../service/CategoryPicker";
+import ExpiryDatePicker from "../service/ExpiryDatePicker";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 
@@ -44,7 +44,7 @@ export default function AddIngredient() {
                                 <Image source={{ uri: image }} style={styles.image} />
                             ) : (
                                 <View style={styles.placeholder}>
-                                    <Image source={require("../assets/upload-icon.png")} style={styles.uploadIcon} />
+                                    <Image source={require("../../assets/upload-icon.png")} style={styles.uploadIcon} />
                                 </View>
                             )}
                         </View>

@@ -31,7 +31,7 @@ const Profile = ({ navigation }) => {
           style={styles.background}
         />
         <View style={styles.user_info}>
-          <Image source={require('../assets/Profile_photo.png')} style={styles.photo}></Image>
+          <Image source={require('../../assets/Profile_photo.png')} style={styles.photo}></Image>
           <TouchableOpacity
             style={styles.badge_button}
             onPress={() => setModalVisible(true)}>
@@ -99,15 +99,15 @@ const Profile = ({ navigation }) => {
             <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <View style={styles.recipe}>
-                  <Image source={require('../assets/pancake.png')} style={styles.recipe_photo}></Image>
+                  <Image source={require('../../assets/pancake.png')} style={styles.recipe_photo}></Image>
                   <Text style={styles.recipe_photo_text}>팬케이크</Text>
                 </View>
                 <View style={styles.recipe}>
-                  <Image source={require('../assets/kimchi_stew.png')} style={styles.recipe_photo}></Image>
+                  <Image source={require('../../assets/kimchi_stew.png')} style={styles.recipe_photo}></Image>
                   <Text style={styles.recipe_photo_text}>김치찌개</Text>
                 </View>
                 <View style={styles.recipe}>
-                  <Image source={require('../assets/chicken_porridge.png')} style={styles.recipe_photo}></Image>
+                  <Image source={require('../../assets/chicken_porridge.png')} style={styles.recipe_photo}></Image>
                   <Text style={styles.recipe_photo_text}>닭죽</Text>
                 </View>
               </View>
