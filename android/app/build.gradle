@@ -116,4 +116,13 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+    
+    // Vector Icons 라이브러리 설정 추가
+    implementation project(':react-native-vector-icons')
 }
+
+// React Native Vector Icons 설정 추가
+project.ext.vectoricons = [
+    iconFontNames: [ 'Ionicons.ttf', 'MaterialIcons.ttf', 'FontAwesome.ttf' ]
+]
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

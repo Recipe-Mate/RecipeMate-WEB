@@ -4,9 +4,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { StatusBar, StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import { StatusBar, StyleSheet, View, Text, ActivityIndicator, LogBox } from 'react-native';
 import ServerStatusCheck from './src/components/ServerStatusCheck';
 import apiConfig from './config/api.config';
+
+// 경고 무시 설정 (개발 중에만 사용)
+LogBox.ignoreLogs([
+  'ViewManagerResolver returned null',  // RNSScreen 관련 경고 무시
+  'ViewManagerRegistry.js',             // 화면 관련 경고 무시
+  'ViewManager for component',           // 컴포넌트 관련 경고 무시
+]);
 
 // 현재 가지고 있는 화면들
 import Main from './screens/Main';
@@ -114,8 +121,8 @@ const AuthStack = () => (
 const AppContent = ({ initialError }) => {
   const { isAuthenticated, loading } = useAuth();
   
-  // 개발 중에는 항상 인증된 것으로 간주 (false로 변경하여 로그인 화면 표시)
-  const alwaysAuthenticated = false; // 이미 false로 설정되어 있음을 확인
+  // 항상 false로 설정하여 인증되지 않은 경우 로그인 화면으로 이동
+  const alwaysAuthenticated = false;
   
   // 로딩 중일 때 초기화 화면 표시
   if (loading) {
@@ -140,7 +147,8 @@ const AppContent = ({ initialError }) => {
               } else if (route.name === 'Profile') {
                 iconName = focused ? 'person' : 'person-outline';
               } else if (route.name === 'ServerStatus') {
-                iconName = focused ? 'server' : 'server-outline';
+                // server 아이콘이 없으므로 settings로 대체
+                iconName = focused ? 'settings' : 'settings-outline';
               }
 
               // IconPlaceholder 대신 아이콘 직접 사용
@@ -195,8 +203,8 @@ const App = () => {
         // Metro 서버 연결 확인
         if (__DEV__) {
           console.log('개발 모드 실행 중');
-          // 포트 번호를 8081로 수정 (React Native Metro 서버의 기본 포트)
-          console.log('Metro URL:', `http://localhost:8081`);
+          // 포트 번호를 8080으로 수정 (Metro 서버 포트 변경)
+          console.log('Metro URL:', `http://localhost:8080`);
         }
         
         // 서버 설정 초기화
@@ -226,17 +234,7 @@ const App = () => {
   );
 };
 
-// 카메라 권한 요청 함수가 수정되었다면 원래대로 복원
-// 원래 코드로 복원
-const requestCameraPermission = async () => {
-  try {
-    const cameraPermission = await Camera.requestCameraPermission();
-    // ...
-  } catch (error) {
-    // ...
-  }
-};
-
+// 스타일 정의
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
