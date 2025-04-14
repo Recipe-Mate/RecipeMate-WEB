@@ -13,8 +13,9 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../src/context/AuthContext';
 import apiService from '../src/services/api.service';
+import apiConfig from '../config/api.config'; // apiConfig 추가
 
-const FoodList = ({ navigation }) => {
+const FoodList = ({ navigation, route }) => {
   const [foodItems, setFoodItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,16 +36,32 @@ const FoodList = ({ navigation }) => {
     
     // 화면으로 돌아올 때 데이터 로드
     const unsubscribe = navigation.addListener('focus', () => {
-      // 파라미터 확인, route 객체에서 직접 params 접근
-      const refreshParam = route.params?.refresh;
-      console.log('[FoodList] 화면 포커스, 갱신 파라미터:', refreshParam);
+      // route 파라미터 확인 - route가 undefined일 수 있으므로 옵셔널 체이닝 사용
+      const refreshParam = route?.params?.refresh;
+      const timestamp = route?.params?.timestamp || Date.now();
+      const newItem = route?.params?.newItem;
       
-      if (refreshParam) {
-        console.log('[FoodList] 새로고침 파라미터 감지됨, 데이터 다시 로드');
-        loadFoodItems();
-        // 파라미터 초기화 (연속 네비게이션에서 중복 로드 방지)
-        navigation.setParams({ refresh: undefined });
+      console.log(`[FoodList] 화면 포커스, 갱신 파라미터:`, { refreshParam, timestamp, newItem });
+      
+      if (newItem) {
+        // 새 아이템이 있으면 현재 목록에 추가하여 즉시 UI에 반영
+        console.log('[FoodList] 새 식재료 항목 수신:', newItem);
+        setFoodItems(prev => {
+          // 중복 방지 (동일 ID가 있으면 교체)
+          const exist = prev.some(item => item.id === newItem.id);
+          if (exist) {
+            return prev.map(item => item.id === newItem.id ? newItem : item);
+          } else {
+            return [newItem, ...prev];
+          }
+        });
       }
+      
+      // 항상 데이터를 새로 로드하도록 변경 (캐시 문제 방지)
+      loadFoodItems();
+      
+      // 파라미터 초기화 (연속 네비게이션에서 중복 로드 방지)
+      navigation.setParams({ refresh: undefined, timestamp: undefined, newItem: undefined });
     });
     
     // 컴포넌트 언마운트 시 ref를 false로 설정
@@ -61,33 +78,53 @@ const FoodList = ({ navigation }) => {
       setLoading(true);
       console.log('[FoodList] 식재료 목록 로드 시작, userId:', userId);
       
-      // getIngredients 함수 사용
-      const response = await apiService.getIngredients(userId);
-      console.log('[FoodList] 식재료 목록 응답:', response);
+      // getIngredients 대신 직접 식재료 목록을 불러오는 API 호출
+      const url = `${apiConfig.getApiUrl()}/food/ownlist?userId=${userId}`;
+      console.log(`[FoodList] 요청 URL: ${url}`);
       
-      let foodData = [];
-      if (response?.data) {
-        if (Array.isArray(response.data)) {
-          foodData = response.data;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          foodData = response.data.data;
-        } else if (response.data.foods && Array.isArray(response.data.foods)) {
-          // GetOwnFoodResponse 형식도 처리
-          foodData = response.data.foods.map((name, index) => ({
-            id: index + 1,
-            name: name
-          }));
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`서버 응답 오류 (${response.status})`);
       }
       
-      console.log('[FoodList] 처리된 식재료 데이터:', foodData);
-      setFoodItems(foodData);
+      const data = await response.json();
+      console.log('[FoodList] 서버 응답 데이터:', data);
+      
+      if (!data || !Array.isArray(data)) {
+        throw new Error('유효하지 않은 응답 데이터');
+      }
+
+      // 서버에서 반환된 실제 ID를 사용하여 각 항목 정규화
+      const normalizedData = data.map(item => ({
+        id: item.id, // 서버에서 반환한 실제 ID 사용
+        name: item.foodName || '이름 없음',
+        quantity: item.quantity || '',
+        expiryDate: item.expiryDate || '',
+        category: item.category || '기타'
+      }));
+
+      console.log('[FoodList] 정규화된 식재료 목록:', normalizedData);
+      
+      if (isMountedRef.current) {
+        setFoodItems(normalizedData);
+      }
     } catch (error) {
       console.error('[FoodList] 데이터 로드 오류:', error);
       Alert.alert('오류', '식재료 목록을 불러오는 데 실패했습니다.');
+      // 오류 발생 시 빈 배열 설정하여 UI 초기화
+      setFoodItems([]);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 

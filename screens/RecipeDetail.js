@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,52 +7,131 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator
 } from 'react-native';
 
-// RecipeDetail 컴포넌트: 레시피 상세 정보를 보여줌
-const RecipeDetail = ({ navigation }) => {
-  const [favorites, setFavorites] = useState(false); // 즐겨찾기 상태 관리함
-  const [ingredients, setIngredients] = useState([
-    { id: '1', name: '김치', has: true },
-    { id: '2', name: '돼지고기', has: false },
-    { id: '3', name: '두부', has: true },
-    { id: '4', name: '대파', has: true },
-    { id: '5', name: '고춧가루', has: true },
-    { id: '6', name: '멸치 육수', has: false },
-  ]);
+// 레시피 이미지 매핑 (RecipeResult와 동일하게 유지)
+const recipeImages = {
+  '닭죽': require('../assets/chicken_porridge.png'),
+  '김치찌개': require('../assets/kimchi_stew.png'),
+  '갈비탕': require('../assets/Galbitang.png'),
+  '제육볶음': require('../assets/Stir_fried_pork.png'),
+  '된장찌개': require('../assets/soy_bean_paste_soup.png'),
+  // 기본 이미지
+  'default': require('../assets/chicken_porridge.png')
+};
 
-  // 레시피 단계 데이터
-  const recipeSteps = [
-    '1. 냄비에 참기름을 두르고 돼지고기와 김치를 볶습니다.',
-    '2. 고기가 익으면 멸치 육수를 넣고 끓입니다.',
-    '3. 두부를 먹기 좋게 썰어 냄비에 넣습니다.',
-    '4. 대파와 고춧가루를 추가하고 한소끔 더 끓입니다.',
-    '5. 맛을 보고 간을 맞춘 후 완성합니다.',
-  ];
+// RecipeDetail 컴포넌트: 레시피 상세 정보를 보여줌
+const RecipeDetail = ({ route, navigation }) => {
+  const [favorites, setFavorites] = useState(false); // 즐겨찾기 상태 관리
+  const [ingredients, setIngredients] = useState([]); // 레시피 재료 목록
+  const [recipeSteps, setRecipeSteps] = useState([]); // 레시피 단계
+  const [recipeTitle, setRecipeTitle] = useState(''); // 레시피 제목
+  const [loading, setLoading] = useState(true); // 로딩 상태
+  const [nutritionInfo, setNutritionInfo] = useState(null); // 영양 정보
+
+  // route.params에서 레시피 정보 가져오기
+  const { recipe } = route?.params || {};
+
+  useEffect(() => {
+    // 레시피 정보가 있으면 설정
+    if (recipe) {
+      console.log('[RecipeDetail] 레시피 데이터 수신:', recipe.title || '제목 없음');
+      
+      // 레시피 제목 설정
+      setRecipeTitle(recipe.title || '레시피');
+      
+      // 레시피 단계 설정
+      setRecipeSteps(
+        Array.isArray(recipe.steps) 
+          ? recipe.steps.map((step, index) => `${index + 1}. ${step}`)
+          : ['조리법 정보가 없습니다.']
+      );
+      
+      // 재료 목록 설정 (보유 여부는 임의로 설정)
+      if (Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0) {
+        const ingredientItems = recipe.ingredients.map((ingredient, index) => ({
+          id: String(index),
+          name: ingredient,
+          // 예시로 짝수 인덱스는 보유, 홀수 인덱스는 미보유로 설정
+          has: index % 2 === 0
+        }));
+        setIngredients(ingredientItems);
+      } else {
+        setIngredients([{ id: '0', name: '재료 정보 없음', has: false }]);
+      }
+      
+      // 영양 정보 설정
+      if (recipe.nutritionInfo) {
+        setNutritionInfo(recipe.nutritionInfo);
+      }
+      
+      setLoading(false);
+    } else {
+      console.log('[RecipeDetail] 레시피 데이터 없음, 기본값 설정');
+      // 기본값 설정
+      setRecipeTitle('레시피 정보 없음');
+      setRecipeSteps(['레시피 정보가 없습니다.']);
+      setIngredients([{ id: '0', name: '재료 정보 없음', has: false }]);
+      setLoading(false);
+    }
+  }, [recipe]);
 
   // 즐겨찾기 토글 함수
   const toggleFavorite = () => {
     setFavorites((prev) => !prev);
-    Alert.alert(favorites ? '즐겨찾기 해제' : '즐겨찾기에 추가');
+    Alert.alert(
+      favorites ? '즐겨찾기 해제' : '즐겨찾기에 추가', 
+      favorites ? '즐겨찾기에서 삭제되었습니다.' : '즐겨찾기에 추가되었습니다.'
+    );
   };
 
   // 요리 완료 버튼 클릭 시 실행되는 함수
   const completeCooking = () => {
-    navigation.navigate('IngredientChange', { ingredients }); // IngredientChange 화면으로 이동함
+    navigation.navigate('IngredientChange', { ingredients });
   };
 
+  // 레시피 이미지 선택 함수
+  const getRecipeImage = (recipeName) => {
+    if (!recipeName) return recipeImages.default;
+    
+    // 제목에 따라 미리 정의된 이미지 반환
+    for (const key of Object.keys(recipeImages)) {
+      if (recipeName.includes(key)) {
+        return recipeImages[key];
+      }
+    }
+    
+    // 일치하는 이미지가 없으면 기본 이미지 반환
+    return recipeImages.default;
+  };
+
+  // 영양 정보 포매팅 함수
+  const formatNutritionValue = (value) => {
+    if (value === undefined || value === null) return '정보 없음';
+    return typeof value === 'number' ? value.toFixed(1) : value;
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text style={styles.loadingText}>레시피 정보를 불러오는 중...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       {/* 메뉴 이름 */}
-      <Text style={styles.menuName}>김치찌개</Text>
+      <Text style={styles.menuName}>{recipeTitle}</Text>
 
-      {/* 알레르기 유발 위험군 */}
-      <Text style={styles.allergyWarning}>알레르기 유발군: 고춧가루</Text>
-
+      {/* 알레르기 정보는 데이터가 없어서 일단 생략 */}
+      
       {/* 메뉴 사진 및 즐겨찾기 */}
       <View style={styles.imageSection}>
         <Image
-          source={require('../assets/kimchi_stew.png')} // 메뉴 이미지
+          source={getRecipeImage(recipeTitle)}
           style={styles.menuImage}
         />
         <TouchableOpacity style={styles.favoriteButton} onPress={toggleFavorite}>
@@ -61,6 +140,45 @@ const RecipeDetail = ({ navigation }) => {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* 영양 정보 섹션 (있을 경우에만 표시) */}
+      {nutritionInfo && (
+        <View style={styles.nutritionSection}>
+          <Text style={styles.sectionTitle}>영양 정보</Text>
+          <View style={styles.nutritionContainer}>
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>칼로리</Text>
+              <Text style={styles.nutritionValue}>
+                {formatNutritionValue(nutritionInfo.calorie)} kcal
+              </Text>
+            </View>
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>탄수화물</Text>
+              <Text style={styles.nutritionValue}>
+                {formatNutritionValue(nutritionInfo.carbohydrate)} g
+              </Text>
+            </View>
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>단백질</Text>
+              <Text style={styles.nutritionValue}>
+                {formatNutritionValue(nutritionInfo.protein)} g
+              </Text>
+            </View>
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>지방</Text>
+              <Text style={styles.nutritionValue}>
+                {formatNutritionValue(nutritionInfo.fat)} g
+              </Text>
+            </View>
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>나트륨</Text>
+              <Text style={styles.nutritionValue}>
+                {formatNutritionValue(nutritionInfo.natrium)} mg
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 재료 리스트 */}
       <View style={styles.ingredientsSection}>
@@ -71,14 +189,14 @@ const RecipeDetail = ({ navigation }) => {
               key={item.id}
               style={[
                 styles.ingredientItem,
-                { backgroundColor: item.has ? '#e0f7ff' : '#ffe0e0' }, // 보유 여부에 따라 배경색 변경
+                { backgroundColor: item.has ? '#e0f7ff' : '#ffe0e0' },
               ]}
             >
               <Text style={styles.ingredientText}>{item.name}</Text>
               <Text
                 style={[
                   styles.ingredientStatus,
-                  { color: item.has ? '#3498db' : '#e74c3c' }, // 상태에 따른 글자색 변경
+                  { color: item.has ? '#3498db' : '#e74c3c' },
                 ]}
               >
                 {item.has ? '보유' : '미보유'}
@@ -104,7 +222,7 @@ const RecipeDetail = ({ navigation }) => {
       <TouchableOpacity style={styles.completeButton} onPress={completeCooking}>
         <Text style={styles.completeButtonText}>요리 완료</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -210,6 +328,38 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#555',
+  },
+  nutritionSection: {
+    marginBottom: 20,
+  },
+  nutritionContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  nutritionItem: {
+    width: '48%',
+    marginBottom: 10,
+  },
+  nutritionLabel: {
+    fontSize: 16,
+    color: '#555',
+  },
+  nutritionValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
   },
 });
 

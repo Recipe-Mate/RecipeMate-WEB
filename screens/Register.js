@@ -50,7 +50,7 @@ const Register = ({ navigation }) => {
       console.log('[회원가입] 모든 환경 변수 확인:', process.env);
       console.log('[회원가입] 앱 버전:', require('../package.json').version);
       
-      const url = `${apiConfig.BASE_URL}/api/signup`;
+      const url = `${apiConfig.getApiUrl()}/api/signup`;
       const payload = {
         name: userName,
         email: userEmail,
@@ -63,7 +63,7 @@ const Register = ({ navigation }) => {
       // 네트워크 요청 전에 서버 상태 확인
       try {
         console.log('[회원가입] 서버 상태 확인 시작');
-        const healthCheck = await fetch(`${apiConfig.BASE_URL}/api/system/health`, {
+        const healthCheck = await fetch(`${apiConfig.getApiUrl()}/api/system/health`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });

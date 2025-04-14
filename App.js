@@ -55,7 +55,7 @@ const ServerStatusScreen = () => {
 // 초기화 화면 컴포넌트
 const InitializingScreen = () => (
   <View style={styles.initializingContainer}>
-    <ActivityIndicator size="large" color="#4CAF50" />
+    <ActivityIndicator size="large" color="#3498db" />
     <Text style={styles.initializingText}>앱을 초기화하는 중...</Text>
   </View>
 );
@@ -70,7 +70,17 @@ const HomeStack = () => (
     <Stack.Screen
       name="MainScreen"
       component={Main}
-      options={{ headerShown: false }}
+      options={{ 
+        title: '홈',
+        headerStyle: {
+          backgroundColor: '#ffffff',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: '#333333',
+        },
+        headerShown: true
+      }}
     />
     <Stack.Screen
       name="AddFood"
@@ -154,14 +164,24 @@ const AppContent = ({ initialError }) => {
               // IconPlaceholder 대신 아이콘 직접 사용
               return <Icon name={iconName} size={size} color={color} />;
             },
-            tabBarActiveTintColor: '#4CAF50',
+            tabBarActiveTintColor: '#3498db',
             tabBarInactiveTintColor: 'gray',
           })}
         >
           <Tab.Screen 
             name="Home" 
             component={HomeStack} // Main 대신 HomeStack 사용
-            options={{ title: '홈', headerShown: false }}
+            options={{ 
+              title: '홈', 
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: '#ffffff',
+              },
+              headerTitleStyle: {
+                fontWeight: 'bold',
+                color: '#333333',
+              }
+            }}
           />
           <Tab.Screen 
             name="Recipe" 

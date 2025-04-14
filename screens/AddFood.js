@@ -30,7 +30,6 @@ const AddFood = ({ navigation }) => {
       const userId = user?.id || 3; // 실제 로그인 사용자 ID 또는 기본값
       
       // MySQL 테이블 구조에 맞게 데이터 객체 생성
-      // food_name, foodName 필드 모두 있으므로 둘 다 채움
       const foodData = {
         userId: userId,
         user_id: userId,
@@ -45,13 +44,31 @@ const AddFood = ({ navigation }) => {
       console.log('[AddFood] 응답:', response);
       
       if (response.data && response.data.success) {
+        // 새로 추가된 식재료 정보를 직접 전달
+        const newFoodItem = {
+          id: response.data.id || Date.now(), // 서버에서 반환한 ID 우선 사용
+          name: foodName.trim(),
+          quantity: quantity.trim() || '1개',
+          userId: userId,
+          user_id: userId
+        };
+        
+        console.log('[AddFood] 추가된 식재료 정보:', newFoodItem);
+        
         Alert.alert(
           '추가 성공',
           '식재료가 성공적으로 추가되었습니다.',
-          [{ text: '확인', onPress: () => {
-            // 명시적으로 refresh 파라미터를 true로 설정하여 목록 갱신 보장
-            navigation.navigate('FoodList', { refresh: true });
-          }}]
+          [{ 
+            text: '확인', 
+            onPress: () => {
+              // 식재료 목록 화면으로 이동하면서 새 항목 정보 및 갱신 플래그 전달
+              navigation.navigate('FoodList', { 
+                refresh: true, 
+                timestamp: Date.now(),
+                newItem: newFoodItem // 새 항목 정보 전달
+              });
+            }
+          }]
         );
       } else {
         throw new Error(response.data?.message || '식재료 추가에 실패했습니다.');
@@ -130,11 +147,11 @@ const AddFood = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f0fdf4', // 연한 초록 계열 배경
   },
   header: {
     padding: 15,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#3498db',
   },
   headerTitle: {
     fontSize: 18,
@@ -146,28 +163,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     margin: 16,
     borderRadius: 8,
-    shadowColor: '#000',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
   },
   label: {
     fontSize: 16,
     marginBottom: 8,
-    color: '#333',
+    color: '#3498db',
   },
   input: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f9fdf9',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#3498db', 
     padding: 12,
     borderRadius: 6,
     fontSize: 16,
     marginBottom: 16,
   },
   addButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#3498db',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -193,11 +210,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#2E7D32',
+    color: '#3498db', // 약간 어두운 초록
   },
   infoText: {
     fontSize: 14,
-    color: '#333',
+    color: '#3498db',
     lineHeight: 20,
   },
 });

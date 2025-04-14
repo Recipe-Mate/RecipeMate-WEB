@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import apiConfig from '../../config/api.config';
+import { Alert } from 'react-native';
 
 // AuthContext 생성
 const AuthContext = createContext();
@@ -38,26 +39,66 @@ export const AuthProvider = ({ children }) => {
       const url = `${apiConfig.getApiUrl()}/api/login`;
       console.log('[로그인] 요청 URL:', url);
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃 설정
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+          signal: controller.signal
+        });
 
-      if (!response.ok) {
-        throw new Error('로그인 실패');
+        clearTimeout(timeoutId); // 타임아웃 해제
+        
+        // 서버 응답 처리
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || '로그인 실패');
+        }
+        
+        // 로그인 실패 확인 - 서버 응답 형식에 맞게 처리
+        if (data.status === 'error') {
+          throw new Error(data.message || '로그인 실패');
+        }
+        
+        // 사용자 데이터 확인
+        if (!data.data || !data.data.id) {
+          throw new Error('사용자 정보를 찾을 수 없습니다.');
+        }
+        
+        // 로그인 성공 처리
+        console.log('[로그인] 성공:', data);
+        
+        // 사용자 정보 저장
+        setUser(data.data);
+        setIsAuthenticated(true);
+        return { success: true };
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          throw new Error('서버 응답 시간이 너무 오래 걸립니다.');
+        }
+        
+        // fetch 과정에서 발생한 오류를 상위로 전파
+        throw fetchError;
       }
-
-      const data = await response.json();
-
-      // 사용자 정보 저장
-      setUser(data.user);
-      setIsAuthenticated(true);
-      return { success: true };
     } catch (error) {
       console.error('로그인 중 오류:', error);
+      
+      // 네트워크 관련 오류 처리
+      if (error.message && error.message.includes('Network request failed')) {
+        return { 
+          success: false, 
+          error: '네트워크 연결 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' 
+        };
+      }
+      
       return { success: false, error: error.message };
     }
   };
@@ -81,23 +122,48 @@ export const AuthProvider = ({ children }) => {
       const url = `${apiConfig.getApiUrl()}/api/signup`;
       console.log('[회원가입] 요청 URL:', url);
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+          signal: controller.signal
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '회원가입 실패');
+        clearTimeout(timeoutId); // 타임아웃 해제
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: '회원가입 실패' }));
+          throw new Error(errorData.message || '회원가입 실패');
+        }
+
+        const data = await response.json();
+        return { success: true, data };
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          throw new Error('서버 응답 시간이 너무 오래 걸립니다.');
+        }
+        
+        throw fetchError;
       }
-
-      const data = await response.json();
-      return { success: true, data };
     } catch (error) {
       console.error('회원가입 중 오류:', error);
+      
+      // 네트워크 관련 오류 처리
+      if (error.message && error.message.includes('Network request failed')) {
+        return { 
+          success: false, 
+          error: '네트워크 연결 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' 
+        };
+      }
+      
       return { success: false, error: error.message };
     }
   };

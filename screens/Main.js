@@ -25,6 +25,30 @@ const Main = ({ navigation }) => {
   
   // 인증 컨텍스트에서 사용자 정보 가져오기
   const { user } = useAuth();
+  
+  // 컴포넌트 마운트될 때 앱 바 설정 - headerShown을 false로 설정
+  useEffect(() => {
+    // 앱 바 타이틀과 옵션 설정
+    navigation.setOptions({
+      headerTitle: '홈',
+      headerStyle: {
+        backgroundColor: '#ffffff',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        color: '#333333',
+      },
+      headerRight: () => (
+        <TouchableOpacity 
+          style={{ marginRight: 15 }}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Icon name="settings-outline" size={24} color="#333333" />
+        </TouchableOpacity>
+      ),
+      headerShown: false // 헤더를 보이지 않도록 설정
+    });
+  }, [navigation]);
 
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
@@ -134,12 +158,12 @@ const Main = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* 사용자 환영 메시지 */}
+      {/*}
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeText}>안녕하세요, {user?.name || '사용자'}님!</Text>
         <Text style={styles.subtitleText}>오늘은 무엇을 요리해볼까요?</Text>
       </View>
-
+        */}
       {/* 내 식재료 섹션 */}
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
@@ -217,100 +241,92 @@ const Main = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    padding: 16,
+    backgroundColor: '#ecf5fc', // #3498db와 어울리는 밝은 배경색
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#f4f4f4',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#333',
   },
-  welcomeSection: {
-    padding: 20,
-    backgroundColor: '#4CAF50',
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  subtitleText: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 5,
-  },
   sectionContainer: {
-    marginTop: 20,
+    marginTop: 15,
     padding: 15,
     backgroundColor: 'white',
-    borderRadius: 10,
-    marginHorizontal: 10,
+    borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 5,
     elevation: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2c6e91', // #3498db와 어울리는 어두운 색상
+    marginBottom: 10,
   },
   seeAllButton: {
-    padding: 5,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   seeAllText: {
-    color: '#4CAF50',
-    fontWeight: 'bold',
+    color: '#2e7d32',
+    fontWeight: '600',
+    fontSize: 14,
   },
   foodItemsContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
   },
   foodItem: {
-    padding: 10,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 20,
-    marginRight: 10,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#d6eaf8', // #3498db와 어울리는 밝은 색상
+    padding: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+    marginBottom: 8,
   },
   foodItemText: {
-    marginLeft: 5,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#2c6e91',
   },
   foodItemQuantity: {
     fontSize: 12,
     color: '#666',
-    marginLeft: 5,
-    fontStyle: 'italic',
+    marginTop: 4,
   },
   emptyContainer: {
-    padding: 15,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    padding: 10,
   },
   emptyText: {
-    color: '#888',
-    marginBottom: 10,
+    color: '#999',
+    marginBottom: 8,
+    fontSize: 14,
   },
   addButton: {
-    padding: 10,
-    backgroundColor: '#4CAF50',
-    borderRadius: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#3498db',
+    borderRadius: 6,
   },
   addButtonText: {
     color: 'white',
@@ -318,20 +334,23 @@ const styles = StyleSheet.create({
   },
   recipesContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
   },
   recipeCard: {
     width: 150,
-    marginRight: 15,
+    marginRight: 12,
     backgroundColor: 'white',
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   recipeImageContainer: {
     height: 100,
-    backgroundColor: '#C8E6C9',
+    backgroundColor: '#AED581',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -342,12 +361,14 @@ const styles = StyleSheet.create({
     padding: 10,
     fontWeight: 'bold',
     textAlign: 'center',
+    fontSize: 15,
+    color: '#333',
   },
   refreshButton: {
     margin: 20,
     padding: 15,
-    backgroundColor: '#4CAF50',
-    borderRadius: 10,
+    backgroundColor: '#3498db',
+    borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -357,46 +378,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 10,
   },
-  section: {
-    margin: 15,
+  welcomeSection: {
+    marginTop: 10,
+    marginBottom: 15,
     padding: 15,
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  ingredientItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  ingredientIcon: {
-    marginRight: 10,
-  },
-  ingredientName: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  ingredientQuantity: {
-    fontSize: 14,
-    color: '#888',
-  },
-  manageButton: {
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 5,
-    marginTop: 15,
-  },
-  manageButtonText: {
-    color: '#4CAF50',
+  welcomeText: {
+    fontSize: 22,
     fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  subtitleText: {
+    fontSize: 16,
+    color: '#666',
   },
 });
 
