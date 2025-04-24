@@ -5,7 +5,7 @@ import Main from './src/screens/Main';
 import SplashScreen from './src/screens/SplashScreen';
 import LogIn from './src/screens/LogIn';
 import Register from './src/screens/Register';
-import TabBar from './src/screens/TabBar';
+import TabBar from './src/navigation/TabBar';
 
 const Stack = createStackNavigator();
 

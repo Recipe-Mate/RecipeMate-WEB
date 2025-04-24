@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import TabBar from './TabBar';
+import TabBar from '../navigation/TabBar';
 
 
 const LogIn = ({ navigation }) => {

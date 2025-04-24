@@ -11,11 +11,9 @@ const Main = ({ navigation }) => {
   const [ModalVisible, setModalVisible] = useState(false);  // modal state
   const [selectedRelationship, setSelectedRelationship] = useState("전체");
 
-  // const userId = 7;
-
   // const fetchFoodList = async () => {
   //   try {
-  //     const response = await fetch(`https://1828-182-221-151-160.ngrok-free.app/food/ownlist/${userId}`);
+  //     const response = await fetch(`https://1828-182-221-151-160.ngrok-free.app/food/ownlist`);
   //     const result = await response.json();
 
 
@@ -42,7 +40,6 @@ const Main = ({ navigation }) => {
 
   const addFood = () => {
     var foodToSend = {
-      userId: 7,
       foodNameList: '양파'
     }
     fetch('https://b763-182-221-151-160.ngrok-free.app/food', {

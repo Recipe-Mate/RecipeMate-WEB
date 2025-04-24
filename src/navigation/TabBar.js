@@ -3,16 +3,16 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from "@expo/vector-icons";
-import Main from "./Main";
-import RecipeSearch from './RecipeSearch';
-import RecipeDetail from './RecipeDetail';
-import RecipeResult from './RecipeResult';
-import IngredientChange from './IngredientChange';
-import Bill from "./Receipt_x";
-import Profile from "./Profile";
-import Badge from "./Badge";
-import AddIngredient from './AddIngredient';
-import CookedRecipes from './CookedRecipes';
+import Main from "../screens/Main";
+import RecipeSearch from '../screens/RecipeSearch';
+import RecipeDetail from '../screens/RecipeDetail';
+import RecipeResult from '../screens/RecipeResult';
+import IngredientChange from '../screens/IngredientChange';
+import Receipt from "../screens/Receipt";
+import Profile from "../screens/Profile";
+import Badge from "../screens/Badge";
+import AddIngredient from '../screens/AddIngredient';
+import CookedRecipes from '../screens/CookedRecipes';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -162,8 +162,8 @@ const TabBar = () => {
                 }}
             />
             <Tab.Screen
-                name="Bill"
-                component={Bill}
+                name="Receipt"
+                component={Receipt}
                 options={{
                     tabBarShowLabel: false,
                     tabBarIcon: ({ color, size }) => (

@@ -10,7 +10,10 @@ export default function AddIngredient() {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedContactTerm, setSelectedContactTerm] = useState([]);
-    const [image, setImage] = useState(null); // 선택한 이미지 저장
+    const [image, setImage] = useState(null);
+    const [foodName, setFoodName] = useState('');
+    const [amount, setAmount] = useState('');
+    const [unit, setUnit] = useState('');
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -30,6 +33,28 @@ export default function AddIngredient() {
             setImage(result.assets[0].uri); // 선택한 이미지 적용
         }
     };
+
+    const addFood = () => {
+        var foodToSend = {
+            "foodList": [
+                {
+                  "foodName": "배추",
+                  "amount": 1,
+                  "unit": "EA"
+                },
+              ]
+        }
+        fetch('https://b763-182-221-151-160.ngrok-free.app/food', {
+          method: 'POST',
+          body: JSON.stringify(foodToSend),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+          .then((responseJson) => {
+            console.log(responseJson);
+          })
+      }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -59,7 +84,13 @@ export default function AddIngredient() {
                             <Text style={styles.text1}>식재료명</Text>
                         </View>
                         <View style={styles.type_input_view}>
-                            <TextInput style={styles.type_input} placeholder='재료를 입력하세요' placeholderTextColor="#aaa" />
+                            <TextInput 
+                                style={styles.type_input}
+                                placeholder='재료를 입력하세요' 
+                                placeholderTextColor="#aaa"
+                                value={foodName}
+                                onChangeText={setFoodName}
+                            />
                         </View>
                     </View>
                     <View style={styles.divider}></View>
@@ -77,7 +108,13 @@ export default function AddIngredient() {
                             <Text style={styles.text1}>개수/용량</Text>
                         </View>
                         <View style={styles.type_input_view}>
-                            <TextInput style={styles.type_input} placeholder="숫자를 입력하세요" placeholderTextColor="#aaa" />
+                            <TextInput
+                                style={styles.type_input} 
+                                placeholder="숫자를 입력하세요" 
+                                placeholderTextColor="#aaa"
+                                value={amount}
+                                onChangeText={setAmount}
+                            />
                         </View>
                     </View>
                     <View style={styles.divider}></View>
@@ -93,12 +130,12 @@ export default function AddIngredient() {
                 <View style={styles.divider}></View>
                 <View style={styles.save_view}>
                     <TouchableOpacity
+                        // onPress={addFood}
                         style={styles.save_button}>
                         <Text style={styles.save_button_text}>저장</Text>
                     </TouchableOpacity>
                 </View>
             </View>
-
         </SafeAreaView>
     );
 }
