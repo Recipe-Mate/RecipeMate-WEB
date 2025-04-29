@@ -1,283 +1,133 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import TabBar from './TabBar';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useAuthRequest } from 'expo-auth-session'; // expo-auth-session에서 useAuthRequest 훅 사용
+import { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI, SERVER_URL } from '@env';
+import * as AuthSession from 'expo-auth-session';
 
-
+const redirectUri = AuthSession.makeRedirectUri({
+  useProxy: true, // 개발 시에는 true, 배포 시에는 false
+});
 const LogIn = ({ navigation }) => {
-  const [userEmail, setEmail] = useState('');
-  const [uesrPassword, setPassword] = useState('');
-  const [userId, setUserId] = useState(null); // 서버 응답값 저장
-
-  const [isValidUser, setIsValidUser] = useState(false);  // userId check result
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // 요청 중 상태 관리
   const [errorText, setErrorText] = useState('');
 
-  const handleLogin = async () => {
-    setLoading(true);
-    setErrorText('');
+  const authorizationEndpoint = 'https://kauth.kakao.com/oauth/authorize';
+  const tokenEndpoint = `${SERVER_URL}/auth/token`; // 서버 URL에 맞게 수정
 
-    var dataToSend = {
-      email: userEmail,
-      password: uesrPassword
-    };
-    // const formBody = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+  // 로그인 URL
+  // const loginUrl = `${authorizationEndpoint}?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
 
+  // useAuthRequest 훅을 최상위에서 호출하여 훅의 호출 순서를 보장
+  const [request, response, promptAsync] = useAuthRequest(
+    {
+      clientId: KAKAO_REST_API_KEY, // 카카오 REST API 키
+      redirectUri: KAKAO_REDIRECT_URI, // 카카오 개발자 콘솔에 등록된 리디렉션 URI
+      responseType: 'code', // OAuth 2.0 인가 코드 플로우 사용
+    },
+    {
+      authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
+      tokenEndpoint: 'https://kauth.kakao.com/oauth/token', // 카카오 서버에서 토큰 받기
+    }
+  );
+  
+  console.log(redirectUri);
+  const handleLogin = useCallback(async () => {
+    if (isLoading || !request) {
+      console.log('요청 준비 안 됨');
+      return;
+    }
+  
+    setIsLoading(true);
+  
     try {
-      const response = await fetch('https://1828-182-221-151-160.ngrok-free.app/user/login', {
-        method: 'POST',
-        body: JSON.stringify(dataToSend),
-        headers: {
-          //Header Defination
-          'Content-Type': 'application/json',
-        },
+      console.log('카카오 로그인 요청 시작...');
+      // promptAsync 호출 전 로그 추가
+      console.log('request 상태:', request);
+      console.log('response 상태:', response);
 
-      });
+      const result = await promptAsync({ useProxy: true }); // 로그인 요청을 보냄
+      console.log('카카오 로그인 결과:', result); // 이 로그가 제대로 출력되는지 확인
+      console.log('카카오 로그인 응답 전체:', result);
+      console.log('리디렉션된 URI:', result?.url);
+      console.log(redirectUri);
+      if (result?.url) {
+        const code = new URL(result.url).searchParams.get('code'); // 리디렉션된 URL에서 'code' 값 추출
+        console.log('인가 코드:', code);
 
-      const data = await response.json();
-      console.log('서버 응답: ', data);
+        if (!code) {
+          throw new Error('인가 코드가 없습니다.');
+        }
 
-      // check userId exists or not
-      if (data && data.userId) {
-        setUserId(data.userId);
-        console.log("41");
-        window.userId = data.userId
-        navigation.replace('TabBar');
+        // 서버에 요청을 보내기 전, 인가 코드를 포함한 요청 보내기
+        const serverResponse = await fetch(`${SERVER_URL}/auth?code=${code}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: KAKAO_REST_API_KEY,
+            redirect_uri: KAKAO_REDIRECT_URI,
+            code: code, // 실제 'code' 값 사용
+          }),
+        });
+
+        console.log('HTTP 응답 상태:', serverResponse.status);
+        const tokenData = await serverResponse.json();
+        console.log('응답 JSON 본문:', tokenData);
       } else {
-        console.log("failed");
-        setErrorText('아이디와 비밀번호를 다시 확인해주세요');
-
+        console.error('카카오 로그인에서 응답을 받지 못했습니다.');
       }
     } catch (error) {
-      console.error('Error: ', error);
+      console.error('카카오 로그인 실패:', error);
+      setErrorText('로그인 실패. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [isLoading, request, response]);
 
+  useEffect(() => {
+    // 응답 상태에 대한 로그 출력
+    if (response) {
+      console.log('카카오 로그인 응답 상태:', response);
 
-
-
-    // 12/18/2024 ver.
-    // fetch('https://1828-182-221-151-160.ngrok-free.app/user/login', {
-    //   method: 'POST',
-    //   body: JSON.stringify(dataToSend),
-    //   headers: {
-    //     //Header Defination
-    //     'Content-Type': 'application/json',
-    //   },
-    // })
-    //   .then((response) => response.json())
-    //   .then((responseJson) => {
-    //     console.log(responseJson);  // 서버 응답 전체를 확인
-    //     const userId = responseJson.userId; // 숫자 값 7이 저장됨
-    //     console.log('Extracted userId:', userId);
-    //     navigation.replace('TabBar');
-    //     if (responseJson.status === 'success') {
-    //       AsyncStorage.setItem('userId', responseJson.data.userId);
-    //       console.log('39', responseJson.data.userID);
-    //       navigation.replace('TabBar');
-    //     } else {
-    //       setErrorText('아이디와 비밀번호를 다시 확인해주세요');
-    //       console.log('Please check your id or password');
-    //       console.log('44 userId', userId);
-    //     }
-    //   })
-      
-
-
-
-      // .then((responseJson) => {
-      //   //Hide Loader
-      //   setLoading(false);
-      //   console.log(responseJson);
-
-      //   const userId = responseJson.userId; // 숫자 값 7이 저장됨
-      //   console.log('Extracted userId:', userId);
-
-      //   // If server response message same as Data Matched
-      //   if (responseJson.status === 'success') {
-      //     AsyncStorage.setItem('user_id', responseJson.data.stu_id);
-      //     console.log(responseJson.data.stu_id);
-      //     navigation.replace('DrawerNavigationRoutes');
-      //   } else {
-      //     setErrorText('아이디와 비밀번호를 다시 확인해주세요');
-      //     console.log('Please check your id or password');
-      //   }
-      // })
-      // .catch((error) => {
-      //   //Hide Loader
-      //   setLoading(false);
-      //   console.error(error);
-      // });
-  
-    
-    
-
-
-
-
-  //   try {
-  //     const response = await fetch('https://56b5-182-221-151-160.ngrok-free.app/user/login', {
-  //       method: 'POST',
-  //       body: JSON.stringify(dataToSend),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //     });
-
-  //     const responseJson = await response.json();
-  //     setLoading(false);
-  //     console.log('Response:', responseJson);
-
-  //     if (responseJson.status === 'success') {
-  //       // AsyncStorage에 userId 저장
-  //       await AsyncStorage.setItem('user_id', JSON.stringify(responseJson.userId)); // userId 값을 JSON.stringify()로 변환하여 저장
-  //       const savedUserId = await AsyncStorage.getItem('user_id'); // 저장된 값 확인
-  //       console.log('Stored user_id:', savedUserId); // 콘솔로 저장된 값 출력
-  //       navigation.replace('TabBar');
-  //     } else {
-  //       setErrorText('아이디와 비밀번호를 다시 확인해주세요');
-  //     }
-  //   } catch (error) {
-  //     setLoading(false);
-  //     setErrorText('서버와 연결할 수 없습니다.');
-  //     console.log('Error:', error);
-  //   }
-
-  //   await AsyncStorage.setItem('user_id', JSON.stringify(responseJson.userId))
-  //     .then(() => {
-  //       console.log('user_id saved successfully');
-  //       // AsyncStorage에서 바로 확인
-  //       AsyncStorage.getItem('user_id')
-  //         .then((value) => {
-  //           console.log('Stored user_id:', value); // 저장된 값 출력
-  //         })
-  //         .catch((error) => {
-  //           console.log('Error reading stored user_id:', error);
-  //         });
-  //     })
-  //     .catch((error) => {
-  //       console.log('Error saving user_id:', error);
-  //     });
-  //   // 저장 시
-  //   await AsyncStorage.setItem('user_id', JSON.stringify(responseJson.userId));
-
-  //   // 읽을 때
-  //   const storedUserId = await AsyncStorage.getItem('user_id');
-  //   const parsedUserId = storedUserId ? JSON.parse(storedUserId) : null;
-  //   console.log('Parsed user_id:', parsedUserId);
-
-  // };
-
-
-
-
-
-
-
-  //   fetch('https://56b5-182-221-151-160.ngrok-free.app/user/login', {
-  //     method: 'POST',
-  //     body: JSON.stringify(dataToSend),
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   })
-    
-    
-  //     .then((response) => response.json())
-  //     .then((responseJson) => {
-  //       setLoading(false);
-  //       console.log('Response:', responseJson); // 서버 응답 출력
-
-
-
-  //       AsyncStorage.setItem('user_id', responseJson.data.user_id)
-  //         .then(() => {
-  //           console.log('user_id saved');
-  //           // 값을 바로 불러와서 확인
-  //           AsyncStorage.getItem('user_id')
-  //             .then((value) => console.log('Stored user_id:', value)); // 바로 확인
-  //         })
-  //         .catch((error) => {
-  //           console.log('Error saving user_id:', error);
-  //         });
-
-
-
-  //       if (responseJson.status === 'success') {
-  //         // 서버에서 받아온 user_id를 AsyncStorage에 저장
-  //         AsyncStorage.setItem('userId', responseJson.data.userId);
-
-
-  //         // 로그인 성공 시 화면 이동 (예: TabBar 화면으로)
-  //         navigation.replace('TabBar');
-  //       } else {
-  //         setErrorText('아이디와 비밀번호를 다시 확인해주세요');
-  //       }
-  //       AsyncStorage.getItem('userId')
-  //         .then((userId) => {
-  //           console.log('Stored userId:', userId);
-  //         })
-  //         .catch((error) => {
-  //           console.log('Error reading user_id from AsyncStorage:', error);
-  //         });
-
-  //     })
-  //     .catch((error) => {
-  //       setLoading(false);
-  //       setErrorText('서버와 연결할 수 없습니다.');
-
-  //     });
-  //     console.log('user_id', userId);
-  // };
+      if (response?.type === 'success') {
+        const { code } = response.params;
+        console.log('인가 코드 확인:', code);
+      }
+    }
+  }, [response]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>로그인</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="이메일"
-        value={userEmail}
-        onChangeText={(text) => setEmail(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="비밀번호"
-        value={uesrPassword}
-        onChangeText={(text) => setPassword(text)}
-        secureTextEntry
-      />
-      {loading ? <ActivityIndicator size="large" color="#333f50" /> : null}
+      {isLoading ? <ActivityIndicator size="large" color="#333f50" /> : null}
       {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
-      <Button title="로그인" onPress={handleLogin} />
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Register')}
-      >
-        <Text style={styles.buttonText}>회원가입하기</Text>
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>카카오 로그인</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  button: {
+    backgroundColor: "#FBE301",
+    borderRadius: 10,
+    borderWidth: 1,
+    width: 250,
+    height: 50,
+    marginTop: 10,
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#3B1E1E',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
   },
   errorText: {
     color: 'red',

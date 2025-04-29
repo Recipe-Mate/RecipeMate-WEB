@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, FlatList, ScrollView, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { SERVER_URL } from '@env';
 
 const Main = ({ navigation }) => {
 
@@ -11,50 +12,47 @@ const Main = ({ navigation }) => {
   const [ModalVisible, setModalVisible] = useState(false);  // modal state
   const [selectedRelationship, setSelectedRelationship] = useState("전체");
 
-  const serverUrl = process.env.SERVER_URL;
-
-  const fetchFoodList = async () => {
-    try {
-      const response = await fetch(`${serverUrl}/food/ownlist`);
-      const result = await response.json();
-
-
-      setFoodNameList(result.ownFoodNameList);
-      console.log(result.ownFoodNameList);
-
-
-      if (result.success) {
-        setFoodNameList(result.data); // 서버에서 받은 리스트를 상태에 저장
-      } else {
-        throw new Error('Failed to fetch food list');
-      }
-    } catch (err) {
-      setError("55" + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  console.log(SERVER_URL);
 
   useEffect(() => {
-    fetchFoodList();
+    fetch(`${SERVER_URL}/food/ownlist`) // 여기에 API 주소 입력
+      .then(response => response.json())
+      .then(data => {
+        console.log('API 응답:', data); // 여기를 먼저 확인
+        const names = data.ownFoodList.map(item => item.foodName);
+        setFoodNameList(names);
+      })
+      .catch(error => {
+        console.error('Error fetching food list:', error);
+      });
   }, []);
 
 
-  // const addFood = () => {
-  //   var foodToSend = {
-  //     foodNameList: '양파'
+  // const fetchFoodList = async () => {
+  //   try {
+  //     const response = await fetch(`${serverUrl}/food/ownlist`);
+  //     const result = await response.json();
+
+
+  //     setFoodNameList(result.ownFoodNameList);
+  //     console.log(result.ownFoodNameList);
+
+
+  //     if (result.success) {
+  //       setFoodNameList(result.data);
+  //     } else {
+  //       throw new Error('Failed to fetch food list');
+  //     }
+  //   } catch (err) {
+  //     setError("55" + err.message);
+  //   } finally {
+  //     setLoading(false);
   //   }
-  //   fetch('${serverUrl}/food', {
-  //     method: 'POST',
-  //     body: JSON.stringify(foodToSend),
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   })
-  //     .then((responseJson) => {
-  //       console.log(responseJson);
-  //     })
-  // }
+  // };
+
+  // useEffect(() => {
+  //   fetchFoodList();
+  // }, []);
 
 
   // const modifyFood = () => {
