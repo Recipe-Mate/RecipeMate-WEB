@@ -4,8 +4,8 @@
  */
 
 // 기본 서버 URL 설정 - 실제 서버 IP 주소와 포트로 변경
-const DEFAULT_API_URL = 'http://10.0.2.2:8081'; // 안드로이드 에뮬레이터에서 localhost 대신 사용
-// iOS에서는 localhost 사용: const DEFAULT_API_URL = 'http://127.0.0.1:8081';
+const DEFAULT_API_URL = 'http://10.0.2.2:8080'; // 안드로이드 에뮬레이터에서 localhost 대신 사용
+// iOS에서는 localhost 사용: const DEFAULT_API_URL = 'http://127.0.0.1:8080';
 
 // API 엔드포인트 정의
 const API_ENDPOINTS_OBJ = {

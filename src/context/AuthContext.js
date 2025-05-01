@@ -12,9 +12,9 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // 로딩 상태를 기본적으로 false로 설정
 
-  // 앱 시작 시 인증 상태 확인
+  // 앱 시작 시 인증 상태를 백그라운드에서 확인
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -22,14 +22,13 @@ export const AuthProvider = ({ children }) => {
         // 실제 서버 연동 시에는 토큰 유효성 검사 등의 로직 추가 필요
         setUser(null);
         setIsAuthenticated(false);
-        setLoading(false);
       } catch (error) {
         console.error('인증 상태 확인 중 오류:', error);
         setIsAuthenticated(false);
-        setLoading(false);
       }
     };
 
+    // 백그라운드에서 인증 상태 확인 실행
     checkAuthStatus();
   }, []);
 
@@ -43,39 +42,40 @@ export const AuthProvider = ({ children }) => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃 설정
       
       try {
+        // 서버 API 구조에 맞게 email, password만 전송
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ 
+            email, 
+            password
+          }),
           signal: controller.signal
         });
-
+        
         clearTimeout(timeoutId); // 타임아웃 해제
         
         // 서버 응답 처리
         const data = await response.json();
         
         if (!response.ok) {
-          throw new Error(data.message || '로그인 실패');
-        }
-        
-        // 로그인 실패 확인 - 서버 응답 형식에 맞게 처리
-        if (data.status === 'error') {
-          throw new Error(data.message || '로그인 실패');
-        }
-        
-        // 사용자 데이터 확인
-        if (!data.data || !data.data.id) {
-          throw new Error('사용자 정보를 찾을 수 없습니다.');
+          console.log('[로그인] 응답 오류:', data);
+          throw new Error(data.errorMessage || '로그인 실패');
         }
         
         // 로그인 성공 처리
         console.log('[로그인] 성공:', data);
         
-        // 사용자 정보 저장
-        setUser(data.data);
+        // 서버 응답 구조에 맞게 사용자 정보 저장
+        // LoginResponse는 data 필드 내에 id와 email을 포함함
+        const userData = {
+          id: data.data.id,
+          email: data.data.email
+        };
+        
+        setUser(userData);
         setIsAuthenticated(true);
         return { success: true };
       } catch (fetchError) {

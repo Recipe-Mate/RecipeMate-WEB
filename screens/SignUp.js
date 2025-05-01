@@ -41,7 +41,7 @@ const SignUp = ({ navigation }) => {
       
       // 회원가입 요청
       const userData = {
-        name,
+        userName: name,  // 'name'을 'userName'으로 변경
         email,
         password
       };

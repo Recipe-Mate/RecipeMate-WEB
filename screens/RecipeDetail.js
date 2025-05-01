@@ -7,8 +7,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
+import { useAuth } from '../src/context/AuthContext';
+import apiService from '../src/services/api.service';
 
 // 레시피 이미지 매핑 (RecipeResult와 동일하게 유지)
 const recipeImages = {
@@ -29,6 +32,10 @@ const RecipeDetail = ({ route, navigation }) => {
   const [recipeTitle, setRecipeTitle] = useState(''); // 레시피 제목
   const [loading, setLoading] = useState(true); // 로딩 상태
   const [nutritionInfo, setNutritionInfo] = useState(null); // 영양 정보
+  const [showIngredientsModal, setShowIngredientsModal] = useState(false);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const { user } = useAuth();
+  const [userIngredients, setUserIngredients] = useState([]); // 사용자 식재료 리스트
 
   // route.params에서 레시피 정보 가져오기
   const { recipe } = route?.params || {};
@@ -77,6 +84,24 @@ const RecipeDetail = ({ route, navigation }) => {
     }
   }, [recipe]);
 
+  // 사용자 식재료 불러오기
+  useEffect(() => {
+    const fetchUserIngredients = async () => {
+      if (!user || !user.id) return;
+      try {
+        const result = await apiService.getIngredients(user.id);
+        if (result && result.success && result.data) {
+          setUserIngredients(result.data);
+        } else {
+          setUserIngredients([]);
+        }
+      } catch (e) {
+        setUserIngredients([]);
+      }
+    };
+    fetchUserIngredients();
+  }, [user]);
+
   // 즐겨찾기 토글 함수
   const toggleFavorite = () => {
     setFavorites((prev) => !prev);
@@ -112,6 +137,49 @@ const RecipeDetail = ({ route, navigation }) => {
     return typeof value === 'number' ? value.toFixed(1) : value;
   };
 
+  // 레시피 재료와 사용자 식재료 매칭 및 상태 구분
+  const getIngredientStatusList = () => {
+    if (!Array.isArray(recipe?.ingredients)) return [];
+    return recipe.ingredients.map((ingredient, index) => {
+      // 예: "양파 100g" 또는 "양파"
+      const match = ingredient.match(/([가-힣a-zA-Z0-9]+)\s*([\d.,]+\s*[a-zA-Z가-힣]*)?/);
+      const name = match ? match[1] : ingredient;
+      const needAmount = match && match[2] ? match[2].trim() : null;
+      // 사용자 식재료 중 이름이 포함되는 항목 찾기(부분일치 허용)
+      const userItem = userIngredients.find(ui => name && ui.name && ui.name.replace(/\s/g,"").includes(name.replace(/\s/g,"")));
+      let status = '미보유';
+      let display = ingredient;
+      if (userItem) {
+        if (needAmount && userItem.quantity) {
+          // 숫자만 비교(단위가 같다고 가정)
+          const needNum = parseFloat(needAmount);
+          const ownNum = parseFloat(userItem.quantity);
+          if (!isNaN(needNum) && !isNaN(ownNum)) {
+            if (ownNum < needNum) {
+              status = '부족';
+              display = `${name} ${userItem.quantity}/${needAmount}`;
+            } else {
+              status = '보유';
+              display = `${name} ${userItem.quantity}`;
+            }
+          } else {
+            status = '보유';
+            display = `${name} ${userItem.quantity}`;
+          }
+        } else {
+          status = '보유';
+          display = userItem.quantity ? `${name} ${userItem.quantity}` : name;
+        }
+      }
+      return {
+        id: String(index),
+        name,
+        display,
+        status,
+      };
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -122,7 +190,7 @@ const RecipeDetail = ({ route, navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{paddingBottom: 32}}>
       {/* 메뉴 이름 */}
       <Text style={styles.menuName}>{recipeTitle}</Text>
 
@@ -183,45 +251,127 @@ const RecipeDetail = ({ route, navigation }) => {
       {/* 재료 리스트 */}
       <View style={styles.ingredientsSection}>
         <Text style={styles.sectionTitle}>재료 리스트</Text>
-        <ScrollView style={styles.scrollableList}>
-          {ingredients.map((item) => (
+        <ScrollView style={styles.scrollableList} nestedScrollEnabled={true}>
+          {getIngredientStatusList().map((item) => (
             <View
               key={item.id}
               style={[
                 styles.ingredientItem,
-                { backgroundColor: item.has ? '#e0f7ff' : '#ffe0e0' },
+                item.status === '보유'
+                  ? { backgroundColor: '#e0f7ff' }
+                  : item.status === '부족'
+                  ? { backgroundColor: '#fffbe0' }
+                  : { backgroundColor: '#ffe0e0' },
               ]}
             >
-              <Text style={styles.ingredientText}>{item.name}</Text>
+              <Text style={styles.ingredientText}>{item.display}</Text>
               <Text
                 style={[
                   styles.ingredientStatus,
-                  { color: item.has ? '#3498db' : '#e74c3c' },
+                  item.status === '보유'
+                    ? { color: '#3498db' }
+                    : item.status === '부족'
+                    ? { color: '#f39c12' }
+                    : { color: '#e74c3c' },
                 ]}
               >
-                {item.has ? '보유' : '미보유'}
+                {item.status === '보유' ? '보유' : item.status === '부족' ? '부족' : '미보유'}
               </Text>
             </View>
           ))}
         </ScrollView>
+        <TouchableOpacity style={styles.detailButton} onPress={() => setShowIngredientsModal(true)}>
+          <Text style={styles.detailButtonText}>전체 재료 자세히 보기</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 레시피 내용 */}
       <View style={styles.recipeSection}>
         <Text style={styles.sectionTitle}>레시피</Text>
-        <ScrollView style={styles.scrollableList}>
+        <ScrollView style={styles.scrollableList} nestedScrollEnabled={true}>
           {recipeSteps.map((step, index) => (
             <Text key={index} style={styles.recipeStep}>
               {step}
             </Text>
           ))}
         </ScrollView>
+        <TouchableOpacity style={styles.detailButton} onPress={() => setShowRecipeModal(true)}>
+          <Text style={styles.detailButtonText}>전체 레시피 자세히 보기</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 요리 완료 버튼 */}
       <TouchableOpacity style={styles.completeButton} onPress={completeCooking}>
         <Text style={styles.completeButtonText}>요리 완료</Text>
       </TouchableOpacity>
+
+      {/* 재료 모달 */}
+      <Modal
+        visible={showIngredientsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowIngredientsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>전체 재료 리스트</Text>
+            <ScrollView style={styles.modalScroll}>
+              {getIngredientStatusList().map((item) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.ingredientItem,
+                    item.status === '보유'
+                      ? { backgroundColor: '#e0f7ff' }
+                      : item.status === '부족'
+                      ? { backgroundColor: '#fffbe0' }
+                      : { backgroundColor: '#ffe0e0' },
+                  ]}
+                >
+                  <Text style={styles.ingredientText}>{item.display}</Text>
+                  <Text
+                    style={[
+                      styles.ingredientStatus,
+                      item.status === '보유'
+                        ? { color: '#3498db' }
+                        : item.status === '부족'
+                        ? { color: '#f39c12' }
+                        : { color: '#e74c3c' },
+                    ]}
+                  >
+                    {item.status === '보유' ? '보유' : item.status === '부족' ? '부족' : '미보유'}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setShowIngredientsModal(false)}>
+              <Text style={styles.closeButtonText}>닫기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 레시피 모달 */}
+      <Modal
+        visible={showRecipeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowRecipeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>전체 레시피</Text>
+            <ScrollView style={styles.modalScroll}>
+              {recipeSteps.map((step, index) => (
+                <Text key={index} style={styles.recipeStep}>{step}</Text>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setShowRecipeModal(false)}>
+              <Text style={styles.closeButtonText}>닫기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -284,6 +434,7 @@ const styles = StyleSheet.create({
   },
   scrollableList: {
     maxHeight: 150, // 스크롤 가능한 고정 높이
+    height: 150, // 명확히 고정
     borderRadius: 10,
     padding: 10,
     backgroundColor: '#fff',
@@ -292,6 +443,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
     marginVertical: 10, // 리스트 컨테이너의 위아래 마진
+    overflow: 'hidden', // 섹션을 벗어나지 않도록
   },
   ingredientItem: {
     flexDirection: 'row',
@@ -360,6 +512,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+  },
+  detailButton: {
+    backgroundColor: '#eee',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  detailButtonText: {
+    color: '#3498db',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    maxHeight: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#333',
+  },
+  modalScroll: {
+    width: '100%',
+    marginBottom: 16,
+    maxHeight: 350,
+  },
+  closeButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

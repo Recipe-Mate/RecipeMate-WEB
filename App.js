@@ -130,9 +130,8 @@ const AuthStack = () => (
 // 메인 앱 컴포넌트 (사용자 인증 상태에 따라 다른 화면 표시)
 const AppContent = ({ initialError }) => {
   const { isAuthenticated, loading } = useAuth();
-  
-  // 항상 false로 설정하여 인증되지 않은 경우 로그인 화면으로 이동
-  const alwaysAuthenticated = false;
+  // 항상 인증된 상태로 처리
+  const alwaysAuthenticated = true;
   
   // 로딩 중일 때 초기화 화면 표시
   if (loading) {
@@ -213,40 +212,39 @@ const AppContent = ({ initialError }) => {
 
 // 최상위 앱 컴포넌트
 const App = () => {
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(true); // 기본값을 true로 설정하여 초기화 화면 건너뛰기
   const [initError, setInitError] = useState(null);
 
   useEffect(() => {
-    const initializeApp = async () => {
+    // 백그라운드에서 초기화 진행
+    const initializeAppInBackground = async () => {
       try {
-        console.log('앱 초기화 시작...');
-        // Metro 서버 연결 확인
+        console.log('백그라운드에서 앱 초기화 시작...');
+        // Metro 서버 로그만 출력
         if (__DEV__) {
           console.log('개발 모드 실행 중');
-          // 포트 번호를 8080으로 수정 (Metro 서버 포트 변경)
-          console.log('Metro URL:', `http://localhost:8080`);
+          console.log('Metro URL:', `http://localhost:8081`);
         }
         
-        // 서버 설정 초기화
-        const result = await apiConfig.initializeServerConfig();
-        if (!result.success) {
-          console.warn('서버 설정을 가져오는 데 실패했습니다. 기본 URL을 사용합니다.');
-        }
+        // 서버 설정 초기화는 비동기적으로 백그라운드에서 수행
+        apiConfig.initializeServerConfig().then(result => {
+          if (!result.success) {
+            console.warn('서버 설정을 가져오는 데 실패했습니다. 기본 URL을 사용합니다.');
+          }
+        }).catch(error => {
+          console.error('서버 설정 초기화 중 오류:', error);
+        });
       } catch (error) {
         console.error('앱 초기화 중 오류가 발생했습니다:', error);
         setInitError(error.message);
-      } finally {
-        setIsInitialized(true);
       }
     };
 
-    initializeApp();
+    // 초기화를 백그라운드에서 실행
+    initializeAppInBackground();
   }, []);
 
-  if (!isInitialized) {
-    return <InitializingScreen />;
-  }
-
+  // 초기화 화면을 표시하지 않고 바로 앱 내용 표시
   return (
     <AuthProvider>
       <AppContent initialError={initError} />
