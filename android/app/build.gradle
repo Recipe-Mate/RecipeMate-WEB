@@ -84,7 +84,19 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        
+        // React Native Vision Camera를 위한 설정
+        missingDimensionStrategy 'react-native-camera', 'general'
     }
+    
+    // React Native Vision Camera를 위한 패키징 옵션 추가
+    packagingOptions {
+        pickFirst 'lib/x86/libc++_shared.so'
+        pickFirst 'lib/x86_64/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+    }
+    
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
