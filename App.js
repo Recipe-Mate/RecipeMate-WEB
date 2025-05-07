@@ -26,6 +26,7 @@ import Login from './screens/Login';
 import SignUp from './screens/SignUp';
 import AddFood from './screens/AddFood'; // 추가된 화면
 import FoodList from './screens/FoodList'; // 추가된 화면
+import RecipeThumbnails from './screens/RecipeThumbnails';
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -112,6 +113,11 @@ const RecipeStack = () => (
       name="RecipeResult"
       component={RecipeResult}
       options={{ title: '검색결과', headerShown: true }}
+    />
+    <Stack.Screen
+      name="RecipeThumbnails"
+      component={RecipeThumbnails}
+      options={{ title: '레시피 썸네일', headerShown: true }}
     />
   </Stack.Navigator>
 );

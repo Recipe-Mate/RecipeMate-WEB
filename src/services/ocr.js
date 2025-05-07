@@ -68,7 +68,7 @@ export async function processImage(uri) {
   for (let i = 0; i < len; i++) {
     let name = withText[i];
     let weight = '0';
-    let unit = '없음';
+    let unit = 'EA';
     const match = name.match(/(\d+(?:\.\d+)?)(kg|g|ml|l)/i);
     if (match) {
       weight = match[1];

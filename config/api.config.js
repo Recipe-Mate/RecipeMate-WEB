@@ -72,4 +72,8 @@ const apiConfig = {
 export const API_BASE_URL = DEFAULT_API_URL;
 export const API_ENDPOINTS = API_ENDPOINTS_OBJ; // 다른 변수로부터 내보내기
 
+// Google Custom Search API 키와 CX(검색 엔진 ID) 추가
+export const GOOGLE_API_KEY = 'YOUR_GOOGLE_API_KEY'; // 실제 키로 교체
+export const GOOGLE_CX = 'YOUR_GOOGLE_CX'; // 실제 CX로 교체
+
 export default apiConfig;

@@ -9,22 +9,46 @@ import {
   Image,
   ActivityIndicator
 } from 'react-native';
+import { GOOGLE_API_KEY, GOOGLE_CX } from '../config/api.config';
 
-// 레시피 이미지 매핑
 const recipeImages = {
   '닭죽': require('../assets/chicken_porridge.png'),
   '김치찌개': require('../assets/kimchi_stew.png'),
   '갈비탕': require('../assets/Galbitang.png'),
   '제육볶음': require('../assets/Stir_fried_pork.png'),
   '된장찌개': require('../assets/soy_bean_paste_soup.png'),
-  // 기본 이미지
-  'default': require('../assets/chicken_porridge.png')
+};
+
+// Google 이미지 검색 함수
+async function fetchGoogleImageUrl(query) {
+  try {
+    const apiUrl = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${GOOGLE_CX}&key=${GOOGLE_API_KEY}&searchType=image&num=1`;
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    if (data.items && data.items.length > 0) {
+      return data.items[0].link;
+    }
+  } catch (error) {
+    console.warn('Google 이미지 검색 실패:', error);
+  }
+  return null;
+}
+
+// 레시피 이미지 반환 함수 (로컬 또는 Google)
+const getRecipeImage = async (name) => {
+  if (recipeImages[name]) {
+    return recipeImages[name];
+  } else {
+    // Google에서 이미지 검색
+    return await fetchGoogleImageUrl(name + ' 음식 사진');
+  }
 };
 
 // RecipeResult 컴포넌트: 검색 결과 레시피를 보여주는 화면
 const RecipeResult = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
-  const [recipes, setRecipes] = useState([]); 
+  const [recipes, setRecipes] = useState([]);
+  const [imageUrls, setImageUrls] = useState({});
 
   // route.params에서 검색 결과 데이터 가져오기
   const { recipes: searchResults, conditions, ingredients } = route.params || {};
@@ -34,11 +58,21 @@ const RecipeResult = ({ route, navigation }) => {
       // 검색 결과가 있으면 설정
       console.log('[RecipeResult] 검색 결과 수신:', searchResults.length);
       setRecipes(searchResults);
+      // 각 레시피별 이미지 URL 비동기 로딩
+      (async () => {
+        const urls = {};
+        for (const r of searchResults) {
+          const img = await getRecipeImage(r.name);
+          urls[r.name] = img;
+        }
+        setImageUrls(urls);
+      })();
     } else {
       console.log('[RecipeResult] 검색 결과 없음');
       setRecipes([]);
     }
   }, [searchResults]);
+
 
   // 레시피 상세 페이지로 이동하는 함수
   const navigateToDetail = (recipe) => {
@@ -46,18 +80,17 @@ const RecipeResult = ({ route, navigation }) => {
   };
 
   // 레시피 이미지 선택 함수
-  const getRecipeImage = (recipeName) => {
-    if (!recipeName) return recipeImages.default;
-    
-    // 제목에 따라 미리 정의된 이미지 반환
-    for (const key of Object.keys(recipeImages)) {
-      if (recipeName.includes(key)) {
-        return recipeImages[key];
-      }
+  const getRecipeImage = (recipe) => {
+    // images 배열의 첫 번째 이미지를 썸네일로 사용
+    if (recipe.images && recipe.images.length > 0) {
+      return { uri: recipe.images[0] };
     }
-    
-    // 일치하는 이미지가 없으면 기본 이미지 반환
-    return recipeImages.default;
+    // 기존 미리 정의된 이미지 사용
+    if (recipe.recipeName && recipeImages[recipe.recipeName]) {
+      return recipeImages[recipe.recipeName];
+    }
+    // 기본 이미지 (예: 된장찌개)
+    return recipeImages['된장찌개'];
   };
 
   // 영양 정보 포매팅 함수
@@ -138,12 +171,37 @@ const RecipeResult = ({ route, navigation }) => {
           >
             {/* 레시피 이미지 */}
             <ImageBackground
-              source={getRecipeImage(recipe.title)}
+              source={typeof imageUrls[recipe.name] === 'string' ? { uri: imageUrls[recipe.name] } : imageUrls[recipe.name]}
               style={styles.recipeImage}
-              imageStyle={styles.recipeImageStyle}
+              imageStyle={styles.recipeImageStyle} // 살짝 흐린 효과 적용
             >
+              {!(recipe.images && recipe.images[0]) && !recipeImages[recipe.recipeName] && (
+                <View style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 2
+                }}>
+                  <Text style={{
+                    color: '#222',
+                    fontWeight: 'bold',
+                    fontSize: 16,
+                    backgroundColor: 'rgba(255,255,255,0.85)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    textAlign: 'center',
+                  }}>
+                    미리보기 이미지가 존재하지 않습니다
+                  </Text>
+                </View>
+              )}
               <View style={styles.recipeInfo}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                <Text style={styles.recipeTitle}>{recipe.recipeName || recipe.title || '이름 없음'}</Text>
               </View>
             </ImageBackground>
             
