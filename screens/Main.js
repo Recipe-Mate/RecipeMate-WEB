@@ -19,7 +19,7 @@ const Main = ({ navigation }) => {
       try {
         // 토큰 가져오기
         const accessToken = await AsyncStorage.getItem('accessToken');
-        
+
         // 토큰이 없으면 API 호출하지 않도록 처리
         if (!accessToken) {
           console.log("토큰이 없습니다.");
@@ -36,11 +36,24 @@ const Main = ({ navigation }) => {
         console.log('accessToken: ', accessToken);
         const data = await response.json();
         console.log('소유 식재료:', data);
-        if (data.ownFoodList) {
-          setFoodNameList(data.ownFoodList.map(item => item.foodName));
-        } else {
-          console.warn('ownFoodList가 응답에 없습니다.');
-        }
+
+        // ✅ ownFoodList에서 필요한 필드만 추출
+        const parsedItems = data.ownFoodList.map((item) => ({
+          id: item.foodId,
+          name: item.foodName,
+          unit: item.unit,
+          imageUrl: item.imgUrl,
+          amount: item.amount,
+        }));
+
+        console.log('✅ parsedItems:', parsedItems);
+        setFoodNameList(parsedItems);
+
+        // if (data.ownFoodList) {
+        //   setFoodNameList(data.ownFoodList.map(item => item.foodName));
+        // } else {
+        //   console.warn('ownFoodList가 응답에 없습니다.');
+        // }
       } catch (error) {
         console.error('Food List 요청 실패:', error);
         setError("데이터를 가져오는 데 실패했습니다.");
@@ -131,79 +144,36 @@ const Main = ({ navigation }) => {
             </View>
           </ScrollView>
         </View>
-        
-        <View>
+
+        <View style={styles.imageContainer}>
           <FlatList
-            data={foodNameList} // 리스트 데이터
-            keyExtractor={(item, index) => index.toString()} // 각 아이템에 key 설정
+            data={foodNameList}
+            keyExtractor={(item, index) => item?.id?.toString?.() ?? index.toString()}
+            key={3} // 🔥 numColumns과 맞춰주기!
+            numColumns={3}
             renderItem={({ item }) => (
-              <Text style={styles.item}>{item}</Text> // 리스트 아이템 출력
+              <View style={styles.gridItem}>
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={styles.photo} />
+                ) : (
+                  <View style={styles.photoPlaceholder}>
+                    <Text>이미지 없음</Text>
+                  </View>
+                )}
+                <Text style={styles.name}>{item.name}</Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={styles.category}>{item.amount}</Text>
+                  <Text style={styles.category}>
+                    {item.unit === 'EA' ? '개' : item.unit}
+                  </Text>
+                </View>
+              </View>
             )}
           />
-          <Text>Food List:</Text>
-          {/* <FlatList
-            data={foodNameList} // foodNameList는 상태에 저장된 데이터
-            keyExtractor={(item) => item.foodId.toString()} // 각 항목의 고유 ID를 키로 사용
-            renderItem={({ item }) => (
-              <View>
-                <Text>{item.foodName}</Text>
-                <Text>{item.amount} {item.unit}</Text>
-              </View>
-            )}
-          /> */}
         </View>
-        <ScrollView>
-          <View style={styles.ingredient_view}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={require("../assets/cucumber.png")}
-                style={styles.photo}
-                resizeMode="cover"
-              />
-              <View style={styles.description}>
-                <Text style={styles.category}>채소</Text>
-                <Text style={styles.name}>오이</Text>
-                <Text style={styles.date}>2025-04-03</Text>
-              </View>
-            </View>
-            <View style={styles.imageContainer}>
-              <Image
-                source={require("../assets/tomato.jpg")}
-                style={styles.photo}
-                resizeMode="cover"
-              />
-              <View style={styles.description}>
-                <Text style={styles.category}>채소</Text>
-                <Text style={styles.name}>토마토</Text>
-                <Text style={styles.date}>2025-04-03</Text>
-              </View>
-            </View>
-            <View style={styles.imageContainer}>
-              <Image
-                source={require("../assets/banana.jpg")}
-                style={styles.photo}
-                resizeMode="cover"
-              />
-              <View style={styles.description}>
-                <Text style={styles.category}>과일</Text>
-                <Text style={styles.name}>바나나</Text>
-                <Text style={styles.date}>2025-04-03</Text>
-              </View>
-            </View>
-          </View>
 
-        </ScrollView>
 
       </View>
-
-
-      {/* <FlatList
-          data={foodNameList} // 리스트 데이터
-          keyExtractor={(item, index) => index.toString()} // 각 아이템에 key 설정
-          renderItem={({ item }) => (
-            <Text style={styles.item}>{item}</Text> // 리스트 아이템 출력
-          )}
-        /> */}
 
     </SafeAreaView >
 
@@ -211,16 +181,23 @@ const Main = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
+  gridItem: {
+    width: '19%', // 3등분!
+  },
   description: {
     padding: 5
   },
   category: {
-    marginVertical: 4,
     color: '#7886C7',
+    marginLeft: 3,
+    marginRight: -1,
+    fontSize: 16
   },
   name: {
     fontWeight: '600',
-    fontSize: 20,
+    fontSize: 17,
+    marginTop: 5,
+    marginLeft: 3,
   },
   date: {
     marginVertical: 4,
@@ -236,11 +213,20 @@ const styles = StyleSheet.create({
     aspectRatio: 1,  // 정사각형 유지
   },
   photo: {
-    width: "100%",
-    height: "100%",
+    width: "90",
+    height: "90",
     borderRadius: 10,
     borderColor: '#A9B5DF',
     borderWidth: 1,
+  },
+  photoPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
   },
   icon: {
     flexDirection: 'row',

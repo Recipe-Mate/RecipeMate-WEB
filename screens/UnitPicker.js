@@ -9,6 +9,7 @@ const UnitPicker = ({ onSelect }) => {
     { label: "개", value: "EA" },
     { label: "병", value: "병" },
     { label: "KG", value: "KG" },
+    { label: "G", value: "G"}
   ]);  
 
   return (
