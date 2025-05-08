@@ -15,6 +15,7 @@ const Profile = ({ navigation }) => {
   const [nickname, setNickname] = useState('Sirius');
   const [newNickname, setNewNickname] = useState('');
   const [ModalVisible, setModalVisible] = useState(false);  // modal state
+  const [numOfItems, setNumOfItems] = useState(0);
 
   const handleNicknameChange = () => {
     if (newNickname.trim() !== '') {
@@ -59,6 +60,14 @@ const Profile = ({ navigation }) => {
   };
 
   useEffect(() => {
+    const fetchNumOfItems = async () => {
+      const value = await AsyncStorage.getItem('num_of_items');
+      if (value !== null) {
+        setNumOfItems(Number(value));
+      }
+    };
+
+    fetchNumOfItems();
     fetchUserInfo();
   }, []);
 
@@ -98,7 +107,7 @@ const Profile = ({ navigation }) => {
                 <TouchableOpacity
                   style={styles.badge_button}
                   onPress={() => { navigation.navigate('MainStack'); }}>
-                  <Text style={styles.number}>3</Text>
+                  <Text style={styles.number}>{numOfItems}</Text>
                 </TouchableOpacity>
               </View>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

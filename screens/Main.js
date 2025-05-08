@@ -48,6 +48,8 @@ const Main = ({ navigation }) => {
 
         console.log('✅ parsedItems:', parsedItems);
         setFoodNameList(parsedItems);
+        console.log(parsedItems.length);
+        await AsyncStorage.setItem('num_of_items', parsedItems.length.toString());
 
         // if (data.ownFoodList) {
         //   setFoodNameList(data.ownFoodList.map(item => item.foodName));
