@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image, Alert, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary } from 'react-native-image-picker';
 import UnitPicker from "./UnitPicker";
 import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 export default function AddIngredient({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -14,13 +15,14 @@ export default function AddIngredient({ navigation }) {
     const [amount, setAmount] = useState('');
     const [unit, setUnit] = useState('');
 
+
     const handleUploadPhoto = async () => {
         try {
             console.log('이미지 선택 시작');
             const result = await launchImageLibrary({
                 mediaType: 'photo',
                 quality: 1,
-                includeBase64: false, 
+                includeBase64: false,
             });
 
             if (result.didCancel) {
@@ -44,66 +46,72 @@ export default function AddIngredient({ navigation }) {
             Alert.alert('이미지 업로드 실패', '이미지를 처리하는 중 오류가 발생했습니다. 다시 시도해주세요.');
         }
     };
-    
-    const addFood = async (foodList, imageFile) => {
+
+    const addFood = async (foodList, imageFiles) => {
         try {
-            const formData = new FormData();
-    
-            // 음식 목록을 JSON 형태로 formData에 추가
-            formData.append('requestBody', JSON.stringify({ foodList }));
-    
-            // 이미지가 존재할 경우에만 이미지 파일 추가
-            if (imageFile) {
-                formData.append('images', {
-                    uri: imageFile.uri,
-                    type: imageFile.type,
-                    name: imageFile.name,
-                });
-            } else {
-                console.log('이미지 없이 요청');
-            }
-    
-            const accessToken = await AsyncStorage.getItem('accessToken');
-            console.log('accessToken:', accessToken);  // accessToken 값 확인
-    
-            if (!accessToken) {
-                console.error('Access token이 없습니다.');
-                Alert.alert('토큰 오류', '토큰이 유효하지 않습니다. 다시 로그인해 주세요.');
-                return;
-            }
-    
-            const response = await fetch(`${SERVER_URL}/food`, {
-                method: 'POST',
-                headers: {
-                    'accept': '*/*',
-                    'Authorization': `Bearer ${accessToken}`,
-                },
-                body: formData,
-            });
-    
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('서버 오류:', response.status, errorText);
-                throw new Error('음식 데이터 전송 실패');
-            }
-    
-            const data = await response.json();
-            console.log('서버 응답 데이터:', data);
-        } catch (error) {
-            console.error('에러 발생:', error);
-        }
-    };
-    
-    
-    
+          const formData = new FormData();
+          formData.append('foodDataList', {
+            string: JSON.stringify({ foodList }),
+            name: 'foodDataList.json',
+            type: 'application/json',
+          });
       
+          if (Array.isArray(imageFiles)) {
+            imageFiles.forEach((image, index) => {
+              formData.append('images', {
+                uri: Platform.OS === 'android' ? image.uri : image.uri.replace('file://', ''),
+                type: image.type || 'image/jpeg',
+                name: image.fileName || `image${index}.jpg`,
+              });
+            });
+          } else if (imageFiles) {
+            formData.append('images', {
+              uri: Platform.OS === 'android' ? imageFiles.uri : imageFiles.uri.replace('file://', ''),
+              type: imageFiles.type || 'image/jpeg',
+              name: imageFiles.fileName || 'image.jpg',
+            });
+          }
+      
+          const accessToken = await AsyncStorage.getItem('accessToken');
+      
+          const response = await fetch(`${SERVER_URL}/food`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              // 'Content-Type' 생략 중요!
+            },
+            body: formData,
+          });
+      
+          // 응답 상태가 200(OK)일 경우에만 JSON 파싱
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('서버 오류:', response.status, errorText);
+            throw new Error('업로드 실패');
+          }
+      
+          // 응답이 비어있지 않다면 JSON으로 파싱
+          const responseData = await response.text();  // 응답이 비어있을 수도 있으므로 text로 받음
+          if (responseData) {
+            const parsedData = JSON.parse(responseData);  // JSON 파싱
+            console.log('업로드 성공:', parsedData);
+          } else {
+            console.log('응답 본문이 비어있습니다.');
+          }
+        } catch (error) {
+          console.error('에러 발생:', error.message);
+        }
+      };
+      
+      
+    
 
     const handleSave = () => {
         if (!foodName || !amount || !unit) {
             Alert.alert('알림', '모든 필드를 입력하세요.');
             return;
         }
-    
+
         const foodList = [
             {
                 foodName: foodName,
@@ -111,15 +119,19 @@ export default function AddIngredient({ navigation }) {
                 unit: unit
             }
         ];
-    
+
+        console.log('foodName: ', foodName);
+        console.log('amount: ', amount);
+        console.log('unit: ', unit);
+
         // 이미지가 있으면 전달하고 없으면 null로 전달
         addFood(foodList, image ? { uri: image, type: 'image/jpeg', name: 'uploaded.jpg' } : null);
-        
+
         navigation.navigate('Main');
     };
-    
-    
-    
+
+
+
 
     return (
         <SafeAreaView style={styles.safeArea}>
