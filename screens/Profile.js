@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView, Alert, ScrollView, RefreshControl } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import { ScrollView } from 'react-native-gesture-handler';
 import NicknameModal from './NicknameModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
-
-//import Badge from "./Badge";
-
-// import profile_photo from "./assets/profile_icon";
+import { useFocusEffect } from '@react-navigation/native';
 
 const Profile = ({ navigation }) => {
   const [nickname, setNickname] = useState('Sirius');
   const [newNickname, setNewNickname] = useState('');
   const [ModalVisible, setModalVisible] = useState(false);  // modal state
   const [numOfItems, setNumOfItems] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);  // 새로 고침 상태
 
   const handleNicknameChange = () => {
     if (newNickname.trim() !== '') {
@@ -26,16 +23,13 @@ const Profile = ({ navigation }) => {
     }
   };
 
-
-
+  // 사용자 정보 가져오기
   const fetchUserInfo = async () => {
     try {
       const userId = await AsyncStorage.getItem('userId');
       console.log('userId: ', userId);
-      console.log(`${SERVER_URL}/user?userId=${userId}`);
 
       const accessToken = await AsyncStorage.getItem('accessToken');
-
       const response = await fetch(`${SERVER_URL}/user?userId=${userId}`, {
         method: 'GET',
         headers: {
@@ -45,36 +39,52 @@ const Profile = ({ navigation }) => {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();  // 서버 에러 내용 직접 보기
+        const errorText = await response.text();
         console.error('서버 응답 상태 코드:', response.status);
         console.error('서버 응답 메시지:', errorText);
         throw new Error('유저 정보 조회 실패');
       }
 
       const data = await response.json();
-      console.log('유저 정보:', data);
       setNickname(data.userName);  // userName 값을 nickname으로 저장
     } catch (error) {
       console.error('에러 발생:', error);
     }
   };
 
-  useEffect(() => {
-    const fetchNumOfItems = async () => {
-      const value = await AsyncStorage.getItem('num_of_items');
-      if (value !== null) {
-        setNumOfItems(Number(value));
-      }
-    };
+  // 보유 재료 수 가져오기
+  const fetchNumOfItems = async () => {
+    const value = await AsyncStorage.getItem('num_of_items');
+    if (value !== null) {
+      setNumOfItems(Number(value));
+    }
+  };
 
-    fetchNumOfItems();
-    fetchUserInfo();
+  useEffect(() => {
+    fetchNumOfItems(); // 처음에는 한번만 호출
+    fetchUserInfo(); // 처음에는 한번만 호출
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      // 화면이 포커스될 때마다 최신 정보 새로 가져오기
+      fetchNumOfItems();
+      fetchUserInfo();
+    }, [])
+  );
 
+  // 새로 고침 함수
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchNumOfItems();
+    await fetchUserInfo();
+    setIsRefreshing(false);
+  };
 
   return (
-    <ScrollView>
+    <ScrollView
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+    >
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="light" />
         <LinearGradient
@@ -97,7 +107,6 @@ const Profile = ({ navigation }) => {
             handleNicknameChange={handleNicknameChange}
             styles={styles}
           />
-          {/* <Text style={styles.email}>abc1234@gmail.com</Text> */}
         </View>
         <View style={{ backgroundColor: '#EEF1FA', flex: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
           <View style={{ padding: 20 }}>
@@ -144,36 +153,10 @@ const Profile = ({ navigation }) => {
               onPress={() => setModalVisible(true)}>
               <Text style={styles.text1}>정보 수정하기</Text>
             </TouchableOpacity>
-            <NicknameModal
-              visible={ModalVisible}
-              setVisible={setModalVisible}
-              newNickname={newNickname}
-              setNewNickname={setNewNickname}
-              handleNicknameChange={handleNicknameChange}
-              styles={styles}
-            />
             <Text style={styles.text1}>계정 로그아웃</Text>
             <Text style={styles.text2}>탈퇴하기</Text>
           </View>
-
-
-
-
-
-          {/* <View style={styles.badge_view}>
-          <Image source={require('../assets/Badge1.png')} style={styles.badge_icon}></Image>
-          <Image source={require('../assets/Badge2.png')} style={styles.badge_icon}></Image>
-          <Image source={require('../assets/Badge3.png')} style={styles.badge_icon}></Image>
-          <TouchableOpacity
-            style={styles.badge_button}
-            onPress={() => { navigation.navigate('Badge') }}>
-            <Ionicons style={{ marginLeft: 20 }} name='add' size={50} color='#ffffff' />
-          </TouchableOpacity>
-        </View> */}
-
         </View>
-
-
       </SafeAreaView>
     </ScrollView>
   );
