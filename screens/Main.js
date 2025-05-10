@@ -14,41 +14,42 @@ const Main = ({ navigation }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const toggleEditMode = () => {
     setIsEditMode(prev => !prev);
   };
 
+  const fetchFoodList = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      if (!accessToken) return;
+
+      const response = await fetch(`${SERVER_URL}/food/ownlist`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      const data = await response.json();
+      const parsedItems = data.ownFoodList.map(item => ({
+        id: item.foodId,
+        name: item.foodName,
+        unit: item.unit,
+        imageUrl: item.imgUrl,
+        amount: item.amount,
+      }));
+
+      setFoodNameList(parsedItems);
+      await AsyncStorage.setItem('num_of_items', parsedItems.length.toString());
+    } catch (error) {
+      console.error('Food List 요청 실패:', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchFoodList = async () => {
-      try {
-        const accessToken = await AsyncStorage.getItem('accessToken');
-        if (!accessToken) return;
-
-        const response = await fetch(`${SERVER_URL}/food/ownlist`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        });
-
-        const data = await response.json();
-        const parsedItems = data.ownFoodList.map(item => ({
-          id: item.foodId,
-          name: item.foodName,
-          unit: item.unit,
-          imageUrl: item.imgUrl,
-          amount: item.amount,
-        }));
-
-        setFoodNameList(parsedItems);
-        await AsyncStorage.setItem('num_of_items', parsedItems.length.toString());
-      } catch (error) {
-        console.error('Food List 요청 실패:', error);
-      }
-    };
-
     fetchFoodList();
   }, []);
 
@@ -66,15 +67,20 @@ const Main = ({ navigation }) => {
           foodIdList: [itemToDelete.id]
         }),
       });
-  
+
       if (!response.ok) throw new Error('삭제 실패');
-  
+
       setFoodNameList(prev => prev.filter(item => item.id !== itemToDelete.id));
       setDeleteModalVisible(false);
       setItemToDelete(null);
     } catch (err) {
       console.error('삭제 중 오류 발생:', err);
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchFoodList().finally(() => setRefreshing(false));
   };
 
   return (
@@ -94,25 +100,9 @@ const Main = ({ navigation }) => {
       </View>
 
       <View style={styles.box}>
-        {/* <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', marginBottom: 15 }}>
-            {['전체', '채소', '과일', '육류', '해산물', '유제품', '기타'].map(item => (
-              <TouchableOpacity
-                key={item}
-                style={[styles.option, selectedRelationship === item && styles.selectedButton]}
-                onPress={() => setSelectedRelationship(selectedRelationship === item ? null : item)}>
-                <Text style={[styles.buttonText, selectedRelationship === item && styles.selectedText]}>
-                  {item}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView> */}
-
         <FlatList
           data={foodNameList}
           keyExtractor={(item, index) => item?.id?.toString?.() ?? index.toString()}
-          key={3}
           numColumns={3}
           renderItem={({ item }) => (
             <View style={styles.gridItem}>
@@ -140,6 +130,8 @@ const Main = ({ navigation }) => {
               )}
             </View>
           )}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </View>
 
@@ -225,24 +217,6 @@ const styles = StyleSheet.create({
     color: '#7886C7',
     marginLeft: 3,
     fontSize: 16,
-  },
-  option: {
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#1E2550',
-    marginRight: 6,
-    paddingHorizontal: 12,
-  },
-  selectedButton: {
-    backgroundColor: '#1E2550',
-  },
-  selectedText: {
-    color: 'white',
-  },
-  buttonText: {
-    fontWeight: '600',
-    marginVertical: 3,
   },
   deleteButton: {
     position: 'absolute',
