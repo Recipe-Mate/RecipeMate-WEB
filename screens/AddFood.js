@@ -16,67 +16,67 @@ import apiService from '../src/services/api.service';
 const AddFood = ({ navigation }) => {
   const [foodName, setFoodName] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [unit, setUnit] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  
+
+  const getUserId = () => {
+    if (!user) return null;
+    if (user.id) return user.id; // PK 우선
+    if (user.user_id) return user.user_id;
+    if (user.user && user.user.user_id) return user.user.user_id;
+    return null;
+  };
+
+  // 식재료명에서 단위/수량/괄호 등 제거 (예: "오렌지 100g(1/2개)" → "오렌지")
+  const extractPureName = (name) => name.replace(/\s*\d+[a-zA-Z가-힣()\/\.]*|\([^)]*\)/g, '').trim();
+
   const handleAddFood = async () => {
+    console.log('[AddFood] user:', user);
+    const userId = getUserId();
     if (!foodName.trim()) {
       Alert.alert('입력 오류', '식재료 이름을 입력해주세요.');
       return;
     }
-    
+    if (!userId) {
+      Alert.alert('로그인 필요', '식재료 추가는 로그인 후 이용 가능합니다.');
+      return;
+    }
+    const numericUserId = Number(userId);
+    if (isNaN(numericUserId)) {
+      Alert.alert('유저 정보 오류', '유저 ID가 올바르지 않습니다. 다시 로그인해 주세요.');
+      return;
+    }
     setIsLoading(true);
     try {
-      const userId = user?.id || 3; // 실제 로그인 사용자 ID 또는 기본값
-      
-      // MySQL 테이블 구조에 맞게 데이터 객체 생성
+      // 수량과 단위를 각각 전송
       const foodData = {
-        userId: userId,
-        user_id: userId,
-        foodName: foodName.trim(),
-        food_name: foodName.trim(),
-        quantity: quantity.trim() || '1개' // quantity 필드 추가 (테이블에 있음)
+        foodNameList: [extractPureName(foodName.trim())], // 순수 식재료명만 전송
+        quantityList: [quantity.trim()],
+        unitList: [unit.trim()]
       };
-      
       console.log('[AddFood] 식재료 추가 요청:', foodData);
-      
-      const response = await apiService.addFood(foodData);
+      const response = await apiService.addFood(numericUserId, foodData);
       console.log('[AddFood] 응답:', response);
-      
-      if (response.data && response.data.success) {
-        // 새로 추가된 식재료 정보를 직접 전달
-        const newFoodItem = {
-          id: response.data.id || Date.now(), // 서버에서 반환한 ID 우선 사용
-          name: foodName.trim(),
-          quantity: quantity.trim() || '1개',
-          userId: userId,
-          user_id: userId
-        };
-        
-        console.log('[AddFood] 추가된 식재료 정보:', newFoodItem);
-        
+      if (response.success) {
         Alert.alert(
           '추가 성공',
           '식재료가 성공적으로 추가되었습니다.',
           [{ 
             text: '확인', 
             onPress: () => {
-              // 식재료 목록 화면으로 이동하면서 새 항목 정보 및 갱신 플래그 전달
               navigation.navigate('FoodList', { 
                 refresh: true, 
-                timestamp: Date.now(),
-                newItem: newFoodItem // 새 항목 정보 전달
+                timestamp: Date.now()
               });
             }
           }]
         );
       } else {
-        throw new Error(response.data?.message || '식재료 추가에 실패했습니다.');
+        throw new Error(response.error || '식재료 추가에 실패했습니다.');
       }
     } catch (error) {
       console.error('[AddFood] 오류:', error);
-      
-      // 오류 메시지 개선
       let errorMessage = '식재료 추가 중 오류가 발생했습니다.';
       if (error.message) {
         if (error.message.includes('405')) {
@@ -84,10 +84,9 @@ const AddFood = ({ navigation }) => {
         } else if (error.message.includes('400')) {
           errorMessage = '잘못된 요청입니다. 입력 데이터를 확인해주세요.';
         } else {
-          errorMessage = error.message; // 서버에서 반환한 오류 메시지 표시
+          errorMessage = error.message;
         }
       }
-      
       Alert.alert('오류 발생', errorMessage);
     } finally {
       setIsLoading(false);
@@ -109,12 +108,21 @@ const AddFood = ({ navigation }) => {
           onChangeText={setFoodName}
         />
         
-        <Text style={styles.label}>수량 (선택사항)</Text>
+        <Text style={styles.label}>수량</Text>
         <TextInput
           style={styles.input}
-          placeholder="예: 500g, 2개, 1봉지 등"
+          placeholder="예: 2, 500, 1 등"
           value={quantity}
           onChangeText={setQuantity}
+          keyboardType="numeric"
+        />
+        
+        <Text style={styles.label}>단위</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="예: 개, g, 봉지 등"
+          value={unit}
+          onChangeText={setUnit}
         />
         
         <TouchableOpacity 
@@ -136,6 +144,7 @@ const AddFood = ({ navigation }) => {
       <View style={styles.infoContainer}>
         <Text style={styles.infoTitle}>TIP</Text>
         <Text style={styles.infoText}>
+          수량과 단위를 각각 입력하세요. (예: 수량 2, 단위 개)
           추가한 식재료는 레시피 추천 시 활용됩니다.
           정확한 이름으로 입력하면 더 정확한 레시피를 추천받을 수 있습니다.
         </Text>

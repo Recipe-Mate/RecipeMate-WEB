@@ -33,6 +33,9 @@ const RecipeSearch = ({ navigation }) => {
   const [ingredients, setIngredients] = useState([]); // 재료 목록 상태 관리
   const [newIngredient, setNewIngredient] = useState(''); // 새로운 재료 입력 상태 관리
   const [loading, setLoading] = useState(false); // 로딩 상태 관리
+  const [error, setError] = useState(''); // 에러 상태 관리
+  const [resultCount, setResultCount] = useState(15); // 기본값 15개
+  const [exactMatch, setExactMatch] = useState(false); // 완전히 일치 옵션 상태
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
   const toggleCondition = (key) => {
@@ -101,7 +104,10 @@ const RecipeSearch = ({ navigation }) => {
       // 검색 매개변수 구성
       const searchParams = {
         foodName: ingredients[0], // 첫 번째 재료를 주 재료로 사용
-        ...conditions
+        ...conditions,
+        startIndex: 1,
+        endIndex: resultCount,
+        exactMatch, // 완전히 일치 옵션 추가
       };
 
       console.log('[RecipeSearch] 검색 매개변수:', searchParams);
@@ -110,16 +116,20 @@ const RecipeSearch = ({ navigation }) => {
       const response = await apiService.searchRecipes(searchParams);
       console.log('[RecipeSearch] 검색 결과:', response);
 
-      // 검색 결과 화면으로 이동
-      navigation.navigate('RecipeResult', { 
-        recipes: response.data,
-        conditions: conditions,
-        ingredients: ingredients
-      });
+      // 검색 결과 화면으로 이동 (RecipeResult로)
+      if (response && response.success && Array.isArray(response.data)) {
+        navigation.navigate('RecipeResult', {
+          recipes: response.data,
+          conditions: conditions,
+          ingredients: ingredients
+        });
+      } else {
+        setError('검색 결과가 없습니다.');
+      }
     } catch (error) {
       console.error('[RecipeSearch] 검색 오류:', error);
       Alert.alert(
-        '검색 오류', 
+        '검색 오류',
         '레시피 검색 중 오류가 발생했습니다. 다시 시도해주세요.'
       );
     } finally {
@@ -145,19 +155,59 @@ const RecipeSearch = ({ navigation }) => {
     ));
   };
 
+  // 완전히 일치 옵션 렌더링
+  const renderExactMatchOption = () => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, marginBottom: 10 }}>
+      <Switch
+        value={exactMatch}
+        onValueChange={setExactMatch}
+        trackColor={{ false: '#d1d5db', true: '#2D336B' }} // 연한 회색/메인 네이비
+        thumbColor={exactMatch ? '#4FC3F7' : '#f4f3f4'} // on: 밝은 파랑, off: 밝은 회색
+      />
+      <Text style={{ marginLeft: 10, fontSize: 16, color: exactMatch ? '#2D336B' : '#333', fontWeight: exactMatch ? 'bold' : 'normal' }}>
+        완전히 일치
+      </Text>
+    </View>
+  );
+
+  // 결과 개수 선택 UI
+  const renderResultCountSelector = () => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+      <Text style={{ fontSize: 16, marginRight: 10 }}>결과 개수</Text>
+      {[5, 15, 30].map((count) => (
+        <TouchableOpacity
+          key={count}
+          style={{
+            backgroundColor: resultCount === count ? '#3498db' : '#eee',
+            paddingVertical: 6,
+            paddingHorizontal: 16,
+            borderRadius: 16,
+            marginRight: 8,
+          }}
+          onPress={() => setResultCount(count)}
+        >
+          <Text style={{ color: resultCount === count ? '#fff' : '#333', fontWeight: 'bold' }}>{count}개</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   // 헤더 부분 렌더링 함수 (FlatList의 ListHeaderComponent로 사용)
   const renderHeader = () => (
     <>
       {/* 화면 제목 */}
       <Text style={styles.title}>레시피 검색</Text>
-
       {/* 조건 섹션 */}
-      <View style={styles.conditions}>
+      <View style={styles.sectionBox}>
         <Text style={styles.sectionTitle}>영양성분 기준</Text>
         {renderConditionItems()}
       </View>
-      
+      {/* <View style={styles.sectionDivider} />  // '재료 추가' 위 구분선 제거 */}
       <Text style={styles.sectionTitle}>재료 추가</Text>
+      {renderExactMatchOption()}
+      <View style={styles.sectionDivider} />
+      {renderResultCountSelector()}
+      <View style={styles.sectionDivider} />
     </>
   );
 
@@ -237,6 +287,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#555',
     marginBottom: 10,
+    marginTop: 10,
   },
   conditions: {
     marginBottom: 20,
@@ -337,6 +388,18 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#95a5a6',
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0', // 연한 회색
+    marginVertical: 12,
+    width: '100%',
+  },
+  sectionBox: {
+    marginBottom: 0,
+    paddingBottom: 0,
+    marginTop: 12,
+    marginBottom: 12,
   },
 });
 

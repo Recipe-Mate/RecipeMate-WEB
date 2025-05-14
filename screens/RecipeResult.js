@@ -22,11 +22,28 @@ const recipeImages = {
 // Google 이미지 검색 함수
 async function fetchGoogleImageUrl(query) {
   try {
+    // API 키가 설정되어 있지 않으면 null 반환
+    if (!GOOGLE_API_KEY || !GOOGLE_CX) {
+      console.log('Google API 키 또는 CX가 설정되지 않았습니다. 로컬 이미지만 사용합니다.');
+      return null;
+    }
+    
     const apiUrl = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${GOOGLE_CX}&key=${GOOGLE_API_KEY}&searchType=image&num=1`;
     const response = await fetch(apiUrl);
+    
+    // 응답이 성공적이지 않으면 로그 출력
+    if (!response.ok) {
+      console.warn(`Google 이미지 검색 API 응답 오류: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
     const data = await response.json();
+    
     if (data.items && data.items.length > 0) {
+      console.log(`[RecipeResult] 레시피 '${query}' 이미지 URL 찾음:`, data.items[0].link);
       return data.items[0].link;
+    } else {
+      console.log(`[RecipeResult] 레시피 '${query}'에 대한 이미지를 찾을 수 없습니다.`);
     }
   } catch (error) {
     console.warn('Google 이미지 검색 실패:', error);
@@ -34,22 +51,13 @@ async function fetchGoogleImageUrl(query) {
   return null;
 }
 
-// 레시피 이미지 반환 함수 (로컬 또는 Google)
-const getRecipeImage = async (name) => {
-  if (recipeImages[name]) {
-    return recipeImages[name];
-  } else {
-    // Google에서 이미지 검색
-    return await fetchGoogleImageUrl(name + ' 음식 사진');
-  }
-};
-
 // RecipeResult 컴포넌트: 검색 결과 레시피를 보여주는 화면
 const RecipeResult = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState([]);
   const [imageUrls, setImageUrls] = useState({});
-
+  const [loadingErrors, setLoadingErrors] = useState({}); // 이미지 로딩 오류 상태 추가
+  
   // route.params에서 검색 결과 데이터 가져오기
   const { recipes: searchResults, conditions, ingredients } = route.params || {};
   
@@ -60,36 +68,54 @@ const RecipeResult = ({ route, navigation }) => {
       setRecipes(searchResults);
       // 각 레시피별 이미지 URL 비동기 로딩
       (async () => {
-        const urls = {};
-        for (const r of searchResults) {
-          const img = await getRecipeImage(r.name);
-          urls[r.name] = img;
+        setLoading(true);
+        try {
+          const urls = {};
+          for (const r of searchResults) {
+            // 이미지 매칭 키를 title > recipeName > name 순으로 통일
+            const key = r.title || r.recipeName || r.name || '기본 레시피';
+            console.log(`[RecipeResult] 레시피 이미지 로딩 중: ${key}`);
+            const imgSrc = await fetchGoogleImageUrl(key + ' 음식 사진');
+            urls[key] = imgSrc;
+            console.log(`[RecipeResult] 이미지 로딩 결과:`, typeof imgSrc === 'string' ? '외부 URL' : '로컬 이미지');
+          }
+          console.log('[RecipeResult] 모든 이미지 로딩 완료');
+          setImageUrls(urls);
+        } catch (error) {
+          console.error('[RecipeResult] 이미지 로딩 오류:', error);
+        } finally {
+          setLoading(false);
         }
-        setImageUrls(urls);
       })();
     } else {
       console.log('[RecipeResult] 검색 결과 없음');
       setRecipes([]);
+      setLoading(false);
     }
   }, [searchResults]);
-
 
   // 레시피 상세 페이지로 이동하는 함수
   const navigateToDetail = (recipe) => {
     navigation.navigate('RecipeDetail', { recipe });
   };
 
-  // 레시피 이미지 선택 함수
-  const getRecipeImage = (recipe) => {
-    // images 배열의 첫 번째 이미지를 썸네일로 사용
-    if (recipe.images && recipe.images.length > 0) {
-      return { uri: recipe.images[0] };
+  // 레시피 썸네일 이미지 로딩 함수 (thumbnail, image, ATT_FILE_NO_MK, ATT_FILE_NO_MAIN, processImage[0] 순)
+  const getRecipeThumbnail = (recipe) => {
+    if (recipe.thumbnail && typeof recipe.thumbnail === 'string' && recipe.thumbnail.length > 0) {
+      return { uri: recipe.thumbnail };
     }
-    // 기존 미리 정의된 이미지 사용
-    if (recipe.recipeName && recipeImages[recipe.recipeName]) {
-      return recipeImages[recipe.recipeName];
+    if (recipe.image && typeof recipe.image === 'string' && recipe.image.length > 0) {
+      return { uri: recipe.image };
     }
-    // 기본 이미지 (예: 된장찌개)
+    if (recipe.ATT_FILE_NO_MK && typeof recipe.ATT_FILE_NO_MK === 'string' && recipe.ATT_FILE_NO_MK.length > 0) {
+      return { uri: recipe.ATT_FILE_NO_MK };
+    }
+    if (recipe.ATT_FILE_NO_MAIN && typeof recipe.ATT_FILE_NO_MAIN === 'string' && recipe.ATT_FILE_NO_MAIN.length > 0) {
+      return { uri: recipe.ATT_FILE_NO_MAIN };
+    }
+    if (Array.isArray(recipe.processImage) && recipe.processImage.length > 0 && recipe.processImage[0]) {
+      return { uri: recipe.processImage[0] };
+    }
     return recipeImages['된장찌개'];
   };
 
@@ -97,6 +123,15 @@ const RecipeResult = ({ route, navigation }) => {
   const formatNutritionValue = (value) => {
     if (value === undefined || value === null) return '정보 없음';
     return typeof value === 'number' ? value.toFixed(1) : value;
+  };
+
+  // 이미지 로딩 오류 처리 함수
+  const handleImageError = (recipeName) => {
+    console.log(`[RecipeResult] 이미지 로딩 실패: ${recipeName}`);
+    setLoadingErrors(prev => ({
+      ...prev,
+      [recipeName]: true
+    }));
   };
 
   // 검색 조건 텍스트 가져오기
@@ -162,49 +197,34 @@ const RecipeResult = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        /* 추천 레시피 목록 */
         recipes.map((recipe, index) => (
           <TouchableOpacity
             key={recipe.id || index}
             style={styles.recipeCard}
             onPress={() => navigateToDetail(recipe)}
           >
-            {/* 레시피 이미지 */}
-            <ImageBackground
-              source={typeof imageUrls[recipe.name] === 'string' ? { uri: imageUrls[recipe.name] } : imageUrls[recipe.name]}
-              style={styles.recipeImage}
-              imageStyle={styles.recipeImageStyle} // 살짝 흐린 효과 적용
-            >
-              {!(recipe.images && recipe.images[0]) && !recipeImages[recipe.recipeName] && (
-                <View style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  zIndex: 2
-                }}>
-                  <Text style={{
-                    color: '#222',
-                    fontWeight: 'bold',
-                    fontSize: 16,
-                    backgroundColor: 'rgba(255,255,255,0.85)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    textAlign: 'center',
-                  }}>
-                    미리보기 이미지가 존재하지 않습니다
-                  </Text>
-                </View>
-              )}
-              <View style={styles.recipeInfo}>
-                <Text style={styles.recipeTitle}>{recipe.recipeName || recipe.title || '이름 없음'}</Text>
+            {loadingErrors[recipe.name] ? (
+              <View style={[styles.recipeImage, styles.noImageContainer]}>
+                <Text style={styles.noImageText}>이미지 로딩에 실패했습니다</Text>
               </View>
-            </ImageBackground>
-            
+            ) : (
+              getRecipeThumbnail(recipe) && getRecipeThumbnail(recipe).uri ? (
+                <ImageBackground
+                  source={getRecipeThumbnail(recipe)}
+                  style={styles.recipeImage}
+                  imageStyle={styles.recipeImageStyle}
+                  onError={() => handleImageError(recipe.name)}
+                >
+                  <View style={styles.recipeInfo}>
+                    <Text style={styles.recipeTitle}>{recipe.recipeName || recipe.title || '이름 없음'}</Text>
+                  </View>
+                </ImageBackground>
+              ) : (
+                <View style={[styles.recipeImage, { backgroundColor: 'rgba(255,255,255,0.7)' }]}> 
+                  <Text style={styles.noImageText}>미리보기 이미지가 존재하지 않습니다</Text>
+                </View>
+              )
+            )}
             {/* 간략 영양 정보 */}
             {recipe.nutritionInfo && (
               <View style={styles.nutritionContainer}>
@@ -228,7 +248,6 @@ const RecipeResult = ({ route, navigation }) => {
                 </View>
               </View>
             )}
-            
             {/* 재료 정보 */}
             <View style={styles.ingredientsContainer}>
               <Text style={styles.ingredientsTitle}>주요 재료</Text>
@@ -385,7 +404,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  }
+  },  noImageContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  noImageText: {
+    color: '#333',
+    fontWeight: 'bold',
+    fontSize: 16,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+    textAlign: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
 });
 
 export default RecipeResult; // RecipeResult 컴포넌트를 외부로 내보냄

@@ -1,186 +1,101 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import apiConfig from '../../config/api.config';
-import { Alert } from 'react-native';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import apiService from '../services/api.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// AuthContext 생성
 const AuthContext = createContext();
 
-// AuthContext Hook 생성
-export const useAuth = () => useContext(AuthContext);
-
-// AuthProvider 컴포넌트
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(false); // 로딩 상태를 기본적으로 false로 설정
-
-  // 앱 시작 시 인증 상태를 백그라운드에서 확인
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        // 서버 연결 없이 기본적으로 인증되지 않은 상태로 시작
-        // 실제 서버 연동 시에는 토큰 유효성 검사 등의 로직 추가 필요
-        setUser(null);
-        setIsAuthenticated(false);
-      } catch (error) {
-        console.error('인증 상태 확인 중 오류:', error);
-        setIsAuthenticated(false);
-      }
-    };
-
-    // 백그라운드에서 인증 상태 확인 실행
-    checkAuthStatus();
-  }, []);
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);  // 회원가입 상태 추가
 
   // 로그인 함수
-  const login = async (email, password) => {
-    try {
-      const url = `${apiConfig.getApiUrl()}/api/login`;
-      console.log('[로그인] 요청 URL:', url);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃 설정
-      
-      try {
-        // 서버 API 구조에 맞게 email, password만 전송
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            email, 
-            password
-          }),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId); // 타임아웃 해제
-        
-        // 서버 응답 처리
-        const data = await response.json();
-        
-        if (!response.ok) {
-          console.log('[로그인] 응답 오류:', data);
-          throw new Error(data.errorMessage || '로그인 실패');
-        }
-        
-        // 로그인 성공 처리
-        console.log('[로그인] 성공:', data);
-        
-        // 서버 응답 구조에 맞게 사용자 정보 저장
-        // LoginResponse는 data 필드 내에 id와 email을 포함함
-        const userData = {
-          id: data.data.id,
-          email: data.data.email
-        };
-        
-        setUser(userData);
-        setIsAuthenticated(true);
-        return { success: true };
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        
-        if (fetchError.name === 'AbortError') {
-          throw new Error('서버 응답 시간이 너무 오래 걸립니다.');
-        }
-        
-        // fetch 과정에서 발생한 오류를 상위로 전파
-        throw fetchError;
+  const login = (userData) => {
+    if (userData.isRegistered) {
+      setIsAuthenticated(true);
+      setUser(userData);
+      setIsRegistering(false);
+      // JWT 토큰이 있으면 apiService에 등록 (값 검증)
+      // 1. access_token 우선, 2. token(문자열) 허용, 3. token(객체)에서 access_token 추출
+      let jwt = null;
+      if (typeof userData.access_token === 'string' && userData.access_token.length > 0) {
+        jwt = userData.access_token;
+      } else if (typeof userData.token === 'string' && userData.token.length > 0) {
+        jwt = userData.token;
+      } else if (userData.token && typeof userData.token === 'object' && typeof userData.token.access_token === 'string' && userData.token.access_token.length > 0) {
+        jwt = userData.token.access_token;
       }
-    } catch (error) {
-      console.error('로그인 중 오류:', error);
-      
-      // 네트워크 관련 오류 처리
-      if (error.message && error.message.includes('Network request failed')) {
-        return { 
-          success: false, 
-          error: '네트워크 연결 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' 
-        };
+      if (jwt) {
+        apiService.setToken(jwt);
+        AsyncStorage.setItem('accessToken', jwt); // JWT를 AsyncStorage에 저장
+      } else {
+        apiService.setToken(null);
+        AsyncStorage.removeItem('accessToken'); // 유효하지 않은 경우 AsyncStorage에서 토큰 제거
+        console.warn('잘못된 JWT 토큰:', userData.token, userData.access_token);
       }
-      
-      return { success: false, error: error.message };
+    } else {
+      console.log('회원가입이 완료되지 않았습니다.');
+      setIsRegistering(true);
     }
   };
 
   // 로그아웃 함수
-  const logout = async () => {
-    try {
-      // 서버 연결 없이 로컬 상태만 변경
-      setUser(null);
-      setIsAuthenticated(false);
-      return { success: true };
-    } catch (error) {
-      console.error('로그아웃 중 오류:', error);
-      return { success: false, error: error.message };
-    }
+  const logout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    setIsRegistering(false);
+    apiService.setToken(null); // 토큰 초기화
+    AsyncStorage.removeItem('accessToken'); // AsyncStorage에서 토큰 제거
   };
 
-  // 회원가입 함수
-  const register = async (userData) => {
-    try {
-      const url = `${apiConfig.getApiUrl()}/api/signup`;
-      console.log('[회원가입] 요청 URL:', url);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃
-      
+  // 회원가입 처리 함수 (필요시 추가)
+  const register = (userData) => {
+    // 회원가입 처리 로직 (예: 서버에 요청 후 성공하면 로그인)
+    console.log('회원가입 처리 중...');
+    setIsAuthenticated(true);
+    setUser(userData);
+    setIsRegistering(false);  // 회원가입 후 로그인 상태로 전환
+  };
+
+  // 앱 시작 시 AsyncStorage에서 토큰을 불러와 apiService에 등록
+  useEffect(() => {
+    (async () => {
       try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userData),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId); // 타임아웃 해제
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: '회원가입 실패' }));
-          throw new Error(errorData.message || '회원가입 실패');
-        }
-
-        const data = await response.json();
-        return { success: true, data };
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        
-        if (fetchError.name === 'AbortError') {
-          throw new Error('서버 응답 시간이 너무 오래 걸립니다.');
+        // 앱 시작 시 항상 로그아웃 상태로 시작하도록 수정
+        // 기존 토큰이 있더라도 제거하고, 인증 상태를 false로 설정
+        const token = await AsyncStorage.getItem('accessToken');
+        if (token) {
+          console.log('[AuthContext] 앱 시작 시 AsyncStorage에 토큰이 있었으나, 로그인 유지 기능을 비활성화하여 제거합니다. 토큰:', token);
+          await AsyncStorage.removeItem('accessToken');
+        } else {
+          console.log('[AuthContext] 앱 시작 시 AsyncStorage에 저장된 accessToken이 없습니다.');
         }
         
-        throw fetchError;
-      }
-    } catch (error) {
-      console.error('회원가입 중 오류:', error);
-      
-      // 네트워크 관련 오류 처리
-      if (error.message && error.message.includes('Network request failed')) {
-        return { 
-          success: false, 
-          error: '네트워크 연결 오류가 발생했습니다. 인터넷 연결을 확인해주세요.' 
-        };
-      }
-      
-      return { success: false, error: error.message };
-    }
-  };
+        apiService.setToken(null); // 항상 토큰 초기화
+        setIsAuthenticated(false); // 항상 비인증 상태로 시작
+        console.log('[AuthContext] 앱 시작 시 로그인 유지 기능 비활성화됨. 항상 로그아웃 상태로 시작합니다.');
 
-  // 컨텍스트 값 제공
-  const contextValue = {
-    user,
-    isAuthenticated,
-    loading,
-    login,
-    logout,
-    register,
-  };
+      } catch (e) {
+        console.error('[AuthContext] 앱 시작 처리 중 오류 발생 (로그인 유지 비활성화 로직):', e);
+        apiService.setToken(null);
+        setIsAuthenticated(false);
+        // 오류 발생 시 만약을 위해 토큰 제거 시도
+        try {
+          await AsyncStorage.removeItem('accessToken');
+          console.log('[AuthContext] 오류로 인해 AsyncStorage의 accessToken 제거 시도 완료 (로그인 유지 비활성화 로직).');
+        } catch (removeError) {
+          console.error('[AuthContext] 오류 후 accessToken 제거 중 추가 오류 (로그인 유지 비활성화 로직):', removeError);
+        }
+      }
+    })();
+  }, []);
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={{ isAuthenticated, loading, user, login, logout, isRegistering, register }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

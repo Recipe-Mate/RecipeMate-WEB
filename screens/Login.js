@@ -1,319 +1,188 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator
-} from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { WebView } from 'react-native-webview';
+import { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI, SERVER_URL } from '@env';
 import { useAuth } from '../src/context/AuthContext';
-import apiConfig from '../config/api.config';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Login = ({ navigation }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const Login = ({ navigation }) => { // navigation prop 추가
+  const [showWebView, setShowWebView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [serverStatus, setServerStatus] = useState('unknown'); // 서버 상태 추가
+  const [errorText, setErrorText] = useState('');
+  const webviewRef = useRef(null);
   const { login } = useAuth();
 
-  // 컴포넌트 마운트 시 서버 상태 확인
-  useEffect(() => {
-    checkServerStatus();
-  }, []);
+  const REDIRECT_URI = `${KAKAO_REDIRECT_URI}`;
+  const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+  console.log('KAKAO_AUTH_URL:', KAKAO_AUTH_URL);
 
-  // 서버 연결 상태 확인 함수
-  const checkServerStatus = async () => {
-    try {
-      setServerStatus('checking');
-      const response = await fetch(`${apiConfig.getApiUrl()}/api/system/health`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        timeout: 5000 // 5초 타임아웃
-      });
-      
-      if (response.ok) {
-        setServerStatus('online');
-      } else {
-        setServerStatus('offline');
+  const handleLogin = () => {
+    setShowWebView(true);  // 버튼 누르면 WebView 표시
+  };
+
+  const handleNavigationChange = (navState) => {
+    const url = navState.url;
+    if (url.startsWith(REDIRECT_URI)) {
+      const match = url.match(/code=([^&]+)/);
+      const code = match?.[1];
+      if (code) {
+        console.log('카카오 인가코드:', code);
+        sendCodeToBackend(code);
+        setShowWebView(false);  // WebView 닫기
       }
-    } catch (error) {
-      console.error('서버 상태 확인 실패:', error);
-      setServerStatus('offline');
     }
   };
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
-      return;
-    }
-
-    // 서버가 오프라인 상태인지 확인
-    if (serverStatus === 'offline') {
-      Alert.alert(
-        '서버 연결 오류',
-        '서버에 연결할 수 없습니다. 네트워크 연결을 확인하거나 나중에 다시 시도해주세요.',
-        [
-          { text: '취소', style: 'cancel' },
-          { text: '재연결 시도', onPress: () => {
-            checkServerStatus();
-          }}
-        ]
-      );
-      return;
-    }
-
-    setIsLoading(true);
+  const sendCodeToBackend = async (code) => {
     try {
-      console.log('[Login] 로그인 시도:', email);
-      
-      const result = await login(email, password);
-      console.log('[Login] 로그인 결과:', result);
-      
-      if (!result.success) {
-        if (result.error) {
-          console.error('[Login] 로그인 실패 상세:', result.error);
-        }
-        Alert.alert('로그인 실패', result.error || '로그인에 실패했습니다. 다시 시도해주세요.');
+      setIsLoading(true);
+      const fetchUrl = `${SERVER_URL}/api/auth`;
+      console.log('fetch 주소:', fetchUrl);
+      const getTokenResponse = await fetch(fetchUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
+      });
+  
+      if (!getTokenResponse.ok) throw new Error('토큰 요청 실패');
+  
+      const data = await getTokenResponse.json();
+      const isRegistered = data.isRegistered;
+      console.log('데이터:', data);
+      // 수정: 백엔드에서 내려주는 필드명에 맞게 파싱
+      console.log('Access Token:', data.access_token);
+      console.log('Refresh Token: ', data.refresh_token);
+      console.log('userId: ', data.user_id);
+
+      if (data.access_token && data.refresh_token) {
+        await AsyncStorage.setItem('accessToken', data.access_token);
+        await AsyncStorage.setItem('refreshToken', data.refresh_token);
+        await AsyncStorage.setItem('userId', String(data.user_id));
+        // userData에 token 필드 추가해서 login 호출
+        login({
+          ...data,
+          token: data.access_token
+        });
+        // navigation.replace('MainStack'); // 자동 전환되므로 삭제
       } else {
-        console.log('[Login] 로그인 성공');
-        // 네비게이션 코드 제거 - 인증 상태 변경만으로 자동 전환됨
+        throw new Error('토큰이 누락되었습니다.');
+      }      
+  
+      // 예시로 refreshToken 유효성 확인
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      const accessToken = await AsyncStorage.getItem('accessToken');
+
+      const checkAccessToken = await fetch(`${SERVER_URL}/api/auth/token/health`, {
+        method: 'POST',
+        headers: {
+          'accept': '*/*',
+          'token': `${refreshToken}`,
+        },
+        body: '',
+      });
+      
+      const accessTokenData = await checkAccessToken.json();
+      console.log('리프레시 서버 응답: ', accessTokenData);
+
+      if (accessTokenData.status === 401) {
+        console.log('Access token expired, refreshing...');
+        
+        const refreshAccessToken = await fetch(`${SERVER_URL}/auth/token`, {
+          method: 'POST',
+          headers: {
+            'accept': '*/*',
+            'refreshToken': refreshToken,
+          },
+          body: '',
+        });
+        
+        const refreshData = await refreshAccessToken.json();
+        console.log('refresh 후 응답:', refreshData);
+        await AsyncStorage.setItem('accessToken', refreshData.accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshData.refreshToken);
+
+        console.log('refresh 후 accessToken: ', accessToken);
+        console.log('refresh 후 refreshToken: ', refreshToken);
       }
+
+      if (isRegistered === true) {
+        // DB PK와 카카오ID를 명확히 저장
+        login({
+          ...data,
+          id: data.user_id, // DB PK
+          kakao_id: data.kakao_id || data.user_id // 카카오ID(백엔드에서 kakao_id가 없으면 user_id 그대로)
+        });
+      } else {
+        setErrorText('등록되지 않은 카카오 계정입니다.');
+      }
+  
     } catch (error) {
-      console.error('[Login] 로그인 처리 중 예외 발생:', error);
-      // 네트워크 오류 발생 시 더 구체적인 메시지 표시
-      if (error.message && error.message.includes('Network request failed')) {
-        Alert.alert(
-          '네트워크 오류', 
-          '서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.',
-          [
-            { text: '확인' },
-            { text: '서버 상태 확인', onPress: checkServerStatus }
-          ]
-        );
-      } else {
-        Alert.alert('오류 발생', '로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
-      }
+      console.error('카카오 로그인 실패: ', error);
+      setErrorText('로그인 중 문제가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleSignUp = () => {
-    navigation.navigate('SignUp');
-  };
+  
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.logoContainer}>
-          <View style={styles.logo}>
-            <Icon name="restaurant" size={60} color="#ffffff" />
-          </View>
-          <Text style={styles.title}>RecipeMate</Text>
-          <Text style={styles.subtitle}>나만의 요리 비서</Text>
-        </View>
-
-        {/* 서버 상태 표시 */}
-        <View style={styles.serverStatusContainer}>
-          {serverStatus === 'checking' && (
-            <View style={styles.statusRow}>
-              <ActivityIndicator size="small" color="#3498db" />
-              <Text style={styles.statusChecking}>서버 연결 확인 중...</Text>
-            </View>
-          )}
-          
-          {serverStatus === 'online' && (
-            <View style={styles.statusRow}>
-              <View style={[styles.statusIndicator, styles.statusOnline]} />
-              <Text style={styles.statusOnlineText}>서버 연결됨</Text>
-            </View>
-          )}
-          
-          {serverStatus === 'offline' && (
-            <View style={styles.statusRow}>
-              <View style={[styles.statusIndicator, styles.statusOffline]} />
-              <Text style={styles.statusOfflineText}>서버 연결 실패</Text>
-              <TouchableOpacity onPress={checkServerStatus} style={styles.retryButton}>
-                <Text style={styles.retryText}>재시도</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.formContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="이메일"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          
-          <TextInput
-            style={styles.input}
-            placeholder="비밀번호"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <TouchableOpacity 
-            style={[
-              styles.loginButton,
-              serverStatus === 'offline' && styles.loginButtonDisabled
-            ]}
-            onPress={handleLogin}
-            disabled={isLoading || serverStatus === 'offline'}
-          >
-            <Text style={styles.loginButtonText}>
-              {isLoading ? '로그인 중...' : '로그인'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleSignUp}>
-            <Text style={styles.signUpText}>계정이 없으신가요? 회원가입</Text>
+    <View style={{ flex: 1 }}>
+      {showWebView ? (
+        <WebView
+          style={{ flex: 1 }}
+          ref={webviewRef}
+          source={{ uri: KAKAO_AUTH_URL }}
+          onNavigationStateChange={handleNavigationChange}
+          javaScriptEnabled
+          domStorageEnabled
+          originWhitelist={['*']}
+        />
+      ) : (
+        <View style={styles.container}>
+          {isLoading && <ActivityIndicator size="large" color="#333f50" />}
+          {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>카카오 로그인</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>© 2025 RecipeMate. All rights reserved.</Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  button: {
+    backgroundColor: "#FBE301",
+    borderRadius: 10,
+    borderWidth: 1,
+    width: 250,
+    height: 50,
+    marginTop: 10,
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#3B1E1E',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F5FCFF',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#3498db',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#3498db',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  serverStatusContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  statusOnline: {
-    backgroundColor: '#3498db',
-  },
-  statusOffline: {
-    backgroundColor: '#3498db',
-  },
-  statusOnlineText: {
-    color: '#3498db',
-    fontSize: 14,
-  },
-  statusOfflineText: {
-    color: '#F44336',
-    fontSize: 14,
-    marginRight: 8,
-  },
-  statusChecking: {
-    color: '#757575',
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  retryButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-  },
-  retryText: {
-    color: '#424242',
-    fontSize: 12,
-  },
-  formContainer: {
-    width: '100%',
-    marginBottom: 30,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  loginButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 5,
-    marginBottom: 20,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#A5D6A7',
-  },
-  loginButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  signUpText: {
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
     textAlign: 'center',
-    color: '#4CAF50',
-    fontSize: 14,
   },
-  footer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  footerText: {
-    color: '#888',
-    fontSize: 12,
+  webView: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 });
 

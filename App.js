@@ -7,6 +7,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { StatusBar, StyleSheet, View, Text, ActivityIndicator, LogBox } from 'react-native';
 import ServerStatusCheck from './src/components/ServerStatusCheck';
 import apiConfig from './config/api.config';
+import LinearGradient from 'react-native-linear-gradient';
+import { SERVER_URL } from '@env';
 
 // 경고 무시 설정 (개발 중에만 사용)
 LogBox.ignoreLogs([
@@ -14,6 +16,7 @@ LogBox.ignoreLogs([
   'ViewManagerRegistry.js',             // 화면 관련 경고 무시
   'ViewManager for component',           // 컴포넌트 관련 경고 무시
 ]);
+
 
 // 현재 가지고 있는 화면들
 import Main from './screens/Main';
@@ -26,7 +29,15 @@ import Login from './screens/Login';
 import SignUp from './screens/SignUp';
 import AddFood from './screens/AddFood'; // 추가된 화면
 import FoodList from './screens/FoodList'; // 추가된 화면
+import AddIngredient from './screens/AddIngredient';
+import Badge from './screens/Badge';
+import CookedRecipes from './screens/CookedRecipes';
+import HomeScreen from './screens/HomeScreen'; // 추가된 화면
 import RecipeThumbnails from './screens/RecipeThumbnails';
+import UserAddIngredient from './screens/UserAddIngredient'; // 사용자 식재료 추가 화면 import
+import FavoriteRecipesScreen from './screens/FavoriteRecipesScreen'; // 즐겨찾기 레시피 화면 import
+// CookedRecipeDetailScreen은 TabBar.js 내의 RecipeStack에서 관리하므로 App.js에서 직접 import할 필요는 없을 수 있습니다.
+// 만약 다른 네비게이터에서 사용된다면 여기에 import를 추가합니다.
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -43,9 +54,9 @@ const ServerStatusScreen = () => {
       <Text style={styles.welcomeText}>
         RecipeMate에 오신 것을 환영합니다!
       </Text>
-      
+
       <ServerStatusCheck />
-      
+
       <Text style={styles.instruction}>
         이 앱에서는 식재료를 관리하고 레시피를 추천받을 수 있습니다.
       </Text>
@@ -65,13 +76,129 @@ const InitializingScreen = () => (
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+const MainStack = () => (
+  <Stack.Navigator initialRouteName='Main'>
+    <Stack.Screen
+      name="Main"
+      component={Main}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="AddIngredient"
+      component={AddIngredient}
+      options={{
+        headerStyle: {
+          backgroundColor: '#2D336B',
+          height: 60,
+        },
+        headerTintColor: '#ffffff',
+        headerBackTitleStyle: {
+          fontSize: 16,
+        },
+        title: '식재료 추가하기',
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "600",
+        },
+        headerShown: true,
+        headerShadowVisible: false,
+        headerBackTitle: '뒤로',
+      }}
+    />
+    <Stack.Screen
+      name="UserAddIngredient"
+      component={UserAddIngredient}
+      options={{
+        headerStyle: {
+          backgroundColor: '#2D336B',
+          height: 60,
+        },
+        headerTintColor: '#ffffff',
+        headerBackTitleStyle: {
+          fontSize: 16,
+        },
+        title: '내 식재료 추가',
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "600",
+        },
+        headerShown: true,
+        headerShadowVisible: false,
+        headerBackTitle: '뒤로',
+      }}
+    />
+    <Stack.Screen
+      name="AddFood"
+      component={AddFood}
+      options={{
+        headerStyle: {
+          backgroundColor: '#2D336B',
+          height: 60,
+        },
+        headerTintColor: '#ffffff',
+        headerBackTitleStyle: {
+          fontSize: 16,
+        },
+        title: '식재료 직접 추가',
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "600",
+        },
+        headerShown: true,
+        headerShadowVisible: false,
+        headerBackTitle: '뒤로',
+      }}
+    />
+    <Stack.Screen
+      name="FoodList"
+      component={FoodList}
+      options={{
+        title: '내 식재료',
+        headerStyle: { backgroundColor: '#2D336B', height: 60 },
+        headerTintColor: '#ffffff',
+        headerTitleStyle: { fontSize: 20, fontWeight: "600" },
+        headerShown: true,
+        headerShadowVisible: false,
+        headerBackTitle: '뒤로',
+      }}
+    />
+    <Stack.Screen // CookedRecipes를 MainStack에 추가
+      name="CookedRecipes"
+      component={CookedRecipes}
+      options={{
+        headerBackground: () => (
+          <LinearGradient
+            colors={['#2D336B', '#525C99']}
+            style={{ flex: 1, borderBottomRightRadius: 10, borderBottomLeftRadius: 10, }}
+          />
+        ),
+        headerTintColor: '#ffffff',
+        headerBackTitleStyle: {
+          fontSize: 16,
+        },
+        title: '최근 요리한 레시피', // Main에서 접근 시 타이틀
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "600",
+          paddingBottom: 10,
+        },
+        headerBackTitle: '뒤로',
+        headerShown: true,
+        headerLeftContainerStyle: {
+          paddingBottom: 10,
+        }
+      }}
+    />
+  </Stack.Navigator>
+);
+
 // 홈 스택 네비게이터 추가 - 식재료 관리 화면을 포함
 const HomeStack = () => (
   <Stack.Navigator>
     <Stack.Screen
-      name="MainScreen"
-      component={Main}
-      options={{ 
+      name="MainStack"
+      component={MainStack}
+      options={{
         title: '홈',
         headerStyle: {
           backgroundColor: '#ffffff',
@@ -80,10 +207,10 @@ const HomeStack = () => (
           fontWeight: 'bold',
           color: '#333333',
         },
-        headerShown: true
+        headerShown: false
       }}
     />
-    <Stack.Screen
+    {/* <Stack.Screen
       name="AddFood"
       component={AddFood}
       options={{ title: '식재료 추가' }}
@@ -92,7 +219,7 @@ const HomeStack = () => (
       name="FoodList"
       component={FoodList}
       options={{ title: '내 식재료' }}
-    />
+    /> */}
   </Stack.Navigator>
 );
 
@@ -102,22 +229,27 @@ const RecipeStack = () => (
     <Stack.Screen
       name="RecipeSearch"
       component={RecipeSearch}
-      options={{ title: '레시피 검색', headerShown: true }}
+      options={{ title: '레시피 검색', headerShown: false }}
     />
     <Stack.Screen
       name="RecipeDetail"
       component={RecipeDetail}
-      options={{ title: '레시피 상세', headerShown: true }}
+      options={{ title: '레시피 상세', headerShown: false }}
     />
     <Stack.Screen
       name="RecipeResult"
       component={RecipeResult}
-      options={{ title: '검색결과', headerShown: true }}
+      options={{ title: '검색결과', headerShown: false }}
     />
     <Stack.Screen
       name="RecipeThumbnails"
       component={RecipeThumbnails}
-      options={{ title: '레시피 썸네일', headerShown: true }}
+      options={{ title: '레시피 썸네일 목록' }}
+    />
+    <Stack.Screen
+      name="IngredientChange"
+      component={require('./screens/IngredientChange').default}
+      options={{ title: '재료 변동 사항', headerShown: true }}
     />
   </Stack.Navigator>
 );
@@ -129,7 +261,8 @@ const AuthStack = () => (
     <Stack.Screen name="Login" component={Login} />
     {/* SignUp 화면 등록 */}
     <Stack.Screen name="SignUp" component={SignUp} />
-    {/* Register 화면이 필요한 경우 추가 */}
+    {/* Register 화면 등록 */}
+    <Stack.Screen name="Register" component={require('./screens/Register').default} />
   </Stack.Navigator>
 );
 
@@ -137,29 +270,109 @@ const AuthStack = () => (
 const AppContent = ({ initialError }) => {
   const { isAuthenticated, loading } = useAuth();
   // 항상 인증된 상태로 처리
-  const alwaysAuthenticated = true;
-  
+  // const alwaysAuthenticated = true;
+
   // 로딩 중일 때 초기화 화면 표시
   if (loading) {
     return <InitializingScreen />;
   }
 
+  const ProfileStack = () => (
+    <Stack.Navigator initialRouteName='Profile'>
+      <Stack.Screen
+        name="Profile"
+        component={Profile}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Badge"
+        component={Badge}
+        options={{
+          headerStyle: {
+            backgroundColor: '#333f50',
+          },
+          headerTintColor: '#ffffff',
+          headerBackTitleStyle: {
+            fontSize: 16,
+          },
+          title: '획득한 배지',
+          headerShown: true,
+          headerBackTitle: '뒤로',
+        }}
+      />
+      <Stack.Screen
+        name="CookedRecipes"
+        component={CookedRecipes}
+        options={{
+          headerBackground: () => (
+            <LinearGradient
+              colors={['#2D336B', '#525C99']}
+              style={{ flex: 1, borderBottomRightRadius: 10, borderBottomLeftRadius: 10, }}
+            />
+          ),
+          headerTintColor: '#ffffff',
+          headerBackTitleStyle: {
+            fontSize: 16,
+          },
+          title: '요리한 레시피 목록',
+          headerTitleStyle: {
+            fontSize: 20,
+            fontWeight: "600",
+            paddingBottom: 10,
+          },
+          headerBackTitle: '뒤로',
+          headerShown: true,
+          headerLeftContainerStyle: {
+            paddingBottom: 10,
+          }
+        }}
+      />
+      <Stack.Screen // FavoriteRecipesScreen을 ProfileStack에 추가
+        name="FavoriteRecipes" 
+        component={FavoriteRecipesScreen}
+        options={{
+          headerBackground: () => (
+            <LinearGradient
+              colors={['#2D336B', '#525C99']}
+              style={{ flex: 1, borderBottomRightRadius: 10, borderBottomLeftRadius: 10, }}
+            />
+          ),
+          headerTintColor: '#ffffff',
+          headerBackTitleStyle: {
+            fontSize: 16,
+          },
+          title: '즐겨찾는 레시피',
+          headerTitleStyle: {
+            fontSize: 20,
+            fontWeight: "600",
+            paddingBottom: 10,
+          },
+          headerBackTitle: '뒤로',
+          headerShown: true,
+          headerLeftContainerStyle: {
+            paddingBottom: 10,
+          }
+        }}
+      />
+    </Stack.Navigator>
+  );
+
   return (
     <NavigationContainer>
       <StatusBar barStyle="dark-content" />
-      {(isAuthenticated || alwaysAuthenticated) ? (
+      {isAuthenticated ? (
         <Tab.Navigator
           screenOptions={({ route }) => ({
             tabBarIcon: ({ focused, color, size }) => {
               let iconName;
 
-              if (route.name === 'Home') {
+              if (route.name === 'MainStack') {
                 iconName = focused ? 'home' : 'home-outline';
-              } else if (route.name === 'Recipe') {
+              } else if (route.name === 'RecipeStack') {
                 iconName = focused ? 'restaurant' : 'restaurant-outline';
               } else if (route.name === 'Receipt') {
                 iconName = focused ? 'receipt' : 'receipt-outline';
-              } else if (route.name === 'Profile') {
+              } else if (route.name === 'ProfileStack') {
                 iconName = focused ? 'person' : 'person-outline';
               } else if (route.name === 'ServerStatus') {
                 // server 아이콘이 없으므로 settings로 대체
@@ -169,43 +382,33 @@ const AppContent = ({ initialError }) => {
               // IconPlaceholder 대신 아이콘 직접 사용
               return <Icon name={iconName} size={size} color={color} />;
             },
-            tabBarActiveTintColor: '#3498db',
+            tabBarActiveTintColor: '#525C99',
             tabBarInactiveTintColor: 'gray',
           })}
         >
-          <Tab.Screen 
-            name="Home" 
-            component={HomeStack} // Main 대신 HomeStack 사용
-            options={{ 
-              title: '홈', 
-              headerShown: true,
-              headerStyle: {
-                backgroundColor: '#ffffff',
-              },
-              headerTitleStyle: {
-                fontWeight: 'bold',
-                color: '#333333',
-              }
-            }}
+          <Tab.Screen
+            name="MainStack"
+            component={MainStack}
+            options={{ title: '홈', headerShown: false }}
           />
-          <Tab.Screen 
-            name="Recipe" 
-            component={RecipeStack} 
+          <Tab.Screen
+            name="RecipeStack"
+            component={RecipeStack}
             options={{ title: '레시피', headerShown: false }}
           />
-          <Tab.Screen 
-            name="Receipt" 
-            component={Receipt} 
+          <Tab.Screen
+            name="Receipt"
+            component={Receipt}
             options={{ title: '영수증 스캔' }}
           />
-          <Tab.Screen 
-            name="Profile" 
-            component={Profile} 
-            options={{ title: '프로필' }}
+          <Tab.Screen
+            name="ProfileStack"
+            component={ProfileStack}
+            options={{ title: '프로필', headerShown: false }}
           />
-          <Tab.Screen 
-            name="ServerStatus" 
-            component={ServerStatusScreen} 
+          <Tab.Screen
+            name="ServerStatus"
+            component={ServerStatusScreen}
             options={{ title: '서버 상태' }}
           />
         </Tab.Navigator>
@@ -229,9 +432,9 @@ const App = () => {
         // Metro 서버 로그만 출력
         if (__DEV__) {
           console.log('개발 모드 실행 중');
-          console.log('Metro URL:', `http://localhost:8081`);
+          console.log('Metro URL:', `${SERVER_URL}`);
         }
-        
+
         // 서버 설정 초기화는 비동기적으로 백그라운드에서 수행
         apiConfig.initializeServerConfig().then(result => {
           if (!result.success) {

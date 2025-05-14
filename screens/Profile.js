@@ -106,6 +106,16 @@ const Profile = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>레시피 관리</Text>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('FavoriteRecipes')} // FavoriteRecipesScreen으로 이동
+        >
+          <Text style={styles.menuText}>즐겨찾는 레시피</Text>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity 
         style={styles.logoutButton}
         onPress={handleLogout}

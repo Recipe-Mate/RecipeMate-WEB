@@ -1,3 +1,5 @@
+// 개발때문에 만든 화면
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 

@@ -3,8 +3,8 @@
  * 서버 URL 및 API 관련 설정 관리
  */
 
-// 기본 서버 URL 설정 - 실제 서버 IP 주소와 포트로 변경
-const DEFAULT_API_URL = 'http://10.0.2.2:8080'; // 안드로이드 에뮬레이터에서 localhost 대신 사용
+// 환경변수에서 API URL을 읽어옴
+const DEFAULT_API_URL = process.env.API_URL || 'http://10.0.2.2:8080'; // 안드로이드 에뮬레이터에서 localhost 대신 사용
 // iOS에서는 localhost 사용: const DEFAULT_API_URL = 'http://127.0.0.1:8080';
 
 // API 엔드포인트 정의
@@ -73,7 +73,8 @@ export const API_BASE_URL = DEFAULT_API_URL;
 export const API_ENDPOINTS = API_ENDPOINTS_OBJ; // 다른 변수로부터 내보내기
 
 // Google Custom Search API 키와 CX(검색 엔진 ID) 추가
-export const GOOGLE_API_KEY = 'YOUR_GOOGLE_API_KEY'; // 실제 키로 교체
-export const GOOGLE_CX = 'YOUR_GOOGLE_CX'; // 실제 CX로 교체
+// API 키를 설정하지 않으면 로컬 이미지만 사용합니다
+export const GOOGLE_API_KEY = 'AIzaSyBpgbgZfve77pGsbEbfk6vCvnGVvV8GYTg'; // 실제 키로 교체하거나 비워두세요
+export const GOOGLE_CX = ''; // 실제 CX로 교체하거나 비워두세요
 
 export default apiConfig;

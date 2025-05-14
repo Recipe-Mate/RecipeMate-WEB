@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
+// import { useTheme } from '../contexts/ThemeContext';
+// import { useLanguage } from '../contexts/LanguageContext';
 
 // 임시 데이터 - 실제로는 API에서 가져올 것
 const FEATURED_RECIPES = [
@@ -17,8 +17,10 @@ const RECENT_RECIPES = [
 ];
 
 const HomeScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { t } = useLanguage();
+  // const { theme } = useTheme();
+  // const { t } = useLanguage();
+  const theme = { text: '#222', background: '#fff', primary: '#3498db' };
+  const t = (s) => s;
 
   const renderRecipeItem = (recipe, index) => (
     <TouchableOpacity

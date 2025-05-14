@@ -9,12 +9,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ToastAndroid  // ToastAndroid 추가
+  ToastAndroid
 } from 'react-native';
 import { useAuth } from '../src/context/AuthContext';
 import apiConfig from '../config/api.config';
 
-const Register = ({ navigation }) => {
+const Register = ({ navigation, route }) => { // route prop 추가
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userPassword, setUserPassword] = useState('');
@@ -23,6 +23,9 @@ const Register = ({ navigation }) => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { register } = useAuth();
+
+  // 카카오 로그인에서 넘어온 kakaoId 파라미터
+  const kakaoId = route?.params?.kakaoId;
 
   // 회원가입 처리 함수
   const handleSignUp = async () => {
@@ -51,7 +54,13 @@ const Register = ({ navigation }) => {
       console.log('[회원가입] 앱 버전:', require('../package.json').version);
       
       const url = `${apiConfig.getApiUrl()}/api/signup`;
-      const payload = {
+      // kakaoId가 있으면 payload에 포함
+      const payload = kakaoId ? {
+        name: userName,
+        email: userEmail,
+        password: userPassword,
+        kakaoId: kakaoId
+      } : {
         name: userName,
         email: userEmail,
         password: userPassword
@@ -84,7 +93,7 @@ const Register = ({ navigation }) => {
           [{ text: '확인' }]
         );
         setIsLoading(false);
-        return; // 여기서 함수 종료
+        return;
       }
       
       const response = await fetch(url, {
@@ -111,7 +120,7 @@ const Register = ({ navigation }) => {
       if (response.ok) {
         console.log('[회원가입] 성공:', result);
         
-        // 응답에서 userId 확인 - 로그 출력 강화
+        // 응답에서 userId 확인
         console.log('[회원가입] 응답 객체 전체:', JSON.stringify(result, null, 2));
         
         // userId를 확실히 추출
@@ -124,7 +133,6 @@ const Register = ({ navigation }) => {
         } else if (result.id) {
           userId = result.id;
         } else if (typeof result === 'object') {
-          // 객체의 모든 키 확인
           Object.keys(result).forEach(key => {
             if (key.toLowerCase().includes('id') || key.toLowerCase().includes('userid')) {
               userId = result[key];
@@ -135,22 +143,19 @@ const Register = ({ navigation }) => {
         
         console.log('[회원가입] 최종 추출된 사용자 ID:', userId);
         
-        // 즉시 Alert 표시 - 가장 단순하게
+        // 즉시 Alert 표시
         Alert.alert(
           '회원가입 성공',
           `회원가입이 완료되었습니다.\n\n사용자 ID: ${userId}\n\n이 ID는 중요합니다. 기억해두세요.`,
           [{ 
             text: '확인', 
             onPress: () => {
-              // 로그인 화면으로 이동하기 전에 ID 다시 한번 표시 (안드로이드)
               if (Platform.OS === 'android') {
                 ToastAndroid.show(
                   `회원가입 성공! ID: ${userId}`,
                   ToastAndroid.LONG
                 );
               }
-              
-              // 약간의 지연 후 화면 전환
               setTimeout(() => {
                 navigation.reset({
                   index: 0,
@@ -179,9 +184,8 @@ const Register = ({ navigation }) => {
     }
   };
 
-  // isSuccess 상태가 true일 때 비어있는 화면 반환
   if (isSuccess) {
-    return null; // Alert가 표시되고 그 후 이동됨
+    return null;
   }
 
   return (
@@ -190,50 +194,30 @@ const Register = ({ navigation }) => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>회원가입</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="닉네임"
-          onChangeText={setUserName}
-          value={userName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="이메일"
-          onChangeText={setUserEmail}
-          value={userEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호"
-          secureTextEntry
-          onChangeText={setUserPassword}
-          value={userPassword}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호 확인"
-          secureTextEntry
-          onChangeText={setUserPasswordChk}
-          value={userPasswordChk}
-        />
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleSignUp}
-          disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>
-            {isLoading ? '처리 중...' : '회원가입'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.loginLink}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={styles.linkText}>이미 계정이 있으신가요? 로그인하기</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>카카오 회원가입</Text>
+        {/* 카카오 아이디 안내 및 버튼 */}
+        {kakaoId && (
+          <View style={styles.kakaoBox}>
+            <Text style={styles.kakaoText}>카카오 계정으로 회원가입합니다.</Text>
+            <Text style={styles.kakaoIdText}>카카오 ID: {kakaoId}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="닉네임"
+              onChangeText={setUserName}
+              value={userName}
+            />
+            <TouchableOpacity
+              style={styles.kakaoButton}
+              onPress={handleSignUp}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.kakaoButtonText}>
+                🟡 카카오 아이디로 가입하기
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -299,7 +283,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 8,
     alignSelf: 'center',
-  }
+  },
+  kakaoBox: {
+    backgroundColor: '#FBE301',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  kakaoText: {
+    color: '#3B1E1E',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  kakaoIdText: {
+    color: '#3B1E1E',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  kakaoButton: {
+    backgroundColor: '#FEE500',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  kakaoButtonText: {
+    color: '#3B1E1E',
+    fontWeight: 'bold',
+    fontSize: 17,
+    letterSpacing: 0.5,
+  },
 });
 
 export default Register;
