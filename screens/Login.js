@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI, SERVER_URL } from '@env';
 import { useAuth } from '../src/context/AuthContext';
@@ -42,24 +42,24 @@ const Login = () => {
         },
         body: JSON.stringify({ code }),
       });
-  
+
       if (!getTokenResponse.ok) throw new Error('토큰 요청 실패');
-  
+
       const data = await getTokenResponse.json();
       const isRegistered = data.isRegistered;
       console.log('데이터:', data);
       console.log('Access Token:', data.accessToken);
       console.log('Refresh Token: ', data.refreshToken);
       console.log('userId: ', data.userId)
-  
+
       if (data.accessToken && data.refreshToken) {
         await AsyncStorage.setItem('accessToken', data.accessToken);
         await AsyncStorage.setItem('refreshToken', data.refreshToken);
         await AsyncStorage.setItem('userId', String(data.userId));
       } else {
         throw new Error('토큰이 누락되었습니다.');
-      }      
-  
+      }
+
       // 예시로 refreshToken 유효성 확인
       const refreshToken = await AsyncStorage.getItem('refreshToken');
       const accessToken = await AsyncStorage.getItem('accessToken');
@@ -72,7 +72,7 @@ const Login = () => {
         },
         body: '', // curl에서 -d ''이므로 빈 문자열 전송
       });
-      
+
 
       const accessTokenData = await checkAccessToken.json();
       console.log('리프레시 서버 응답: ', accessTokenData);
@@ -80,7 +80,7 @@ const Login = () => {
 
       if (accessTokenData.status === 401) {
         console.log('Access token expired, refreshing...');
-        
+
         const refreshAccessToken = await fetch(`${SERVER_URL}/auth/token`, {
           method: 'POST',
           headers: {
@@ -89,7 +89,7 @@ const Login = () => {
           },
           body: '', // curl에서 -d ''인 부분
         });
-        
+
         const refreshData = await refreshAccessToken.json();
         console.log('refresh 후 응답:', refreshData);
         await AsyncStorage.setItem('accessToken', refreshData.accessToken);
@@ -105,7 +105,7 @@ const Login = () => {
       } else {
         setErrorText('등록되지 않은 사용자입니다.');
       }
-  
+
     } catch (error) {
       console.error('카카오 로그인 실패: ', error);
       setErrorText('로그인 중 문제가 발생했습니다.');
@@ -113,7 +113,7 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
+
 
   return (
     <View style={{ flex: 1 }}>
@@ -129,8 +129,16 @@ const Login = () => {
         />
       ) : (
         <View style={styles.container}>
+          {/* 이미지 추가 부분 */}
+          <Image
+            source={require('../assets/icon.png')} // 로컬 이미지
+            style={styles.logo}
+            resizeMode="contain"
+          />
+
           {isLoading && <ActivityIndicator size="large" color="#333f50" />}
           {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
+
           <TouchableOpacity style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>카카오 로그인</Text>
           </TouchableOpacity>
@@ -143,9 +151,10 @@ const Login = () => {
 const styles = StyleSheet.create({
   button: {
     backgroundColor: "#FBE301",
-    borderRadius: 10,
-    borderWidth: 1,
-    width: 250,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: '#3B1E1E',
+    width: 220,
     height: 50,
     marginTop: 10,
     justifyContent: 'center',
@@ -153,7 +162,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#3B1E1E',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     textAlign: 'center',
   },
   container: {
@@ -161,6 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    backgroundColor: '#fff',
   },
   errorText: {
     color: 'red',
@@ -172,6 +182,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  logo: {
+  width: 300,
+  height: 200,
+  }
+
 });
 
 export default Login;
