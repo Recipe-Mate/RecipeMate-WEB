@@ -8,10 +8,13 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
-  ActivityIndicator
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import apiService from '../src/services/api.service';
 import apiConfig from '../config/api.config';
+import { LinearGradient } from 'react-native-linear-gradient';
 
 // ValueOption enum - 서버 API와 동일한 값 사용
 const ValueOption = {
@@ -33,13 +36,16 @@ const RecipeSearch = ({ navigation }) => {
   const [ingredients, setIngredients] = useState([]); // 재료 목록 상태 관리
   const [newIngredient, setNewIngredient] = useState(''); // 새로운 재료 입력 상태 관리
   const [loading, setLoading] = useState(false); // 로딩 상태 관리
+  const [error, setError] = useState(''); // 에러 상태 관리
+  const [resultCount, setResultCount] = useState(15); // 기본값 15개
+  const [exactMatch, setExactMatch] = useState(false); // 완전히 일치 옵션 상태
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
   const toggleCondition = (key) => {
     setConditions((prev) => {
       const currentValue = prev[key];
       let nextValue;
-      
+
       // 값을 순환시킴: NONE -> HIGH -> LOW -> NONE
       if (currentValue === ValueOption.NONE) {
         nextValue = ValueOption.HIGH;
@@ -48,7 +54,7 @@ const RecipeSearch = ({ navigation }) => {
       } else {
         nextValue = ValueOption.NONE;
       }
-      
+
       return { ...prev, [key]: nextValue };
     });
   };
@@ -70,7 +76,7 @@ const RecipeSearch = ({ navigation }) => {
 
   // 값 옵션에 따른 UI 표시 텍스트
   const getOptionText = (option) => {
-    switch(option) {
+    switch (option) {
       case ValueOption.HIGH: return '높음';
       case ValueOption.LOW: return '낮음';
       case ValueOption.NONE: return '상관없음';
@@ -80,7 +86,7 @@ const RecipeSearch = ({ navigation }) => {
 
   // 값 옵션에 따른 UI 표시 색상
   const getOptionColor = (option) => {
-    switch(option) {
+    switch (option) {
       case ValueOption.HIGH: return '#e74c3c';
       case ValueOption.LOW: return '#3498db';
       case ValueOption.NONE: return '#888';
@@ -101,7 +107,10 @@ const RecipeSearch = ({ navigation }) => {
       // 검색 매개변수 구성
       const searchParams = {
         foodName: ingredients[0], // 첫 번째 재료를 주 재료로 사용
-        ...conditions
+        ...conditions,
+        startIndex: 1,
+        endIndex: resultCount,
+        exactMatch, // 완전히 일치 옵션 추가
       };
 
       console.log('[RecipeSearch] 검색 매개변수:', searchParams);
@@ -110,16 +119,20 @@ const RecipeSearch = ({ navigation }) => {
       const response = await apiService.searchRecipes(searchParams);
       console.log('[RecipeSearch] 검색 결과:', response);
 
-      // 검색 결과 화면으로 이동
-      navigation.navigate('RecipeResult', { 
-        recipes: response.data,
-        conditions: conditions,
-        ingredients: ingredients
-      });
+      // 검색 결과 화면으로 이동 (RecipeResult로)
+      if (response && response.success && Array.isArray(response.data)) {
+        navigation.navigate('RecipeResult', {
+          recipes: response.data,
+          conditions: conditions,
+          ingredients: ingredients
+        });
+      } else {
+        setError('검색 결과가 없습니다.');
+      }
     } catch (error) {
       console.error('[RecipeSearch] 검색 오류:', error);
       Alert.alert(
-        '검색 오류', 
+        '검색 오류',
         '레시피 검색 중 오류가 발생했습니다. 다시 시도해주세요.'
       );
     } finally {
@@ -129,117 +142,171 @@ const RecipeSearch = ({ navigation }) => {
 
   const conditionLabels = ['탄수화물', '단백질', '지방', '칼로리'];
   const conditionKeys = ['carbohydrate', 'protien', 'fat', 'calorie'];
-  
-  // 조건 아이템 렌더링 함수
-  const renderConditionItems = () => {
-    return conditionKeys.map((key, index) => (
-      <View key={index} style={styles.conditionItem}>
-        <Text style={styles.conditionText}>{conditionLabels[index]}</Text>
-        <TouchableOpacity 
-          style={[styles.optionButton, {backgroundColor: getOptionColor(conditions[key])}]} 
-          onPress={() => toggleCondition(key)}
-        >
-          <Text style={styles.optionButtonText}>{getOptionText(conditions[key])}</Text>
-        </TouchableOpacity>
-      </View>
-    ));
-  };
-
-  // 헤더 부분 렌더링 함수 (FlatList의 ListHeaderComponent로 사용)
-  const renderHeader = () => (
-    <>
-      {/* 화면 제목 */}
-      <Text style={styles.title}>레시피 검색</Text>
-
-      {/* 조건 섹션 */}
-      <View style={styles.conditions}>
-        <Text style={styles.sectionTitle}>영양성분 기준</Text>
-        {renderConditionItems()}
-      </View>
-      
-      <Text style={styles.sectionTitle}>재료 추가</Text>
-    </>
-  );
-
-  // 푸터 부분 렌더링 함수 (FlatList의 ListFooterComponent로 사용)
-  const renderFooter = () => (
-    <>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="재료를 입력하세요"
-          value={newIngredient}
-          onChangeText={setNewIngredient}
-          onSubmitEditing={addIngredient}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addIngredient}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 검색 버튼 */}
-      <TouchableOpacity 
-        style={[styles.searchButton, loading && styles.disabledButton]}
-        onPress={searchRecipes}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <Text style={styles.searchButtonText}>레시피 검색</Text>
-        )}
-      </TouchableOpacity>
-    </>
-  );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={ingredients}
-        renderItem={({ item, index }) => (
-          <View style={styles.ingredientItem}>
-            <Text style={styles.ingredientText}>{item}</Text>
-            <TouchableOpacity onPress={() => deleteIngredient(index)}>
-              <Text style={styles.deleteButton}>🗑️</Text>
+    <SafeAreaView style={styles.safeArea}>
+
+      <LinearGradient
+        colors={["#2D336B", "#A9B5DF"]}
+        style={styles.background}
+      />
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
+        <Text style={styles.title}>레시피 검색</Text>
+      </View>
+      <ScrollView>
+
+        {/* 조건 섹션 */}
+        <View style={styles.sectionBox}>
+          <Text style={styles.sectionTitle}>영양성분 기준</Text>
+          {conditionKeys.map((key, index) => (
+            <View key={index} style={styles.conditionItem}>
+              <Text style={styles.conditionText}>{conditionLabels[index]}</Text>
+              <TouchableOpacity
+                style={[styles.optionButton, { backgroundColor: getOptionColor(conditions[key]) }]}
+                onPress={() => toggleCondition(key)}
+              >
+                <Text style={styles.optionButtonText}>{getOptionText(conditions[key])}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+
+        {/* 재료 추가 섹션 */}
+        <View style={styles.sectionBox}>
+          <Text style={styles.sectionTitle}>재료 추가</Text>
+
+          {/* 완전히 일치 옵션 */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, marginBottom: 10 }}>
+            <Switch
+              value={exactMatch}
+              onValueChange={setExactMatch}
+              trackColor={{ false: '#d1d5db', true: '#2D336B' }}
+              thumbColor={exactMatch ? '#4FC3F7' : '#f4f3f4'}
+            />
+            <Text style={{
+              marginLeft: 10,
+              fontSize: 16,
+              color: exactMatch ? '#2D336B' : '#333',
+              fontWeight: exactMatch ? 'bold' : 'normal'
+            }}>
+              완전히 일치
+            </Text>
+          </View>
+
+          {/* 구분선 */}
+          <View style={styles.sectionDivider} />
+
+          {/* 결과 개수 선택 */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, marginRight: 10 }}>결과 개수</Text>
+            {[5, 15, 30].map((count) => (
+              <TouchableOpacity
+                key={count}
+                style={{
+                  backgroundColor: resultCount === count ? '#3498db' : '#eee',
+                  paddingVertical: 6,
+                  paddingHorizontal: 16,
+                  borderRadius: 16,
+                  marginRight: 8,
+                }}
+                onPress={() => setResultCount(count)}
+              >
+                <Text style={{ color: resultCount === count ? '#fff' : '#333', fontWeight: 'bold' }}>{count}개</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* 구분선 */}
+          <View style={styles.sectionDivider} />
+        </View>
+        <View style={styles.box}>
+          <FlatList
+            data={ingredients}
+            renderItem={({ item, index }) => (
+              <View style={styles.ingredientItem}>
+                <Text style={styles.ingredientText}>{item}</Text>
+                <TouchableOpacity onPress={() => deleteIngredient(index)}>
+                  <Text style={styles.deleteButton}>🗑️</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            keyExtractor={(item, index) => index.toString()}
+          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="재료를 입력하세요"
+              placeholderTextColor="#7886C7"
+              value={newIngredient}
+              onChangeText={setNewIngredient}
+            />
+            <TouchableOpacity style={styles.addButton} onPress={addIngredient}>
+              <Text style={styles.addButtonText}>+</Text>
             </TouchableOpacity>
           </View>
-        )}
-        keyExtractor={(item, index) => index.toString()}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>아직 추가된 재료가 없습니다</Text>
-          </View>
-        }
-        contentContainerStyle={styles.listContainer}
-      />
-    </View>
+
+          <TouchableOpacity
+            style={[styles.btnArea, loading && styles.disabledButton]}
+            onPress={() => {
+              if (!loading) searchRecipes();
+            }}
+            activeOpacity={0.7}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.searchButtonText}>레시피 검색</Text>
+            )}
+          </TouchableOpacity>
+
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
+
 };
 
-// 스타일 정의함
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  box: {
+    backgroundColor: '#EEF1FA',
+    padding: 15,
+    margin: 10,
+    borderRadius: 20,
+    marginBottom: 3,
+  },
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+  },
+  header: {
+    height: 40,
+    backgroundColor: '#ffffff',
   },
   title: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
-    marginBottom: 16,
+    color: '#fff',
+    paddingLeft: 15,
+  },
+  sectionBox: {
+    backgroundColor: '#EEF1FA',
+    padding: 15,
+    margin: 10,
+    borderRadius: 20,
+    marginBottom: 3,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#555',
-    marginBottom: 10,
-  },
-  conditions: {
-    marginBottom: 20,
+    color: '#2D336B',
   },
   conditionItem: {
     flexDirection: 'row',
@@ -247,84 +314,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#A9B5DF',
   },
   conditionText: {
-    fontSize: 16,
-    color: '#444',
-  },
-  ingredients: {
-    marginBottom: 20,
+    fontSize: 18,
+    color: '#2D336B',
   },
   ingredientItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#fff',
+    borderRadius: 10,
     padding: 12,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   ingredientText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  deleteButton: {
-    fontSize: 16,
-    color: '#e74c3c',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginRight: 10,
-  },
-  addButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  addButtonText: {
-    fontSize: 20,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  searchButton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 15,
-    marginTop: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  searchButtonText: {
     fontSize: 18,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  listContainer: {
-    paddingBottom: 20,
+    color: '#2D336B',
   },
   optionButton: {
     paddingVertical: 6,
@@ -335,8 +342,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
   },
-  disabledButton: {
-    backgroundColor: '#95a5a6',
+  deleteButton: {
+    fontSize: 16,
+    color: '#e74c3c',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#7886C7',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 18,
+    backgroundColor: '#fff',
+    marginRight: 10,
+  },
+  addButton: {
+    height: 40,
+    backgroundColor: '#2D336B',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  addButtonText: {
+    fontSize: 30,
+    color: '#fff',
+    fontWeight: 'bold',
+    lineHeight: 30,
+  },
+  btnArea: {
+    backgroundColor: '#2D336B',
+    height: 50,
+    borderRadius: 20,
+    margin: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchButton: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  searchButtonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

@@ -1,100 +1,156 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, TextInput } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { ScrollView } from 'react-native-gesture-handler';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons'; // 아이콘 사용 시
+import { useFocusEffect } from '@react-navigation/native';
+import apiService from '../src/services/api.service';
+import { useAuth } from '../src/context/AuthContext';
 
+const CookedRecipesScreen = ({ navigation }) => {
+  const [recipes, setRecipes] = React.useState([]);
+  const { user } = useAuth();
+  const [loading, setLoading] = React.useState(true);
 
-const CookedRecipes = () => {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={20} color="#777" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="검색"
-          placeholderTextColor="#7886C7"
-        />
-      </View>
-      <ScrollView>
-        <View style={styles.box}>
-          <View style={styles.recipe_view}>
-            <Image source={require('../assets/pancake.png')} style={styles.recipe_photo}></Image>
-            <Text style={styles.recipe_text}>팬케이크</Text>
-          </View>
-          <View style={styles.recipe_view}>
-            <Image source={require('../assets/kimchi_stew.png')} style={styles.recipe_photo}></Image>
-            <Text style={styles.recipe_text}>김치찌개</Text>
-          </View>
-          <View style={styles.recipe_view}>
-            <Image source={require('../assets/chicken_porridge.png')} style={styles.recipe_photo}></Image>
-            <Text style={styles.recipe_text}>닭죽</Text>
-          </View>
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          if (user && user.id) {
+            const result = await apiService.getRecentRecipes(user.id);
+            if (isActive && result && result.success && result.data) {
+              setRecipes(result.data);
+            } else if (isActive) {
+              setRecipes([]);
+              if (result && !result.success) {
+                console.warn('CookedRecipesScreen: Failed to fetch recent recipes - ', result.error);
+              }
+            }
+          } else if (isActive) {
+            setRecipes([]);
+          }
+        } catch (e) {
+          if (isActive) setRecipes([]);
+          console.error('CookedRecipesScreen: Error fetching recent recipes - ', e);
+        } finally {
+          if (isActive) setLoading(false);
+        }
+      };
+      fetchData();
+      return () => { isActive = false; };
+    }, [user])
+  );
+
+  const handleRecipePress = (recipe) => {
+    // recipe 객체는 이제 getRecentRecipes로부터 받은 상세 정보를 포함한 SavedRecipeInfo 객체입니다.
+    // SavedRecipeInfo의 기본 키인 id를 recipeId로 사용하고, 전체 객체를 recipeData로 전달합니다.
+    const recipeId = recipe.id; // SavedRecipeInfo의 PK (Long id)
+    
+    if (recipeId) {
+      console.log("[CookedRecipesScreen] Navigating to CookedRecipeDetailScreen with:", JSON.stringify(recipe, null, 2));
+      navigation.navigate('RecipeStack', { 
+        screen: 'CookedRecipeDetailScreen', // CookedRecipeDetailScreen으로 변경
+        params: { 
+          recipeId: recipeId, // SavedRecipeInfo의 PK
+          recipeData: recipe   // SavedRecipeInfo 전체 객체 전달
+        }
+      });
+    } else {
+      console.warn("CookedRecipesScreen: Recipe ID (SavedRecipeInfo.id) is missing", recipe);
+    }
+  };
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity style={styles.item} onPress={() => handleRecipePress(item)}>
+      {item.recipeImage ? (
+        <Image source={{ uri: item.recipeImage }} style={styles.recipeImage} />
+      ) : (
+        <View style={styles.recipeImagePlaceholder}>
+          <Icon name="restaurant-outline" size={24} color="#ccc" />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      )}
+      <View style={styles.recipeInfo}>
+        <Text style={styles.itemText}>{item.recipeName || '이름 없는 레시피'}</Text>
+        {item.lastUsedAt && (
+          <Text style={styles.dateText}>
+            최근 사용: {new Date(item.lastUsedAt).toLocaleDateString()} {new Date(item.lastUsedAt).toLocaleTimeString()}
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>최근 본 레시피</Text>
+      {loading ? (
+        <Text style={styles.emptyText}>불러오는 중...</Text>
+      ) : recipes.length === 0 ? (
+        <Text style={styles.emptyText}>최근 본 레시피가 없습니다.</Text>
+      ) : (
+        <FlatList
+          data={recipes}
+          keyExtractor={(item, index) => (item.id?.toString() || `cooked-${index}`)}
+          renderItem={renderItem}
+        />
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: '#7886C7',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    margin: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  icon: {
-    marginRight: 8,
-    color: '#7886C7'
-  },
-  input: {
+  container: {
     flex: 1,
-    height: 40,
-    fontSize: 18,
+    backgroundColor: '#fff',
+    padding: 20,
   },
-  safeArea: {
-    backgroundColor: "#EEF1FA",
-    flex: 1,
-  },
-  box: {
-    flex: 11,
-    backgroundColor: '#EEF1FA',
-  },
-  recipe_photo: {
-    width: 80,
-    height: 80,
-    borderWidth: 1,
-    borderRadius: 20,
-    borderColor: '#2D336B',
-  },
-  recipe_view: {
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    padding: 12,
-    marginLeft: 15,
-    marginRight: 15,
-    marginBottom: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  recipe_text: {
-    paddingLeft: 18,
-    fontSize: 23,
+  title: {
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#2D336B',
+    marginBottom: 18,
+    color: '#2c6e91',
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+  },
+  recipeImage: {
+    width: 60, // 이미지 크기 조정
+    height: 60, // 이미지 크기 조정
+    borderRadius: 8,
+    marginRight: 15,
+  },
+  recipeImagePlaceholder: {
+    width: 60, // 이미지 크기 조정
+    height: 60, // 이미지 크기 조정
+    borderRadius: 8,
+    marginRight: 15,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recipeInfo: {
+    flex: 1,
+  },
+  itemText: {
+    fontSize: 17,
+    fontWeight: '500', // 텍스트 굵기 추가
+    color: '#333',
+  },
+  dateText: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 4,
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 15,
+    textAlign: 'center',
+    marginTop: 40,
   },
 });
 
-export default CookedRecipes;
+export default CookedRecipesScreen;

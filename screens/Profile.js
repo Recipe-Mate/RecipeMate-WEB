@@ -127,7 +127,7 @@ const Profile = ({ navigation }) => {
             <View style={styles.divider}></View>
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center' }}
-              onPress={() => { navigation.navigate('CookedRecipes') }}>
+              onPress={() => { navigation.navigate('RecipeCompletedList') }}>
               <Text style={styles.title}>요리한 레시피</Text>
               <Icon name='chevron-forward-outline' size={26} color='#2D336B' />
             </TouchableOpacity>
@@ -153,8 +153,6 @@ const Profile = ({ navigation }) => {
               onPress={() => setModalVisible(true)}>
               <Text style={styles.text1}>정보 수정하기</Text>
             </TouchableOpacity>
-            <Text style={styles.text1}>계정 로그아웃</Text>
-            <Text style={styles.text2}>탈퇴하기</Text>
           </View>
         </View>
       </SafeAreaView>

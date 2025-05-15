@@ -25,12 +25,11 @@ import RecipeSearch from './screens/RecipeSearch';
 import RecipeDetail from './screens/RecipeDetail';
 import RecipeResult from './screens/RecipeResult';
 import Login from './screens/Login';
-import SignUp from './screens/SignUp';
 import AddFood from './screens/AddFood'; // 추가된 화면
 import FoodList from './screens/FoodList'; // 추가된 화면
 import AddIngredient from './screens/AddIngredient';
 import Badge from './screens/Badge';
-import CookedRecipes from './screens/CookedRecipes';
+import RecipeCompletedList from './screens/RecipeCompletedList';
 
 
 // Context API 추가
@@ -102,37 +101,6 @@ const MainStack = () => (
   </Stack.Navigator>
 );
 
-// 홈 스택 네비게이터 추가 - 식재료 관리 화면을 포함
-const HomeStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen
-      name="MainStack"
-      component={MainStack}
-      options={{
-        title: '홈',
-        headerStyle: {
-          backgroundColor: '#ffffff',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          color: '#333333',
-        },
-        headerShown: false
-      }}
-    />
-    {/* <Stack.Screen
-      name="AddFood"
-      component={AddFood}
-      options={{ title: '식재료 추가' }}
-    />
-    <Stack.Screen
-      name="FoodList"
-      component={FoodList}
-      options={{ title: '내 식재료' }}
-    /> */}
-  </Stack.Navigator>
-);
-
 // 레시피 스택 네비게이터
 const RecipeStack = () => (
   <Stack.Navigator>
@@ -159,9 +127,6 @@ const AuthStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     {/* Login 화면 등록 */}
     <Stack.Screen name="Login" component={Login} />
-    {/* SignUp 화면 등록 */}
-    <Stack.Screen name="SignUp" component={SignUp} />
-    {/* Register 화면이 필요한 경우 추가 */}
   </Stack.Navigator>
 );
 
@@ -200,8 +165,8 @@ const AppContent = ({ initialError }) => {
         }}
       />
       <Stack.Screen
-        name="CookedRecipes"
-        component={CookedRecipes}
+        name="RecipeCompletedList"
+        component={RecipeCompletedList}
         options={{
           headerBackground: () => (
             <LinearGradient
@@ -277,11 +242,6 @@ const AppContent = ({ initialError }) => {
             name="ProfileStack"
             component={ProfileStack}
             options={{ title: '프로필', headerShown: false }}
-          />
-          <Tab.Screen
-            name="ServerStatus"
-            component={ServerStatusScreen}
-            options={{ title: '서버 상태' }}
           />
         </Tab.Navigator>
       ) : (

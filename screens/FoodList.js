@@ -71,41 +71,50 @@ const FoodList = ({ navigation, route }) => {
     };
   }, [navigation, route]);
 
+  // 식재료명에서 단위/수량/괄호 등 제거 (예: "오렌지 100g(1/2개)" → "오렌지")
+  const extractPureName = (name) => name.replace(/\s*\d+[a-zA-Z가-힣()\/\.]*|\([^)]*\)/g, '').trim();
+
   const loadFoodItems = async () => {
-    const userId = user?.id || 3; // 실제 로그인 사용자 ID 또는 기본값
-    
     try {
       setLoading(true);
-      console.log('[FoodList] 식재료 목록 로드 시작, userId:', userId);
+      // userId는 더 이상 필요 없음, JWT 기반 인증만 사용
+      console.log('[FoodList] 식재료 목록 로드 시작 (JWT 기반 인증)');
       
-      // getIngredients 대신 직접 식재료 목록을 불러오는 API 호출
-      const url = `${apiConfig.getApiUrl()}/food/ownlist?userId=${userId}`;
-      console.log(`[FoodList] 요청 URL: ${url}`);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`서버 응답 오류 (${response.status})`);
-      }
-      
-      const data = await response.json();
+      // apiService.getIngredients() 사용 권장 (공통화)
+      // const url = `${apiConfig.getApiUrl()}/food/ownlist`;
+      // const response = await fetch(url, { ... });
+      const data = await apiService.getIngredients();
       console.log('[FoodList] 서버 응답 데이터:', data);
-      
-      if (!data || !Array.isArray(data)) {
-        throw new Error('유효하지 않은 응답 데이터');
+
+      // 서버 응답이 foodList 필드로 객체 배열을 반환하도록 파싱
+      let foodArray = [];
+      if (Array.isArray(data.foodList)) {
+        foodArray = data.foodList;
+      } else if (Array.isArray(data.ownFoodNameList)) {
+        // (이전 호환) 문자열 배열일 경우 임시 객체로 변환
+        foodArray = data.ownFoodNameList.map((name, idx) => ({
+          id: idx,
+          foodName: name,
+          quantity: '',
+        }));
+      } else if (Array.isArray(data)) {
+        foodArray = data;
+      } else if (data && typeof data === 'object') {
+        // 혹시 모를 다른 배열 필드가 있을 경우
+        const arrField = Object.values(data).find(v => Array.isArray(v));
+        if (arrField) foodArray = arrField;
+      }
+
+      if (!foodArray || !Array.isArray(foodArray)) {
+        foodArray = [];
       }
 
       // 서버에서 반환된 실제 ID를 사용하여 각 항목 정규화
-      const normalizedData = data.map(item => ({
+      const normalizedData = foodArray.map(item => ({
         id: item.id, // 서버에서 반환한 실제 ID 사용
-        name: item.foodName || '이름 없음',
+        name: extractPureName(item.foodName || '이름 없음'), // 순수 식재료명만 사용
         quantity: item.quantity || '',
+        unit: item.unit || '',
         expiryDate: item.expiryDate || '',
         category: item.category || '기타'
       }));
@@ -170,15 +179,18 @@ const FoodList = ({ navigation, route }) => {
     <View style={styles.foodItem}>
       <View style={styles.foodInfo}>
         <Text style={styles.foodName}>{item.name}</Text>
-        {item.quantity && (
-          <Text style={styles.foodQuantity}>{item.quantity}</Text>
+        {(item.quantity || item.unit) && (
+          <Text style={styles.foodQuantity}>
+            {item.quantity}
+            {item.unit ? ` ${item.unit}` : ''}
+          </Text>
         )}
       </View>
       <TouchableOpacity 
         style={[styles.deleteButton, loading && styles.disabledButton]}
         onPress={() => !loading && handleDeleteFood(item.id)}
         disabled={loading}
-        activeOpacity={0.7} // 터치 피드백 개선
+        activeOpacity={0.7}
       >
         <View style={styles.deleteButtonInner}>
           <Icon name="delete" size={24} color={loading ? "#CCCCCC" : "#FF5252"} />
