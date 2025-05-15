@@ -35,29 +35,36 @@ const Receipt = ({ navigation }) => {
   const [displayedSize, setDisplayedSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const requestCameraPermission = async () => {
-      if (Platform.OS === 'android') {
-        try {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.CAMERA,
-            {
-              title: 'Camera Permission',
-              message: 'This app requires camera access to scan receipts.',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            }
-          );
-          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('Camera permission denied');
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'This app requires camera access to scan receipts.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
           }
-        } catch (err) {
-          console.warn(err);
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          chooseImage(); // 권한 허용되면 이미지 선택
+        } else {
+          console.log('Camera permission denied');
         }
+      } catch (err) {
+        console.warn(err);
       }
-    };
-    requestCameraPermission();
-  }, []);
+    } else {
+      // iOS라면 권한 요청 없이 바로 실행 가능 (필요에 따라 체크)
+      chooseImage();
+    }
+  };
+
+  requestCameraPermission();
+}, []);
+
 
   const preprocessName = (name) => {
     let raw = name.trim();
@@ -179,13 +186,7 @@ const Receipt = ({ navigation }) => {
     });
   };
 
-  const takePhoto = () => {
-    launchCamera({ mediaType: 'photo' }, (response) => {
-      if (response.assets && response.assets.length > 0) {
-        processImage(response.assets[0].uri);
-      }
-    });
-  };
+
 
   const reset = () => {
     setImageUri(null);
@@ -198,52 +199,11 @@ const Receipt = ({ navigation }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      {!imageUri ? (
-        <View style={{ flex: 1 }}>
-          <LinearGradient
-            colors={["#2D336B", "#A9B5DF"]}
-            style={styles.background}
-          />
-          <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
-            <Text style={styles.title}>영수증 스캔</Text>
-          </View>
-          <View style={styles.textBox}>
-            <Text style={styles.text}>식재료 등록이 귀찮을 때</Text>
-            <Text style={styles.text}>영수증을 카메라로 촬영하거나</Text>
-            <Text style={styles.text}>이미지를 업로드하여 </Text>
-            <Text style={styles.text}>식재료 등록을 간편하게 해보세요!</Text>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('ReceiptTake')}>
-            <View style={styles.sectionBox}>
-              <Text style={styles.Icon}>📷</Text>
-              <View>
-                <Text style={styles.ButtonText}>카메라로 촬영하기</Text>
-                <Text style={styles.descText}>영수증을 촬영해보세요!</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('ReceiptChoose')}>
-            <View style={styles.sectionBox}>
-              <Text style={styles.Icon}>🖼</Text>
-              <View>
-                <Text style={styles.ButtonText}>이미지 업로드</Text>
-                <Text style={styles.descText}>갤러리의 이미지를 등록해보세요!</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
           <LinearGradient
             colors={["#A9B5DF", "#EEF1FA"]}
             style={styles.background}
           />
-          <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
-            <TouchableOpacity onPress={reset} style={{marginLeft: 10, flexDirection: 'row'}}>
-              <Icon name='chevron-back-outline' size={30} color='#2D336B' style={{paddingTop: 2,}} />
-              <Text style={styles.title2}>영수증 스캔 결과</Text>
-            </TouchableOpacity>
-          </View>
           <ScrollView>
             <Image
               source={{ uri: imageUri }}
@@ -274,8 +234,6 @@ const Receipt = ({ navigation }) => {
             ))}
           </ScrollView>
         </View>
-
-      )}
     </View>
   );
 };

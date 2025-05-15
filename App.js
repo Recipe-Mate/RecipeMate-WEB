@@ -25,11 +25,11 @@ import RecipeSearch from './screens/RecipeSearch';
 import RecipeDetail from './screens/RecipeDetail';
 import RecipeResult from './screens/RecipeResult';
 import Login from './screens/Login';
-import AddFood from './screens/AddFood'; // 추가된 화면
-import FoodList from './screens/FoodList'; // 추가된 화면
 import AddIngredient from './screens/AddIngredient';
 import Badge from './screens/Badge';
 import RecipeCompletedList from './screens/RecipeCompletedList';
+import ReceiptTake from './screens/ReceiptTake';
+import ReceiptChoose from './screens/ReceiptChoose';
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -46,9 +46,7 @@ const ServerStatusScreen = () => {
       <Text style={styles.welcomeText}>
         RecipeMate에 오신 것을 환영합니다!
       </Text>
-
       <ServerStatusCheck />
-
       <Text style={styles.instruction}>
         이 앱에서는 식재료를 관리하고 레시피를 추천받을 수 있습니다.
       </Text>
@@ -129,6 +127,21 @@ const ReceiptStack = () => (
       options={{ title: '영수증 스캔', headerShown: false }}
     />
     <Stack.Screen
+      name="ReceiptTake"
+      component={ReceiptTake}
+      options={{ title: '영수증 스캔 결과' }}
+    />
+    <Stack.Screen
+      name="ReceiptChoose"
+      component={ReceiptChoose}
+      options={{ title: '영수증 스캔 결과',         
+        headerStyle: {
+          backgroundColor: '#A9B5DF',
+          height: 60,
+        }, 
+      }}
+    />
+    <Stack.Screen
       name="AddIngredient"
       component={AddIngredient}
       options={{
@@ -150,12 +163,6 @@ const ReceiptStack = () => (
         headerBackTitle: '뒤로',
       }}
     />
-    <Stack.Screen
-      name="Main"
-      component={Main}
-      options={{ headerShown: false }}
-    />
-
   </Stack.Navigator>
 );
 

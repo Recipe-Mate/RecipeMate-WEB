@@ -92,11 +92,8 @@ const Main = ({ navigation }) => {
             <Icon name='add' size={40} color='#fff' />
           </TouchableOpacity>
           <TouchableOpacity style={styles.badge_button} onPress={toggleEditMode}>
-            {isEditMode ? (
-              <Text style={styles.doneText}>완료</Text>
-            ) : (
-              <Icon name='edit' size={30} color='#fff' />
-            )}          </TouchableOpacity>
+            {isEditMode ? '완료' : <Icon name='edit' size={30} color='#fff' />}
+          </TouchableOpacity>
         </View>
       </View>
 
