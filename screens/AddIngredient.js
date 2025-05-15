@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image, Alert, Platform, Image as RNImage } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -7,15 +7,12 @@ import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
 
-
-export default function AddIngredient({ navigation }) {
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    const [selectedUnit, setSelectedUnit] = useState(null);
+export default function AddIngredient({ route, navigation }) {
+    const { foodName, amount, unit } = route.params || {};
     const [image, setImage] = useState(null);
-    const [foodName, setFoodName] = useState('');
-    const [amount, setAmount] = useState('');
-    const [unit, setUnit] = useState('');
-
+    const [foodNameState, setFoodName] = useState(foodName || '');
+    const [amountState, setAmount] = useState(amount ? String(amount) : '');
+    const [unitState, setUnit] = useState(unit || '');
 
     const handleUploadPhoto = async () => {
         try {
@@ -50,90 +47,88 @@ export default function AddIngredient({ navigation }) {
 
     const addFood = async (foodList, imageFiles) => {
         try {
-          const formData = new FormData();
-          formData.append('foodDataList', {
-            string: JSON.stringify({ foodList }),
-            name: 'foodDataList.json',
-            type: 'application/json',
-          });
-      
-          if (Array.isArray(imageFiles)) {
-            imageFiles.forEach((image, index) => {
-              formData.append('images', {
-                uri: Platform.OS === 'android' ? image.uri : image.uri.replace('file://', ''),
-                type: image.type || 'image/jpeg',
-                name: image.fileName || `image${index}.jpg`,
-              });
+            const formData = new FormData();
+            formData.append('foodDataList', {
+                string: JSON.stringify({ foodList }),
+                name: 'foodDataList.json',
+                type: 'application/json',
             });
-          } else if (imageFiles) {
-            formData.append('images', {
-              uri: Platform.OS === 'android' ? imageFiles.uri : imageFiles.uri.replace('file://', ''),
-              type: imageFiles.type || 'image/jpeg',
-              name: imageFiles.fileName || 'image.jpg',
+
+            if (Array.isArray(imageFiles)) {
+                imageFiles.forEach((image, index) => {
+                    formData.append('images', {
+                        uri: Platform.OS === 'android' ? image.uri : image.uri.replace('file://', ''),
+                        type: image.type || 'image/jpeg',
+                        name: image.fileName || `image${index}.jpg`,
+                    });
+                });
+            } else if (imageFiles) {
+                formData.append('images', {
+                    uri: Platform.OS === 'android' ? imageFiles.uri : imageFiles.uri.replace('file://', ''),
+                    type: imageFiles.type || 'image/jpeg',
+                    name: imageFiles.fileName || 'image.jpg',
+                });
+            }
+
+            const accessToken = await AsyncStorage.getItem('accessToken');
+
+            const response = await fetch(`${SERVER_URL}/food`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+                body: formData,
             });
-          }
-      
-          const accessToken = await AsyncStorage.getItem('accessToken');
-      
-          const response = await fetch(`${SERVER_URL}/food`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              // 'Content-Type' 생략 중요!
-            },
-            body: formData,
-          });
-      
-          // 응답 상태가 200(OK)일 경우에만 JSON 파싱
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('서버 오류:', response.status, errorText);
-            throw new Error('업로드 실패');
-          }
-      
-          // 응답이 비어있지 않다면 JSON으로 파싱
-          const responseData = await response.text();  // 응답이 비어있을 수도 있으므로 text로 받음
-          if (responseData) {
-            const parsedData = JSON.parse(responseData);  // JSON 파싱
-            console.log('업로드 성공:', parsedData);
-          } else {
-            console.log('응답 본문이 비어있습니다.');
-          }
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('서버 오류:', response.status, errorText);
+                throw new Error('업로드 실패');
+            }
+
+            const responseData = await response.text();
+            if (responseData) {
+                const parsedData = JSON.parse(responseData);
+                console.log('업로드 성공:', parsedData);
+            } else {
+                console.log('응답 본문이 비어있습니다.');
+            }
         } catch (error) {
-          console.error('에러 발생:', error.message);
+            console.error('에러 발생:', error.message);
         }
-      };
-      
-      
-    
+    };
 
     const handleSave = () => {
-        if (!foodName || !amount || !unit) {
+        if (!foodNameState || !amountState || !unitState) {
             Alert.alert('알림', '모든 필드를 입력하세요.');
             return;
         }
 
         const foodList = [
             {
-                foodName: foodName,
-                amount: amount,
-                unit: unit
+                foodName: foodNameState,
+                amount: amountState,
+                unit: unitState
             }
         ];
 
-        console.log('foodName: ', foodName);
-        console.log('amount: ', amount);
-        console.log('unit: ', unit);
+        console.log('foodName: ', foodNameState);
+        console.log('amount: ', amountState);
+        console.log('unit: ', unitState);
         const imageData = image
-        ? { uri: image, type: 'image/jpeg', name: 'uploaded.jpg' }
-        : { uri: defaultImage.uri, type: 'image/jpeg', name: 'default.jpg' };
+            ? { uri: image, type: 'image/jpeg', name: 'uploaded.jpg' }
+            : { uri: defaultImage.uri, type: 'image/jpeg', name: 'default.jpg' };
         // 이미지가 있으면 전달하고 없으면 null로 전달
         addFood(foodList, imageData);
 
         navigation.navigate('Main');
     };
 
-
+    useEffect(() => {
+        if (unit) {
+            setUnit(unit);
+        }
+    }, [unit]);
 
 
     return (
@@ -164,7 +159,7 @@ export default function AddIngredient({ navigation }) {
                             style={styles.type_input}
                             placeholder='재료를 입력하세요'
                             placeholderTextColor="#aaa"
-                            value={foodName}
+                            value={foodNameState}
                             onChangeText={setFoodName}
                         />
                     </View>
@@ -180,7 +175,7 @@ export default function AddIngredient({ navigation }) {
                             style={styles.type_input}
                             placeholder="숫자를 입력하세요"
                             placeholderTextColor="#aaa"
-                            value={amount}
+                            value={amountState}
                             onChangeText={setAmount}
                             keyboardType="phone-pad"
                         />
@@ -193,7 +188,7 @@ export default function AddIngredient({ navigation }) {
                         <Text style={styles.text1}>단위</Text>
                     </View>
                     <View style={styles.type_input_view}>
-                        <UnitPicker onSelect={setUnit} />
+                        <UnitPicker onSelect={setUnit} selected={unitState} />
                     </View>
                 </View>
 

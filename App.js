@@ -31,7 +31,6 @@ import AddIngredient from './screens/AddIngredient';
 import Badge from './screens/Badge';
 import RecipeCompletedList from './screens/RecipeCompletedList';
 
-
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
@@ -122,6 +121,44 @@ const RecipeStack = () => (
   </Stack.Navigator>
 );
 
+const ReceiptStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen
+      name="Receipt"
+      component={Receipt}
+      options={{ title: '영수증 스캔', headerShown: false }}
+    />
+    <Stack.Screen
+      name="AddIngredient"
+      component={AddIngredient}
+      options={{
+        headerStyle: {
+          backgroundColor: '#2D336B',
+          height: 60,
+        },
+        headerTintColor: '#ffffff',
+        headerBackTitleStyle: {
+          fontSize: 16,
+        },
+        title: '식재료 추가하기',
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "600",
+        },
+        headerShown: true,
+        headerShadowVisible: false,
+        headerBackTitle: '뒤로',
+      }}
+    />
+    <Stack.Screen
+      name="Main"
+      component={Main}
+      options={{ headerShown: false }}
+    />
+
+  </Stack.Navigator>
+);
+
 // 인증되지 않은 사용자를 위한 스택
 const AuthStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -182,13 +219,9 @@ const AppContent = ({ initialError }) => {
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "600",
-            paddingBottom: 10,
           },
           headerBackTitle: '뒤로',
           headerShown: true,
-          headerLeftContainerStyle: {
-            paddingBottom: 10,
-          },
         }}
       />
     </Stack.Navigator>
@@ -207,7 +240,7 @@ const AppContent = ({ initialError }) => {
                 iconName = focused ? 'home' : 'home-outline';
               } else if (route.name === 'RecipeStack') {
                 iconName = focused ? 'restaurant' : 'restaurant-outline';
-              } else if (route.name === 'Receipt') {
+              } else if (route.name === 'ReceiptStack') {
                 iconName = focused ? 'receipt' : 'receipt-outline';
               } else if (route.name === 'ProfileStack') {
                 iconName = focused ? 'person' : 'person-outline';
@@ -234,9 +267,9 @@ const AppContent = ({ initialError }) => {
             options={{ title: '레시피', headerShown: false }}
           />
           <Tab.Screen
-            name="Receipt"
-            component={Receipt}
-            options={{ title: '영수증 스캔' }}
+            name="ReceiptStack"
+            component={ReceiptStack}
+            options={{ title: '영수증 스캔', headerShown: false }}
           />
           <Tab.Screen
             name="ProfileStack"

@@ -13,18 +13,19 @@ import {
 } from 'react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import TextRecognition, { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
+import { LinearGradient } from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
 const excludedBrands = [
-'해태제과','오리온','크라운제과','농심','롯데제과','삼양식품','빙그레','포카칩','롯데푸드',
-'오뚜기','팔도','CJ제일제당','해찬들','대상','청정원','샘표식품','풀무원','양반','동원F&B',
-'사조대림','백설','샘표','이금기','해표','비비고','롯데칠성음료','광동제약','웅진식품',
-'동아오츠카','해태htb','코카콜라음료','델몬트','남양유업','매일유업','서울우유','푸르밀',
-'종가집','동원','롯데','해태','동원','국산'
+  '해태제과', '오리온', '크라운제과', '농심', '롯데제과', '삼양식품', '빙그레', '포카칩', '롯데푸드',
+  '오뚜기', '팔도', 'CJ제일제당', '해찬들', '대상', '청정원', '샘표식품', '풀무원', '양반', '동원F&B',
+  '사조대림', '백설', '샘표', '이금기', '해표', '비비고', '롯데칠성음료', '광동제약', '웅진식품',
+  '동아오츠카', '해태htb', '코카콜라음료', '델몬트', '남양유업', '매일유업', '서울우유', '푸르밀',
+  '종가집', '동원', '롯데', '해태', '동원', '국산'
 ].map((brand) => brand.toLowerCase());
 
-const Receipt = () => {
+const Receipt = ({ navigation }) => {
   const [imageUri, setImageUri] = useState(null);
   const [groupedLines, setGroupedLines] = useState([]);
   const [normalizedLines, setNormalizedLines] = useState([]);
@@ -197,46 +198,134 @@ const Receipt = () => {
   return (
     <View style={{ flex: 1 }}>
       {!imageUri ? (
-        <View style={styles.centered}>
-          <Button title="📷 카메라로 촬영하기" onPress={takePhoto} />
-          <View style={{ marginVertical: 10 }} />
-          <Button title="🖼 이미지 선택하기" onPress={chooseImage} />
+        <View style={{ flex: 1 }}>
+          <LinearGradient
+            colors={["#2D336B", "#A9B5DF"]}
+            style={styles.background}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
+            <Text style={styles.title}>영수증 스캔</Text>
+          </View>
+          <View style={styles.textBox}>
+            <Text style={styles.text}>식재료 등록이 귀찮을 때!</Text>
+            <Text style={styles.text}>영수증을 카메라로 촬영하거나</Text>
+            <Text style={styles.text}>이미지를 업로드하여 </Text>
+            <Text style={styles.text}>식재료 등록을 간편하게 해보세요</Text>
+          </View>
+          <View style={styles.sectionBox}>
+            <TouchableOpacity onPress={takePhoto}>
+              <Text style={styles.ButtonText}>📷 카메라로 촬영하기</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionBox}>
+            <TouchableOpacity onPress={chooseImage}>
+              <Text style={styles.ButtonText}>🖼 이미지 업로드</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
-        <ScrollView style={{ padding: 10 }}>
-          <Image
-            source={{ uri: imageUri }}
-            style={{ width: width, height: 300, resizeMode: 'contain' }}
+        <View style={{ flex: 1 }}>
+          <LinearGradient
+            colors={["#A9B5DF", "#EEF1FA"]}
+            style={styles.background}
           />
+          <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
+            <Text style={styles.title2}>영수증 스캔 결과</Text>
+          </View>
+          <ScrollView>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.imgStyle}
+            />
+            {jsonData.map((item, idx) => (
+              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, marginVertical: 5 }}>
+                <Text style={{ flex: 1 }}>
+                  🔸 {item.name} - {item.weight * item.count} - {item.unit}
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#2D336B',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 6,
+                  }}
+                  onPress={() =>
+                    navigation.navigate('AddIngredient', {
+                      foodName: item.name,
+                      amount: String(item.weight * item.count),
+                      unit: item.unit,
+                    })
+                  }       >
+                  <Text style={{ color: 'white' }}>등록</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
 
-          <Text style={styles.sectionTitle}>📄 영수증 스캔 결과</Text>
+            <TouchableOpacity onPress={reset} style={{ marginTop: 20 }}>
+              <Text style={{ color: 'blue', fontSize: 16 }}>⬅ 뒤로가기</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
 
-          {jsonData.map((item, idx) => (
-            <Text key={idx} style={{ marginLeft: 10 }}>
-              🔸 {item.name} - {item.weight} - {item.unit} - {item.count}
-            </Text>
-          ))}
-
-          <TouchableOpacity onPress={reset} style={{ marginTop: 20 }}>
-            <Text style={{ color: 'blue', fontSize: 16 }}>⬅ 뒤로가기</Text>
-          </TouchableOpacity>
-        </ScrollView>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  title: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    color: '#fff',
+    paddingLeft: 15,
+  },
+  title2: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    color: '#2D336B',
+    paddingLeft: 15,
+  },
+  imgStyle: {
+    height: 300,
+    resizeMode: 'contain',
+    marginVertical: 20,
+  },
+  text: {
+    fontSize: 18,
+    marginVertical: 5,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginVertical: 10,
   },
+  textBox: {
+    backgroundColor: '#FFFFFF',
+    padding: 15,
+    margin: 10,
+    borderRadius: 20,
+    marginBottom: 3,
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  sectionBox: {
+    backgroundColor: '#EEF1FA',
+    padding: 15,
+    margin: 10,
+    borderRadius: 20,
+    marginBottom: 3,
+    alignItems: 'center',
+    height: 120,
+    justifyContent: 'center',
+  },
+  ButtonText: {
+    fontSize: 25,
+    fontWeight: '600',
+    color: '#2D336B'
+  }
 });
 
 export default Receipt;
