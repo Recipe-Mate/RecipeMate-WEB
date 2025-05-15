@@ -10,7 +10,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Main = ({ navigation }) => {
   const [foodNameList, setFoodNameList] = useState([]);
-  const [selectedRelationship, setSelectedRelationship] = useState("전체");
   const [isEditMode, setIsEditMode] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -86,7 +85,6 @@ const Main = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={["#2D336B", "#A9B5DF"]} style={styles.background} />
-
       <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
         <Text style={styles.title}>식재료 목록</Text>
         <View style={styles.icon}>
@@ -94,8 +92,11 @@ const Main = ({ navigation }) => {
             <Icon name='add' size={40} color='#fff' />
           </TouchableOpacity>
           <TouchableOpacity style={styles.badge_button} onPress={toggleEditMode}>
-            <Icon name='edit' size={30} color='#fff' />
-          </TouchableOpacity>
+            {isEditMode ? (
+              <Text style={styles.doneText}>완료</Text>
+            ) : (
+              <Icon name='edit' size={30} color='#fff' />
+            )}          </TouchableOpacity>
         </View>
       </View>
 
@@ -175,6 +176,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     flex: 1,
     paddingRight: 20,
+  },
+  doneText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: 'bold',
   },
   badge_button: {
     marginLeft: 5,

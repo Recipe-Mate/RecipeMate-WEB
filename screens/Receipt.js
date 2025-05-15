@@ -14,6 +14,7 @@ import {
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import TextRecognition, { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
 import { LinearGradient } from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
 
@@ -207,21 +208,29 @@ const Receipt = ({ navigation }) => {
             <Text style={styles.title}>영수증 스캔</Text>
           </View>
           <View style={styles.textBox}>
-            <Text style={styles.text}>식재료 등록이 귀찮을 때!</Text>
+            <Text style={styles.text}>식재료 등록이 귀찮을 때</Text>
             <Text style={styles.text}>영수증을 카메라로 촬영하거나</Text>
             <Text style={styles.text}>이미지를 업로드하여 </Text>
-            <Text style={styles.text}>식재료 등록을 간편하게 해보세요</Text>
+            <Text style={styles.text}>식재료 등록을 간편하게 해보세요!</Text>
           </View>
-          <View style={styles.sectionBox}>
-            <TouchableOpacity onPress={takePhoto}>
-              <Text style={styles.ButtonText}>📷 카메라로 촬영하기</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.sectionBox}>
-            <TouchableOpacity onPress={chooseImage}>
-              <Text style={styles.ButtonText}>🖼 이미지 업로드</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={takePhoto}>
+            <View style={styles.sectionBox}>
+              <Text style={styles.Icon}>📷</Text>
+              <View>
+                <Text style={styles.ButtonText}>카메라로 촬영하기</Text>
+                <Text style={styles.descText}>영수증을 촬영해보세요!</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={chooseImage}>
+            <View style={styles.sectionBox}>
+              <Text style={styles.Icon}>🖼</Text>
+              <View>
+                <Text style={styles.ButtonText}>이미지 업로드</Text>
+                <Text style={styles.descText}>갤러리의 이미지를 등록해보세요!</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
       ) : (
         <View style={{ flex: 1 }}>
@@ -230,7 +239,10 @@ const Receipt = ({ navigation }) => {
             style={styles.background}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
-            <Text style={styles.title2}>영수증 스캔 결과</Text>
+            <TouchableOpacity onPress={reset} style={{marginLeft: 10, flexDirection: 'row'}}>
+              <Icon name='chevron-back-outline' size={30} color='#2D336B' style={{paddingTop: 2,}} />
+              <Text style={styles.title2}>영수증 스캔 결과</Text>
+            </TouchableOpacity>
           </View>
           <ScrollView>
             <Image
@@ -260,10 +272,6 @@ const Receipt = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
             ))}
-
-            <TouchableOpacity onPress={reset} style={{ marginTop: 20 }}>
-              <Text style={{ color: 'blue', fontSize: 16 }}>⬅ 뒤로가기</Text>
-            </TouchableOpacity>
           </ScrollView>
         </View>
 
@@ -283,7 +291,6 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: 'bold',
     color: '#2D336B',
-    paddingLeft: 15,
   },
   imgStyle: {
     height: 300,
@@ -319,12 +326,24 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     alignItems: 'center',
     height: 120,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+    paddingLeft: 20,
   },
   ButtonText: {
     fontSize: 25,
     fontWeight: '600',
-    color: '#2D336B'
+    color: '#2D336B',
+    paddingLeft: 15,
+  },
+  descText: {
+    fontSize: 16,
+    color: '#2D336B',
+    paddingLeft: 15,
+    paddingTop: 3,
+  },
+  Icon: {
+    fontSize: 55,
   }
 });
 

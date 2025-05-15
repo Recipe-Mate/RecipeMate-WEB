@@ -261,7 +261,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     type_input: {
-        marginVertical: 7,
         fontSize: 16,
     },
     divider: {

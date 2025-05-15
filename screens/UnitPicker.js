@@ -13,7 +13,6 @@ const UnitPicker = ({ onSelect, selected }) => {
     { label: "봉", value: "봉" },
     { label: "ml", value: "ml" },
     { label: "L", value: "L" },
-    { label: "없음", value: "없음" },
   ]);
 
   // selected prop이 주어지면 초기값 설정
