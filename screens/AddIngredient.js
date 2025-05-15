@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Image, Alert, Platform, Image as RNImage } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary } from 'react-native-image-picker';
 import UnitPicker from "./UnitPicker";
 import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
+
 
 export default function AddIngredient({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -123,9 +124,11 @@ export default function AddIngredient({ navigation }) {
         console.log('foodName: ', foodName);
         console.log('amount: ', amount);
         console.log('unit: ', unit);
-
+        const imageData = image
+        ? { uri: image, type: 'image/jpeg', name: 'uploaded.jpg' }
+        : { uri: defaultImage.uri, type: 'image/jpeg', name: 'default.jpg' };
         // 이미지가 있으면 전달하고 없으면 null로 전달
-        addFood(foodList, image ? { uri: image, type: 'image/jpeg', name: 'uploaded.jpg' } : null);
+        addFood(foodList, imageData);
 
         navigation.navigate('Main');
     };
