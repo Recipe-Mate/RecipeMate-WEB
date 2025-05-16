@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   Image,
   Dimensions,
@@ -11,7 +10,8 @@ import {
   PermissionsAndroid,
   Platform,
   Modal,
-  TextInput
+  TextInput,
+  Alert
 } from 'react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import TextRecognition, { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
@@ -20,9 +20,10 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
 import { Image as RNImage } from 'react-native';
-const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
+import UnitPicker from "./UnitPicker";
 
 const { width } = Dimensions.get('window');
+const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
 
 const excludedBrands = [
   '해태제과', '오리온', '크라운제과', '농심', '롯데제과', '삼양식품', '빙그레', '포카칩', '롯데푸드',
@@ -45,14 +46,13 @@ const Receipt = ({ navigation }) => {
   const [amount, setAmount] = useState('');
   const [unit, setUnit] = useState('');
 
-
   const openModalWithItem = (item) => {
+    setSelectedItem(item);
     setFoodName(item.name);
     setAmount(String(item.weight * item.count));
     setUnit(item.unit);
     setModalVisible(true);
   };
-
 
   const sendIngredientsToServer = async (foodName, amount, unit) => {
     if (!foodName || !amount || !unit) return;
@@ -72,8 +72,6 @@ const Receipt = ({ navigation }) => {
         type: 'application/json',
       });
 
-      const defaultImage = Image.resolveAssetSource(require('../assets/default.png'));
-
       formData.append('images', {
         uri: Platform.OS === 'android' ? defaultImage.uri : defaultImage.uri.replace('file://', ''),
         type: 'image/jpeg',
@@ -89,13 +87,13 @@ const Receipt = ({ navigation }) => {
         },
         body: formData,
       });
-      
+
       console.log('foodName: ', foodName);
       console.log('amount: ', amount);
       console.log('unit: ', unit);
 
       if (response.ok) {
-        alert('서버에 성공적으로 전송되었습니다!');
+        Alert.alert('성공', '서버에 성공적으로 전송되었습니다!', [{ text: '확인' }]);
         setModalVisible(false);
         setSelectedItem(null);
       } else {
@@ -108,7 +106,6 @@ const Receipt = ({ navigation }) => {
       console.error('전송 중 에러 발생:', error);
     }
   };
-
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -125,7 +122,7 @@ const Receipt = ({ navigation }) => {
             }
           );
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            chooseImage(); // 권한 허용되면 이미지 선택
+            chooseImage();
           } else {
             console.log('Camera permission denied');
           }
@@ -133,7 +130,6 @@ const Receipt = ({ navigation }) => {
           console.warn(err);
         }
       } else {
-        // iOS라면 권한 요청 없이 바로 실행 가능 (필요에 따라 체크)
         chooseImage();
       }
     };
@@ -238,7 +234,6 @@ const Receipt = ({ navigation }) => {
               name = name.substring(0, numberIndex);
             }
           }
-
           jsonResult.push({
             name: name.trim(),
             weight: weight,
@@ -246,7 +241,6 @@ const Receipt = ({ navigation }) => {
             count: onlyDigits[i],
           });
         }
-
         setJsonData(jsonResult);
       }
     } catch (e) {
@@ -260,15 +254,6 @@ const Receipt = ({ navigation }) => {
         processImage(response.assets[0].uri);
       }
     });
-  };
-
-  const reset = () => {
-    setImageUri(null);
-    setGroupedLines([]);
-    setNormalizedLines([]);
-    setFilteredItems([]);
-    setJsonData([]);
-    setDisplayedSize({ width: 0, height: 0 });
   };
 
   return (
@@ -289,17 +274,11 @@ const Receipt = ({ navigation }) => {
                 🔸 {item.name} - {item.weight * item.count} - {item.unit}
               </Text>
               <TouchableOpacity
-                style={{
-                  backgroundColor: '#2D336B',
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 6,
-                }}
-                onPress={() => openModalWithItem(item)}  // 모달 열기
+                style={{ backgroundColor: '#2D336B', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginRight: 10, }}
+                onPress={() => openModalWithItem(item)}
               >
                 <Text style={{ color: 'white' }}>등록</Text>
               </TouchableOpacity>
-
             </View>
           ))}
         </ScrollView>
@@ -309,92 +288,37 @@ const Receipt = ({ navigation }) => {
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 20,
-          }}>
-            <View style={{
-              backgroundColor: 'white',
-              borderRadius: 12,
-              width: '100%',
-              maxHeight: '80%',
-              padding: 20,
-            }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20, }}>
+            <View style={{ backgroundColor: 'white', borderRadius: 12, width: '100%', maxHeight: '100%', padding: 20, }}>
               <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
                 식재료 정보 수정
               </Text>
-
-              {/* 식재료명 입력 */}
-              <Text>식재료명</Text>
+              <Text style={styles.modal_title}>식재료명</Text>
               <TextInput
                 value={foodName}
                 onChangeText={setFoodName}
                 placeholder="예: 양파"
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#ccc',
-                  borderRadius: 8,
-                  padding: 10,
-                  marginBottom: 10,
-                }}
+                style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 10, }}
               />
-
-              {/* 개수/용량 입력 */}
-              <Text>개수 / 용량</Text>
+              <Text style={styles.modal_title}>개수 / 용량</Text>
               <TextInput
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="예: 100"
                 keyboardType="numeric"
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#ccc',
-                  borderRadius: 8,
-                  padding: 10,
-                  marginBottom: 10,
-                }}
+                style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 10, }}
               />
-
-              {/* 단위 입력 */}
-              <Text>단위</Text>
-              <TextInput
-                value={unit}
-                onChangeText={setUnit}
-                placeholder="예: g"
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#ccc',
-                  borderRadius: 8,
-                  padding: 10,
-                  marginBottom: 20,
-                }}
-              />
-              {/* 버튼 */}
+              <Text style={styles.modal_title}>단위</Text>
+              <UnitPicker onSelect={setUnit} selected={unit} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <TouchableOpacity
-                  style={{
-                    backgroundColor: '#888',
-                    padding: 12,
-                    borderRadius: 8,
-                    width: '45%',
-                    alignItems: 'center',
-                  }}
+                  style={{ backgroundColor: '#888', padding: 12, borderRadius: 8, width: '45%', alignItems: 'center', marginTop: 15, }}
                   onPress={() => setModalVisible(false)}
                 >
                   <Text style={{ color: 'white' }}>취소</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
-                  style={{
-                    backgroundColor: '#2D336B',
-                    padding: 12,
-                    borderRadius: 8,
-                    width: '45%',
-                    alignItems: 'center',
-                  }}
+                  style={{ backgroundColor: '#2D336B', padding: 12, borderRadius: 8, width: '45%', alignItems: 'center', marginTop: 15, }}
                   onPress={() => sendIngredientsToServer(foodName, amount, unit)}
                 >
                   <Text style={{ color: 'white' }}>등록하기</Text>
@@ -420,6 +344,9 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: 'bold',
     color: '#2D336B',
+  },
+  modal_title: {
+    marginBottom: 5,
   },
   imgStyle: {
     height: 300,
