@@ -30,7 +30,6 @@ import Badge from './screens/Badge';
 import RecipeCompletedList from './screens/RecipeCompletedList';
 import ReceiptTake from './screens/ReceiptTake';
 import ReceiptChoose from './screens/ReceiptChoose';
-import ReceiptAdd from './screens/ReceiptAdd';
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -130,7 +129,12 @@ const ReceiptStack = () => (
     <Stack.Screen
       name="ReceiptTake"
       component={ReceiptTake}
-      options={{ title: '영수증 스캔 결과' }}
+      options={{ title: '영수증 스캔 결과',         
+        headerStyle: {
+          backgroundColor: '#A9B5DF',
+          height: 60,
+        }, 
+      }}
     />
     <Stack.Screen
       name="ReceiptChoose"
@@ -140,28 +144,6 @@ const ReceiptStack = () => (
           backgroundColor: '#A9B5DF',
           height: 60,
         }, 
-      }}
-    />
-    <Stack.Screen
-      name="ReceiptAdd"
-      component={ReceiptAdd}
-      options={{
-        headerStyle: {
-          backgroundColor: '#2D336B',
-          height: 60,
-        },
-        headerTintColor: '#ffffff',
-        headerBackTitleStyle: {
-          fontSize: 16,
-        },
-        title: '식재료 추가하기',
-        headerTitleStyle: {
-          fontSize: 20,
-          fontWeight: "600",
-        },
-        headerShown: true,
-        headerShadowVisible: false,
-        headerBackTitle: '뒤로',
       }}
     />
   </Stack.Navigator>
