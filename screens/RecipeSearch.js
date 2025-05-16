@@ -151,7 +151,7 @@ const RecipeSearch = ({ navigation }) => {
         style={styles.background}
       />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 8 }}>
         <Text style={styles.title}>레시피 검색</Text>
       </View>
       <ScrollView>
@@ -160,7 +160,13 @@ const RecipeSearch = ({ navigation }) => {
         <View style={styles.sectionBox}>
           <Text style={styles.sectionTitle}>영양성분 기준</Text>
           {conditionKeys.map((key, index) => (
-            <View key={index} style={styles.conditionItem}>
+            <View
+              key={index}
+              style={[
+                styles.conditionItem,
+                index !== conditionKeys.length - 1 && styles.withSeparator
+              ]}
+            >
               <Text style={styles.conditionText}>{conditionLabels[index]}</Text>
               <TouchableOpacity
                 style={[styles.optionButton, { backgroundColor: getOptionColor(conditions[key]) }]}
@@ -170,6 +176,7 @@ const RecipeSearch = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           ))}
+
         </View>
 
         {/* 재료 추가 섹션 */}
@@ -181,13 +188,13 @@ const RecipeSearch = ({ navigation }) => {
             <Switch
               value={exactMatch}
               onValueChange={setExactMatch}
-              trackColor={{ false: '#d1d5db', true: '#2D336B' }}
-              thumbColor={exactMatch ? '#4FC3F7' : '#f4f3f4'}
+              trackColor={{ false: '#bbb', true: '#2D336B' }}
+              thumbColor={exactMatch ? '#A9B5DF' : '#999'}
             />
             <Text style={{
               marginLeft: 10,
               fontSize: 16,
-              color: exactMatch ? '#2D336B' : '#333',
+              color: exactMatch ? '#2D336B' : '#2D336B',
               fontWeight: exactMatch ? 'bold' : 'normal'
             }}>
               완전히 일치
@@ -198,16 +205,16 @@ const RecipeSearch = ({ navigation }) => {
           <View style={styles.sectionDivider} />
 
           {/* 결과 개수 선택 */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 16, marginRight: 10 }}>결과 개수</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+            <Text style={{ fontSize: 16, marginRight: 10, color: '#2D336B' }}>결과 개수:</Text>
             {[5, 15, 30].map((count) => (
               <TouchableOpacity
                 key={count}
                 style={{
-                  backgroundColor: resultCount === count ? '#3498db' : '#eee',
+                  backgroundColor: resultCount === count ? '#2D336B' : '#A9B5DF',
                   paddingVertical: 6,
                   paddingHorizontal: 16,
-                  borderRadius: 16,
+                  borderRadius: 13,
                   marginRight: 8,
                 }}
                 onPress={() => setResultCount(count)}
@@ -313,12 +320,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: '#A9B5DF',
   },
   conditionText: {
     fontSize: 18,
     color: '#2D336B',
+  },
+  withSeparator: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#A9B5DF',
   },
   ingredientItem: {
     flexDirection: 'row',
@@ -360,7 +369,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   addButton: {
-    height: 40,
+    height: 45,
+    width: 45,
     backgroundColor: '#2D336B',
     borderRadius: 8,
     justifyContent: 'center',
@@ -376,8 +386,8 @@ const styles = StyleSheet.create({
   btnArea: {
     backgroundColor: '#2D336B',
     height: 50,
-    borderRadius: 20,
-    margin: 10,
+    borderRadius: 10,
+    marginTop: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },

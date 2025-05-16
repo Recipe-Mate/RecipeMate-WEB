@@ -111,6 +111,7 @@ const Main = ({ navigation }) => {
         <FlatList
           data={foodNameList}
           keyExtractor={(item, index) => item?.id?.toString?.() ?? index.toString()}
+          showsVerticalScrollIndicator={false}
           numColumns={3}
           renderItem={({ item }) => (
             <View style={styles.gridItem}>
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontWeight: '600',
-    fontSize: 17,
+    fontSize: 16,
     marginTop: 5,
   },
   category: {

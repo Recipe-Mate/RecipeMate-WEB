@@ -83,10 +83,10 @@ const Profile = ({ navigation }) => {
 
   return (
     <ScrollView
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+    contentContainerStyle={{ flexGrow: 1 }}  
+    refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
     >
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="light" />
         <LinearGradient
           colors={["#525C99", "#FFF2F2"]}
           locations={[0.1, 1]}
@@ -149,7 +149,6 @@ const Profile = ({ navigation }) => {
             </ScrollView>
             <View style={styles.divider}></View>
             <TouchableOpacity
-              style={styles.badge_button}
               onPress={() => setModalVisible(true)}>
               <Text style={styles.text1}>정보 수정하기</Text>
             </TouchableOpacity>

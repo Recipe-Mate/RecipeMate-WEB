@@ -34,26 +34,6 @@ import ReceiptChoose from './screens/ReceiptChoose';
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
-// 아이콘 대신 사용할 임시 컴포넌트를 실제 Icon 컴포넌트로 대체
-const IconPlaceholder = ({ name, size, color }) => (
-  <Icon name={name} size={size} color={color} />
-);
-
-// 서버 상태 화면 컴포넌트
-const ServerStatusScreen = () => {
-  return (
-    <View style={styles.screenContainer}>
-      <Text style={styles.welcomeText}>
-        RecipeMate에 오신 것을 환영합니다!
-      </Text>
-      <ServerStatusCheck />
-      <Text style={styles.instruction}>
-        이 앱에서는 식재료를 관리하고 레시피를 추천받을 수 있습니다.
-      </Text>
-    </View>
-  );
-};
-
 // 초기화 화면 컴포넌트
 const InitializingScreen = () => (
   <View style={styles.initializingContainer}>
