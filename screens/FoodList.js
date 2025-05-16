@@ -8,12 +8,13 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Modal  // 추가된 import
+  Modal
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../src/context/AuthContext';
 import apiService from '../src/services/api.service';
 import apiConfig from '../config/api.config'; // apiConfig 추가
+import { useFocusEffect } from '@react-navigation/native';
 
 const FoodList = ({ navigation, route }) => {
   const [foodItems, setFoodItems] = useState([]);
@@ -199,6 +200,30 @@ const FoodList = ({ navigation, route }) => {
     </View>
   );
 
+  // 뒤로가기(헤더/하드웨어) 시 항상 Main으로 replace
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBack = () => {
+        navigation.replace('Main');
+        return true;
+      };
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity onPress={onBack} style={{ paddingHorizontal: 16 }}>
+            <Icon name="arrow-back" size={24} color="#3498db" />
+          </TouchableOpacity>
+        )
+      });
+      // 무한루프 방지: beforeRemove에서 replace 호출 전 리스너 해제
+      const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+        e.preventDefault();
+        unsubscribe();
+        navigation.replace('Main');
+      });
+      return () => unsubscribe();
+    }, [navigation])
+  );
+
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
@@ -210,16 +235,7 @@ const FoodList = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>내 식재료 목록</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('AddFood')}
-        >
-          <Icon name="add" size={24} color="#FFF" />
-        </TouchableOpacity>
-      </View>
-      
+      {/* 네이티브 헤더만 사용, 커스텀 헤더/StatusBar/SafeAreaView 제거 */}
       {foodItems.length > 0 ? (
         <FlatList
           data={foodItems}
@@ -246,8 +262,15 @@ const FoodList = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* 삭제 확인 모달 추가 */}
+      {/* 플로팅 추가 버튼 (앱 바와 겹치지 않게 하단에 고정) */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('AddFood')}
+        activeOpacity={0.8}
+      >
+        <Icon name="add" size={32} color="#FFF" />
+      </TouchableOpacity>
+      {/* 삭제 확인 모달 */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -258,7 +281,6 @@ const FoodList = ({ navigation, route }) => {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>식재료 삭제</Text>
             <Text style={styles.modalText}>정말 이 식재료를 삭제하시겠습니까?</Text>
-            
             <View style={styles.modalButtons}>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.cancelButton]}
@@ -266,7 +288,6 @@ const FoodList = ({ navigation, route }) => {
               >
                 <Text style={styles.cancelButtonText}>취소</Text>
               </TouchableOpacity>
-              
               <TouchableOpacity 
                 style={[styles.modalButton, styles.deleteButton]}
                 onPress={confirmDelete}
@@ -285,26 +306,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#4CAF50',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   listContainer: {
     padding: 16,
@@ -432,7 +433,23 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: 'white',
     fontWeight: 'bold',
-  }
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2D336B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
 });
 
 export default FoodList;

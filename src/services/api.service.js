@@ -272,7 +272,7 @@ const apiService = {
    * @returns {Promise<Object>} 서버 응답
    */
   async addFood(userId, foodData) {
-    const url = `${apiConfig.getApiUrl()}/food/${userId}`;
+    const url = `${apiConfig.getApiUrl()}/food`;
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -393,11 +393,11 @@ const apiService = {
             thumbnail: recipe.attFileNoMk || recipe.attFileNoMain || recipe.ATT_FILE_NO_MK || recipe.ATT_FILE_NO_MAIN || null, // API 필드명 확인 및 중복 제거
             // 영양 정보 추가
             nutritionInfo: {
-              calorie: recipe.INFO_ENG || null,      // 열량
-              carbohydrate: recipe.INFO_CAR || null, // 탄수화물
-              protein: recipe.INFO_PRO || null,    // 단백질
-              fat: recipe.INFO_FAT || null,        // 지방
-              natrium: recipe.INFO_NA || null        // 나트륨
+              calorie: recipe.calorie ?? null,
+              carbohydrate: recipe.carbohydrate ?? null,
+              protein: recipe.protein ?? null,
+              fat: recipe.fat ?? null,
+              natrium: recipe.natrium ?? null
             }
           };
         });
@@ -415,11 +415,11 @@ const apiService = {
             rcpSeq: newRcpSeq, // RCP_SEQ 명시적 저장
             // nutritionInfo가 이미 객체 형태로 존재하면 유지, 아니면 공공데이터 필드에서 생성
             nutritionInfo: recipe.nutritionInfo || {
-              calorie: recipe.INFO_ENG || null,
-              carbohydrate: recipe.INFO_CAR || null,
-              protein: recipe.INFO_PRO || null,
-              fat: recipe.INFO_FAT || null,
-              natrium: recipe.INFO_NA || null
+              calorie: recipe.calorie ?? null,
+              carbohydrate: recipe.carbohydrate ?? null,
+              protein: recipe.protein ?? null,
+              fat: recipe.fat ?? null,
+              natrium: recipe.natrium ?? null
             }
           };
         });

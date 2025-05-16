@@ -81,50 +81,20 @@ const MainStack = () => (
     <Stack.Screen
       name="Main"
       component={Main}
-      options={{ headerShown: false }}
+      options={{ headerShown: true }} // 변경: false -> true
     />
     <Stack.Screen
       name="AddIngredient"
       component={AddIngredient}
       options={{
-        headerStyle: {
-          backgroundColor: '#2D336B',
-          height: 60,
-        },
-        headerTintColor: '#ffffff',
-        headerBackTitleStyle: {
-          fontSize: 16,
-        },
-        title: '식재료 추가하기',
-        headerTitleStyle: {
-          fontSize: 20,
-          fontWeight: "600",
-        },
-        headerShown: true,
-        headerShadowVisible: false,
-        headerBackTitle: '뒤로',
+        headerShown: false
       }}
     />
     <Stack.Screen
       name="UserAddIngredient"
       component={UserAddIngredient}
       options={{
-        headerStyle: {
-          backgroundColor: '#2D336B',
-          height: 60,
-        },
-        headerTintColor: '#ffffff',
-        headerBackTitleStyle: {
-          fontSize: 16,
-        },
-        title: '내 식재료 추가',
-        headerTitleStyle: {
-          fontSize: 20,
-          fontWeight: "600",
-        },
-        headerShown: true,
-        headerShadowVisible: false,
-        headerBackTitle: '뒤로',
+        headerShown: false
       }}
     />
     <Stack.Screen
@@ -132,34 +102,55 @@ const MainStack = () => (
       component={AddFood}
       options={{
         headerStyle: {
-          backgroundColor: '#2D336B',
-          height: 60,
+          backgroundColor: '#ffffff', // 색상 통일
         },
-        headerTintColor: '#ffffff',
+        headerTintColor: '#000000',
         headerBackTitleStyle: {
           fontSize: 16,
         },
-        title: '식재료 직접 추가',
+        title: '식재료 추가',
         headerTitleStyle: {
           fontSize: 20,
-          fontWeight: "600",
+          fontWeight: '600',
+          color: '#000000', // 타이틀 색상도 통일
+          paddingBottom: 10,
         },
-        headerShown: true,
-        headerShadowVisible: false,
         headerBackTitle: '뒤로',
+        headerShown: true,
+        headerLeftContainerStyle: {
+          paddingBottom: 10,
+        }
       }}
     />
     <Stack.Screen
       name="FoodList"
       component={FoodList}
       options={{
+        headerStyle: {
+          backgroundColor: '#ffffff', // 색상 통일
+        },
+        headerBackground: () => (
+          <LinearGradient
+            colors={['#ffffff', '#ffffff']}
+            style={{ flex: 1, borderBottomRightRadius: 10, borderBottomLeftRadius: 10 }}
+          />
+        ),
+        headerTintColor: '#000000',
+        headerBackTitleStyle: {
+          fontSize: 16,
+        },
         title: '내 식재료',
-        headerStyle: { backgroundColor: '#2D336B', height: 60 },
-        headerTintColor: '#ffffff',
-        headerTitleStyle: { fontSize: 20, fontWeight: "600" },
-        headerShown: true,
-        headerShadowVisible: false,
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: '600',
+          color: '#000000', // 타이틀 색상도 통일
+          paddingBottom: 10,
+        },
         headerBackTitle: '뒤로',
+        headerShown: true,
+        headerLeftContainerStyle: {
+          paddingBottom: 10,
+        }
       }}
     />
     <Stack.Screen // CookedRecipes를 MainStack에 추가
@@ -207,7 +198,7 @@ const HomeStack = () => (
           fontWeight: 'bold',
           color: '#333333',
         },
-        headerShown: false
+        headerShown: true,
       }}
     />
     {/* <Stack.Screen
@@ -229,22 +220,22 @@ const RecipeStack = () => (
     <Stack.Screen
       name="RecipeSearch"
       component={RecipeSearch}
-      options={{ title: '레시피 검색', headerShown: false }}
+      options={{ title: '레시피 검색', headerShown: true }} // 변경: false -> true
     />
     <Stack.Screen
       name="RecipeDetail"
       component={RecipeDetail}
-      options={{ title: '레시피 상세', headerShown: false }}
+      options={{ title: '레시피 상세', headerShown: true }} // 변경: false -> true
     />
     <Stack.Screen
       name="RecipeResult"
       component={RecipeResult}
-      options={{ title: '검색결과', headerShown: false }}
+      options={{ title: '검색결과', headerShown: true }} // 변경: false -> true
     />
     <Stack.Screen
       name="RecipeThumbnails"
       component={RecipeThumbnails}
-      options={{ title: '레시피 썸네일 목록' }}
+      options={{ title: '레시피 썸네일 목록', headerShown: true }} // 추가: headerShown: true
     />
     <Stack.Screen
       name="IngredientChange"
@@ -256,7 +247,7 @@ const RecipeStack = () => (
 
 // 인증되지 않은 사용자를 위한 스택
 const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator screenOptions={{ headerShown: true }}>
     {/* Login 화면 등록 */}
     <Stack.Screen name="Login" component={Login} />
     {/* SignUp 화면 등록 */}
@@ -282,7 +273,7 @@ const AppContent = ({ initialError }) => {
       <Stack.Screen
         name="Profile"
         component={Profile}
-        options={{ headerShown: false }}
+        options={{ headerShown: true }} // 변경: false -> true
       />
       <Stack.Screen
         name="Badge"
@@ -335,7 +326,7 @@ const AppContent = ({ initialError }) => {
             <LinearGradient
               colors={['#2D336B', '#525C99']}
               style={{ flex: 1, borderBottomRightRadius: 10, borderBottomLeftRadius: 10, }}
-            />
+          />
           ),
           headerTintColor: '#ffffff',
           headerBackTitleStyle: {

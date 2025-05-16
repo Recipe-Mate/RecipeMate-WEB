@@ -39,7 +39,8 @@ const Main = ({ navigation }) => {
           <Icon name="settings-outline" size={24} color="#333333" />
         </TouchableOpacity>
       ),
-      headerShown: true
+      headerShown: true,
+      headerLeft: () => null // 홈에서는 뒤로가기 버튼 없음
     });
   }, [navigation]);
 

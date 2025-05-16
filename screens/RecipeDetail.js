@@ -30,32 +30,70 @@ const parseIngredientString = (line) => {
   line = String(line || '').trim();
   if (!line) return null;
 
-  // Regex to capture name, amount, and unit.
-  // Adjusted to better handle various formats and ensure name is captured.
-  // Example: "당근 100g", "오렌지 1/2개", "물 50ml", "설탕 1큰술", "대파 1대 (흰 부분)"
-  // It looks for a name part, followed by a numeric amount, and an optional unit.
-  // It tries to be flexible with spacing and parentheses around details.
-  const regex = /^(.*?)\s*([\d./]+)\s*([a-zA-Z가-힣μ]+)?(?:\s*\(.*\)|\s|$)/;
-  const match = line.match(regex);
+  // 괄호 안 값도 추출 (예: 100g(1/2개) → bracketAmount: '1/2', bracketUnit: '개')
+  let bracketAmount = null, bracketUnit = null;
+  const bracketMatch = line.match(/\(([^)]+)\)/);
+  if (bracketMatch) {
+    const inner = bracketMatch[1].trim(); // 예: "1/2개"
+    const match = inner.match(/^([\d./]+)\s*([a-zA-Z가-힣μ]+)?$/);
+    if (match) {
+      bracketAmount = match[1];
+      bracketUnit = match[2] || '';
+    }
+  }
+
+  // 괄호 밖 값 추출 (예: 100g)
+  const regex = /^(.*?)\s*([\d./]+)\s*([a-zA-Z가-힣μ]+)?/;
+  const match = line.replace(/\(.*\)/, '').match(regex);
 
   if (match) {
     const name = (match[1] || '').trim();
-    const amount = (match[2] || '0').trim(); // Default to '0' if somehow empty
+    const amount = (match[2] || '').trim();
     const unit = (match[3] || '').trim();
-
-    // If name is empty, it's not a valid ingredient line for our purpose.
-    if (!name) {
-      // console.log(`[parseIngredientString] Skipped due to empty name: "${line}"`);
-      return null;
-    }
-    // If amount is effectively zero and there's no unit, it might be a title-like entry
-    // or an ingredient without quantity (e.g., "후추"). For IngredientChange, we prefer quantifiable items.
-    // However, IngredientChange can handle amount "0", so let's pass it if name is present.
-    return { name, amount, unit };
+    return { name, amount, unit, bracketAmount, bracketUnit };
   }
-  // console.log(`[parseIngredientString] Skipped due to no regex match: "${line}"`);
-  return null; // Not a parsable ingredient line with amount/unit
+  // 괄호 안만 있는 경우
+  if (bracketAmount && bracketUnit) {
+    const name = line.replace(/\(.*\)/, '').trim();
+    return { name, amount: bracketAmount, unit: bracketUnit, bracketAmount, bracketUnit };
+  }
+  return null;
 };
+
+// 단위 변환 테이블 (예시: 1개=100g, 1개=150g 등)
+const UNIT_CONVERT_TABLE = {
+  // 식재료명: { fromUnit: { toUnit: 환산값(1 fromUnit당 toUnit 몇 g) } }
+  '계란': { '개': { 'g': 50 }, 'g': { '개': 1/50 } },
+  '오렌지': { '개': { 'g': 150 }, 'g': { '개': 1/150 } },
+  '당근': { '개': { 'g': 100 }, 'g': { '개': 1/100 } },
+  // 필요시 추가
+};
+
+// 단위 변환 함수
+function convertUnit(ingredientName, amount, fromUnit, toUnit) {
+  if (!ingredientName || !fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return parseFloat(amount);
+  const table = UNIT_CONVERT_TABLE[ingredientName];
+  if (!table) return null;
+  const from = fromUnit.toLowerCase();
+  const to = toUnit.toLowerCase();
+  // 변환 테이블의 키도 소문자로 normalize
+  const normalizedTable = {};
+  for (const f in table) {
+    normalizedTable[f.toLowerCase()] = {};
+    for (const t in table[f]) {
+      normalizedTable[f.toLowerCase()][t.toLowerCase()] = table[f][t];
+    }
+  }
+  if (!normalizedTable[from] || !normalizedTable[from][to]) return null;
+  let num = null;
+  try {
+    num = eval(String(amount));
+  } catch {
+    num = parseFloat(amount);
+  }
+  if (isNaN(num)) return null;
+  return num * normalizedTable[from][to];
+}
 
 // RecipeDetail 컴포넌트: 레시피 상세 정보를 보여줌
 const RecipeDetail = ({ route, navigation }) => {
@@ -80,34 +118,23 @@ const RecipeDetail = ({ route, navigation }) => {
   const { recipe } = route?.params || {}; 
 
   useEffect(() => {
-    // recipeData 대신 recipe를 사용
     if (recipe) {
-      console.log('[RecipeDetail] Received recipe for NUTRITION CHECK:', JSON.stringify(recipe, null, 2)); // <--- 이 로그를 추가합니다.
-      console.log('[RecipeDetail] Received recipe:', JSON.stringify(recipe, null, 2));
-
-      // API 응답 또는 RecipeResult.js에서 전달된 객체의 필드명에 맞게 수정
       setRecipeTitle(recipe.recipeName || recipe.title || '레시피 정보 없음');
       setRecipeImageUri(recipe.thumbnail || recipe.image || recipe.ATT_FILE_NO_MK || recipe.ATT_FILE_NO_MAIN || null);
-
-      // recipe.steps를 가장 먼저 확인하도록 수정
       setRecipeSteps(
-        Array.isArray(recipe.steps) && recipe.steps.length > 0 // RecipeResult.js에서 오는 'steps' 필드 우선 확인
+        Array.isArray(recipe.steps) && recipe.steps.length > 0
           ? recipe.steps
-          : Array.isArray(recipe.cookingProcess) && recipe.cookingProcess.length > 0 // 그 다음 'cookingProcess' (SavedRecipeInfo 등)
-          ? recipe.cookingProcess 
-          : Array.isArray(recipe.manual) && recipe.manual.length > 0 // 그 다음 공공데이터 포털 API의 'manual' 필드
+          : Array.isArray(recipe.cookingProcess) && recipe.cookingProcess.length > 0
+          ? recipe.cookingProcess
+          : Array.isArray(recipe.manual) && recipe.manual.length > 0
           ? recipe.manual.filter(m => m && (m.MANUAL_DESC || m.MANUAL_IMG_URL)).map((m, idx) => `${idx+1}. ${m.MANUAL_DESC || '이미지 참고'}`)
-          : ['조리법 정보가 없습니다.'] // 모두 없으면 기본 메시지
+          : ['조리법 정보가 없습니다.']
       );
-      
-      // API 응답의 재료 필드명 확인 필요 (예: ingredients, recipe.ingredients 등)
-      // 현재는 ingredients가 문자열 배열이라고 가정
-      // SavedRecipeInfo와 구조가 다르므로, API 응답에 맞게 처리해야 함.
       if (Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0) {
         const ingredientItems = recipe.ingredients.map((ing, index) => ({
           id: String(index),
-          name: typeof ing === 'string' ? ing : (ing.IRDNT_NM || '알 수 없는 재료'), // 공공데이터 포털 API의 경우 IRDNT_NM
-          has: userIngredients.some(userIng => 
+          name: typeof ing === 'string' ? ing : (ing.IRDNT_NM || '알 수 없는 재료'),
+          has: userIngredients.some(userIng =>
             typeof ing === 'string' && userIng.name && ing.toLowerCase().includes(userIng.name.toLowerCase()) ||
             (ing.IRDNT_NM && userIng.name && ing.IRDNT_NM.toLowerCase().includes(userIng.name.toLowerCase()))
           ),
@@ -115,57 +142,29 @@ const RecipeDetail = ({ route, navigation }) => {
         setIngredients(ingredientItems);
       } else {
         setIngredients([{ id: '0', name: '재료 정보 없음', has: false }]);
-      }      // API 응답의 영양 정보 필드명 확인 필요 (예: nutritionInfo, recipe.nutrition 등)
-      // SavedRecipeInfo와 구조가 다르므로, API 응답에 맞게 처리해야 함.
-      // RecipeResult에서 오는 데이터는 nutritionInfo 객체 안에 필드가 있을 수 있음.
-      const nutritionSource = recipe.nutritionInfo || recipe; // nutritionInfo 객체가 있으면 사용, 없으면 recipe 객체에서 직접 찾음
-      console.log('[RecipeDetail] 영양정보 원본데이터:', nutritionSource);
-      
-      // 영양정보 추출 및 검증 로직 개선
-      const getNutritionValue = (source, keys) => {
-        for (const key of keys) {
-          if (source[key] !== undefined && source[key] !== null) {
-            const value = parseFloat(source[key]);
-            if (!isNaN(value)) return value;
-          }
-        }
-        return null;
+      }
+      // 영양정보를 recipe.nutritionInfo, recipe, 그리고 INFO_ENG 등 모든 필드에서 추출
+      const getNum = v => {
+        if (v === undefined || v === null) return null;
+        const n = parseFloat(v);
+        return isNaN(n) ? null : n;
       };
-      
-      // Recipe.java에 맞게 필드 이름을 정렬 
       const nutritionData = {
-        calorie: getNutritionValue(nutritionSource, ['calorie', 'CAL_INFO', 'NTR_SCO', 'INFO_ENG']),
-        carbohydrate: getNutritionValue(nutritionSource, ['carbohydrate', 'CRB_INFO', 'INFO_CAR']),
-        protein: getNutritionValue(nutritionSource, ['protein', 'PRO_INFO', 'INFO_PRO']),
-        fat: getNutritionValue(nutritionSource, ['fat', 'FAT_INFO', 'INFO_FAT']),
-        natrium: getNutritionValue(nutritionSource, ['natrium', 'NA_INFO', 'INFO_NA']),
+        calorie: getNum(recipe.nutritionInfo?.calorie) ?? getNum(recipe.calorie) ?? getNum(recipe.INFO_ENG),
+        carbohydrate: getNum(recipe.nutritionInfo?.carbohydrate) ?? getNum(recipe.carbohydrate) ?? getNum(recipe.INFO_CAR),
+        protein: getNum(recipe.nutritionInfo?.protein) ?? getNum(recipe.protein) ?? getNum(recipe.INFO_PRO),
+        fat: getNum(recipe.nutritionInfo?.fat) ?? getNum(recipe.fat) ?? getNum(recipe.INFO_FAT),
+        natrium: getNum(recipe.nutritionInfo?.natrium) ?? getNum(recipe.natrium) ?? getNum(recipe.INFO_NA),
       };
-      
-      console.log('[RecipeDetail] 가공된 영양정보:', nutritionData);
-      
-      // 영양 정보가 하나라도 있으면 nutritionInfo에 저장
-      if (nutritionData.calorie !== null || 
-          nutritionData.carbohydrate !== null || 
-          nutritionData.protein !== null || 
-          nutritionData.fat !== null || 
-          nutritionData.natrium !== null) {
-        setNutritionInfo(nutritionData);
-      } else {
-        console.warn('[RecipeDetail] 영양 정보가 없습니다. 설정되지 않았습니다.');
-        setNutritionInfo(null);
-      }
-
+      setNutritionInfo(nutritionData);
       setLoading(false);
-    } else {      if (!recipe || !recipe.recipeName) {
-        console.log('[RecipeDetail] No recipe, setting defaults');
-        // ...기존 기본값 설정 코드 유지...
-        setRecipeTitle('레시피 정보 없음');
-        setRecipeImageUri(null);
-        setRecipeSteps(['레시피 정보가 없습니다.']);
-        setIngredients([{ id: '0', name: '재료 정보 없음', has: false }]);
-        setNutritionInfo(null);
-        setLoading(false);
-      }
+    } else {
+      setRecipeTitle('레시피 정보 없음');
+      setRecipeImageUri(null);
+      setRecipeSteps(['레시피 정보가 없습니다.']);
+      setIngredients([{ id: '0', name: '재료 정보 없음', has: false }]);
+      setNutritionInfo(null);
+      setLoading(false);
     }
   }, [recipe, user]); // userIngredients 제거
 
@@ -371,17 +370,11 @@ const RecipeDetail = ({ route, navigation }) => {
     }
     return recipeImages.default;
   };  // 영양 정보 포매팅 함수
-  const formatNutritionValue = (value) => {
-    if (value === undefined || value === null || Number.isNaN(parseFloat(value))) return '정보 없음';
-    
-    // 숫자가 아닌 경우 숫자로 변환 시도
+  const formatNutritionValue = (value, unit = '') => {
+    if (value === undefined || value === null || value === '' || Number.isNaN(Number(value))) return '';
     const numValue = typeof value === 'number' ? value : parseFloat(value);
-    
-    // 변환에 실패하거나 NaN인 경우
-    if (isNaN(numValue)) return '정보 없음';
-    
-    // 소수점 첫째 자리까지 표시 (0이면 정수로 표시)
-    return numValue % 1 === 0 ? numValue.toString() : numValue.toFixed(1);
+    if (isNaN(numValue)) return '';
+    return numValue % 1 === 0 ? numValue.toString() + (unit ? ` ${unit}` : '') : numValue.toFixed(1) + (unit ? ` ${unit}` : '');
   };
 
   // 레시피 재료와 사용자 식재료 매칭 및 상태 구분
@@ -403,8 +396,10 @@ const RecipeDetail = ({ route, navigation }) => {
                   originalName: parsed.name,
                   nameToMatch: parsed.name.replace(/\s/g, "").toLowerCase(),
                   amount: parsed.amount,
-                  unit: parsed.unit,
-                  fullText: `${parsed.name} ${parsed.amount || ''}${parsed.unit || ''}`.trim(),
+                  unit: parsed.unit ? parsed.unit.toLowerCase() : '',
+                  bracketAmount: parsed.bracketAmount,
+                  bracketUnit: parsed.bracketUnit ? parsed.bracketUnit.toLowerCase() : '',
+                  fullText: `${parsed.name} ${parsed.amount || ''}${parsed.unit || ''}${parsed.bracketAmount && parsed.bracketUnit ? `(${parsed.bracketAmount}${parsed.bracketUnit})` : ''}`.trim(),
                 });
               }
             }
@@ -429,8 +424,10 @@ const RecipeDetail = ({ route, navigation }) => {
                 originalName: parsed.name,
                 nameToMatch: parsed.name.replace(/\s/g, "").toLowerCase(),
                 amount: parsed.amount,
-                unit: parsed.unit,
-                fullText: `${parsed.name} ${parsed.amount || ''}${parsed.unit || ''}`.trim(),
+                unit: parsed.unit ? parsed.unit.toLowerCase() : '',
+                bracketAmount: parsed.bracketAmount,
+                bracketUnit: parsed.bracketUnit ? parsed.bracketUnit.toLowerCase() : '',
+                fullText: `${parsed.name} ${parsed.amount || ''}${parsed.unit || ''}${parsed.bracketAmount && parsed.bracketUnit ? `(${parsed.bracketAmount}${parsed.bracketUnit})` : ''}`.trim(),
               });
             } else { // Fallback if object couldn't be parsed into name/amount/unit
                  parsedEntries.push({
@@ -449,39 +446,99 @@ const RecipeDetail = ({ route, navigation }) => {
       .map((parsedItem) => {
         if (!parsedItem || !parsedItem.nameToMatch) return null; // Skip if item is invalid
 
+        // 표시 텍스트 생성: 단위가 하나면 한 번만, 둘 다 있으면 둘 다
+        let display = '';
+        if (parsedItem.amount && parsedItem.unit && parsedItem.bracketAmount && parsedItem.bracketUnit) {
+          // 단위와 수량이 둘 다 있고, 단위가 다를 때만 둘 다 표시
+          if (parsedItem.unit !== parsedItem.bracketUnit || parsedItem.amount !== parsedItem.bracketAmount) {
+            display = `${parsedItem.originalName} ${parsedItem.amount}${parsedItem.unit}(${parsedItem.bracketAmount}${parsedItem.bracketUnit})`;
+          } else {
+            // 단위와 수량이 완전히 같으면 한 번만
+            display = `${parsedItem.originalName} ${parsedItem.amount}${parsedItem.unit}`;
+          }
+        } else if (parsedItem.amount && parsedItem.unit) {
+          display = `${parsedItem.originalName} ${parsedItem.amount}${parsedItem.unit}`;
+        } else if (parsedItem.amount) {
+          display = `${parsedItem.originalName} ${parsedItem.amount}`;
+        } else {
+          display = parsedItem.originalName;
+        }
+
         const userItem = userIngredients.find(ui =>
-          ui.name && parsedItem.nameToMatch.includes(ui.name.replace(/\s/g, "").toLowerCase())
+          ui.foodName && parsedItem.nameToMatch.includes(ui.foodName.replace(/\s/g, "").toLowerCase())
         );
 
+        // 디버깅용 로그
+        console.log('[재료비교] parsedItem:', parsedItem);
+        console.log('[재료비교] userItem:', userItem);
+
         let status = '미보유';
-        let display = parsedItem.fullText;
+        // display는 위에서 이미 레시피 필요량만으로 생성
 
         if (userItem) {
-          status = '보유'; // Default to '보유' if user has it
-          display = `${parsedItem.originalName} (보유량: ${userItem.quantity || '측정 안됨'}${userItem.unit || ''})`;
-
-          // Check for '부족' status only if quantifiable
-          if (parsedItem.amount && parsedItem.amount !== '-' && userItem.quantity) {
-            const needNumStr = String(parsedItem.amount).replace(/[^\\d.]/g, '');
-            const ownNumStr = String(userItem.quantity).replace(/[^\\d.]/g, '');
-
-            if (needNumStr && ownNumStr) { // Ensure both are non-empty after stripping non-numeric
-                const needNum = parseFloat(needNumStr);
-                const ownNum = parseFloat(ownNumStr);
-
-                if (!Number.isNaN(needNum) && !Number.isNaN(ownNum)) {
-                    if (ownNum < needNum) {
-                    status = '부족';
-                    display = `${parsedItem.originalName} (필요: ${parsedItem.amount || ''}${parsedItem.unit || ''}, 보유: ${userItem.quantity || '0'}${userItem.unit || ''})`;
-                    }
+          // 단위 normalize
+          const userUnit = userItem.unit ? userItem.unit.toLowerCase() : '';
+          const parsedUnit = parsedItem.unit ? parsedItem.unit.toLowerCase() : '';
+          const parsedBracketUnit = parsedItem.bracketUnit ? parsedItem.bracketUnit.toLowerCase() : '';
+          let compareAmount = null, compareUnit = null;
+          let needNum = null, ownNum = null;
+          if (userUnit && parsedUnit && userUnit === parsedUnit) {
+            compareAmount = parsedItem.amount;
+            compareUnit = parsedUnit;
+            try { needNum = eval(compareAmount.replace(/[^\d./]/g, '')); } catch { needNum = parseFloat(compareAmount); }
+            ownNum = parseFloat(userItem.quantity);
+            console.log(`[재료비교] 단위 일치: userUnit=${userUnit}, amount=${compareAmount}, needNum=${needNum}, ownNum=${ownNum}`);
+          } else if (userUnit && parsedBracketUnit && userUnit === parsedBracketUnit) {
+            compareAmount = parsedItem.bracketAmount;
+            compareUnit = parsedBracketUnit;
+            try { needNum = eval(compareAmount.replace(/[^\d./]/g, '')); } catch { needNum = parseFloat(compareAmount); }
+            ownNum = parseFloat(userItem.quantity);
+            console.log(`[재료비교] 괄호 단위 일치: userUnit=${userUnit}, bracketAmount=${compareAmount}, needNum=${needNum}, ownNum=${ownNum}`);
+          } else if (userUnit && parsedUnit && parsedBracketUnit) {
+            if (userUnit === '개' && parsedUnit === 'g') {
+              const convertedOwn = convertUnit(parsedItem.originalName, userItem.quantity, '개', 'g');
+              try { needNum = eval(parsedItem.amount.replace(/[^\d./]/g, '')); } catch { needNum = parseFloat(parsedItem.amount); }
+              console.log(`[재료비교] 변환(개→g): userUnit=${userUnit}, own=${userItem.quantity}, convertedOwn=${convertedOwn}, needNum=${needNum}`);
+              if (convertedOwn !== null && !isNaN(needNum)) {
+                if (convertedOwn < needNum) {
+                  status = '부족';
+                } else {
+                  status = '보유';
                 }
+                return { id: parsedItem.id, name: parsedItem.originalName, display, status };
+              }
+            } else if (userUnit === 'g' && parsedBracketUnit === '개') {
+              const convertedOwn = convertUnit(parsedItem.originalName, userItem.quantity, 'g', '개');
+              try { needNum = eval(parsedItem.bracketAmount.replace(/[^\d./]/g, '')); } catch { needNum = parseFloat(parsedItem.bracketAmount); }
+              console.log(`[재료비교] 변환(g→개): userUnit=${userUnit}, own=${userItem.quantity}, convertedOwn=${convertedOwn}, needNum=${needNum}`);
+              if (convertedOwn !== null && !isNaN(needNum)) {
+                if (convertedOwn < needNum) {
+                  status = '부족';
+                } else {
+                  status = '보유';
+                }
+                return { id: parsedItem.id, name: parsedItem.originalName, display, status };
+              }
             }
           }
+          if (needNum !== null && ownNum !== null && !isNaN(needNum) && !isNaN(ownNum)) {
+            console.log(`[재료비교] 기본비교: needNum=${needNum}, ownNum=${ownNum}, compareAmount=${compareAmount}, compareUnit=${compareUnit}`);
+            if (ownNum < needNum) {
+              status = '부족';
+            } else {
+              status = '보유';
+            }
+          } else {
+            console.log(`[재료비교] 수량 비교 불가, 보유로 처리: userItem.quantity=${userItem.quantity}, userUnit=${userUnit}`);
+            status = '보유';
+          }
+        } else {
+          console.log(`[재료비교] 미보유: parsedItem.nameToMatch=${parsedItem.nameToMatch}`);
         }
         return {
           id: parsedItem.id,
           name: parsedItem.originalName, // API 호출 시 이 name을 사용 (순수 재료명)
-          display: parsedItem.fullText, // 화면 표시용 텍스트
+          display, // 화면 표시용 텍스트(레시피 필요량만)
           status,
         };
       })
@@ -513,41 +570,43 @@ const RecipeDetail = ({ route, navigation }) => {
       </View>
       {/* 영양 정보 섹션 (있을 경우에만 표시) */}
       {nutritionInfo && (
+        (nutritionInfo.calorie !== null || nutritionInfo.carbohydrate !== null || nutritionInfo.protein !== null || nutritionInfo.fat !== null || nutritionInfo.natrium !== null) && (
         <View style={styles.nutritionSection}>
           <Text style={styles.sectionTitle}>영양 정보</Text>
           <View style={styles.nutritionContainer}>
             <View style={styles.nutritionItem}>
               <Text style={styles.nutritionLabel}>칼로리</Text>
               <Text style={styles.nutritionValue}>
-                {formatNutritionValue(nutritionInfo.calorie)} kcal
+                {formatNutritionValue(nutritionInfo.calorie, 'kcal') || '정보 없음'}
               </Text>
             </View>
             <View style={styles.nutritionItem}>
               <Text style={styles.nutritionLabel}>탄수화물</Text>
               <Text style={styles.nutritionValue}>
-                {formatNutritionValue(nutritionInfo.carbohydrate)} g
+                {formatNutritionValue(nutritionInfo.carbohydrate, 'g') || '정보 없음'}
               </Text>
             </View>
             <View style={styles.nutritionItem}>
               <Text style={styles.nutritionLabel}>단백질</Text>
               <Text style={styles.nutritionValue}>
-                {formatNutritionValue(nutritionInfo.protein)} g
+                {formatNutritionValue(nutritionInfo.protein, 'g') || '정보 없음'}
               </Text>
             </View>
             <View style={styles.nutritionItem}>
               <Text style={styles.nutritionLabel}>지방</Text>
               <Text style={styles.nutritionValue}>
-                {formatNutritionValue(nutritionInfo.fat)} g
+                {formatNutritionValue(nutritionInfo.fat, 'g') || '정보 없음'}
               </Text>
             </View>
             <View style={styles.nutritionItem}>
               <Text style={styles.nutritionLabel}>나트륨</Text>
               <Text style={styles.nutritionValue}>
-                {formatNutritionValue(nutritionInfo.natrium)} mg
+                {formatNutritionValue(nutritionInfo.natrium, 'mg') || '정보 없음'}
               </Text>
             </View>
           </View>
         </View>
+        )
       )}
 
       {/* 재료 리스트 */}
