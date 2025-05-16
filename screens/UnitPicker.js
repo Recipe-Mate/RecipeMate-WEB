@@ -6,13 +6,12 @@ const UnitPicker = ({ onSelect, selected }) => {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([
-    { label: "개", value: "EA" },
-    { label: "병", value: "병" },
-    { label: "kg", value: "kg" },
-    { label: "g", value: "g" },
-    { label: "봉", value: "봉" },
-    { label: "ml", value: "ml" },
+    { label: "kg", value: "KG" },
+    { label: "g", value: "G" },
+    { label: "mg", value: "MG" },
+    { label: "ml", value: "ML" },
     { label: "L", value: "L" },
+    { label: "개", value: "EA" },
   ]);
 
   // selected prop이 주어지면 초기값 설정
