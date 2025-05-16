@@ -30,6 +30,7 @@ import Badge from './screens/Badge';
 import RecipeCompletedList from './screens/RecipeCompletedList';
 import ReceiptTake from './screens/ReceiptTake';
 import ReceiptChoose from './screens/ReceiptChoose';
+import ReceiptAdd from './screens/ReceiptAdd';
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -142,8 +143,8 @@ const ReceiptStack = () => (
       }}
     />
     <Stack.Screen
-      name="AddIngredient"
-      component={AddIngredient}
+      name="ReceiptAdd"
+      component={ReceiptAdd}
       options={{
         headerStyle: {
           backgroundColor: '#2D336B',

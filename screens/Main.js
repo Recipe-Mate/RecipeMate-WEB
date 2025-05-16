@@ -82,6 +82,15 @@ const Main = ({ navigation }) => {
     fetchFoodList().finally(() => setRefreshing(false));
   };
 
+  const unitMap = {
+    KG: 'kg',
+    G: 'g',
+    MG: 'mg',
+    ML: 'ml',
+    L: 'L',
+    EA: '개',
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={["#2D336B", "#A9B5DF"]} style={styles.background} />
@@ -92,8 +101,9 @@ const Main = ({ navigation }) => {
             <Icon name='add' size={40} color='#fff' />
           </TouchableOpacity>
           <TouchableOpacity style={styles.badge_button} onPress={toggleEditMode}>
-            {isEditMode ? '완료' : <Icon name='edit' size={30} color='#fff' />}
+            {isEditMode ? <Text style={{ color: '#fff', fontSize: 17 }}>완료</Text> : <Icon name='edit' size={30} color='#fff' />}
           </TouchableOpacity>
+
         </View>
       </View>
 
@@ -114,7 +124,7 @@ const Main = ({ navigation }) => {
               <Text style={styles.name}>{item.name}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <Text style={styles.category}>{item.amount}</Text>
-                <Text style={styles.category}>{item.unit === 'EA' ? '개' : item.unit}</Text>
+                <Text style={styles.category}>{unitMap[item.unit] || item.unit}</Text>
               </View>
               {isEditMode && (
                 <TouchableOpacity

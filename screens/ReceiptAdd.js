@@ -7,7 +7,7 @@ import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
 
-export default function AddIngredient({ route, navigation }) {
+export default function ReceiptAdd({ route, navigation }) {
     const { foodName, amount, unit } = route.params || {};
     const [image, setImage] = useState(null);
     const [foodNameState, setFoodName] = useState(foodName || '');
@@ -121,7 +121,7 @@ export default function AddIngredient({ route, navigation }) {
         // 이미지가 있으면 전달하고 없으면 null로 전달
         addFood(foodList, imageData);
 
-        navigation.navigate('Main');
+        navigation.navigate('ReceiptTake');
     };
 
     useEffect(() => {

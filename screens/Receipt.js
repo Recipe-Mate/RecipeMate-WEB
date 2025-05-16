@@ -59,134 +59,6 @@ const Receipt = ({ navigation }) => {
     requestCameraPermission();
   }, []);
 
-  const preprocessName = (name) => {
-    let raw = name.trim();
-
-    // 숫자만 있거나 숫자 + 공백만 있는 경우
-    if (/^[0-9]+\s*$/.test(raw)) {
-      if (raw.trim().length === 1) {
-        return raw.trim(); // 숫자 1개 또는 "4 " → "4"
-      } else {
-        return ''; // 숫자 2개 이상 → 제거
-      }
-    }
-
-    // 일반 정제 과정
-    let processed = raw;
-    processed = processed.replace(/^[0-9]+\s*[a-zA-Z]/, '');
-    processed = processed.replace(/^[0-9]+\s*/, '');
-    processed = processed.replace(/[^가-힣0-9a-zA-Z\/\s]/g, ''); // '/'는 남김
-
-    // '/' 기준으로 앞부분만 남기기 (용량 추출 위해 뒤쪽은 별도로 유지)
-    const slashIndex = processed.indexOf('/');
-    if (slashIndex !== -1) {
-      processed = processed.substring(0, slashIndex);
-    }
-
-    processed = processed
-      .replace(/([가-힣])([a-zA-Z0-9])/g, '$1 $2')
-      .replace(/([a-zA-Z])([가-힣])/g, '$1 $2');
-    processed = processed.replace(/\s+/g, ' ').trim().toLowerCase();
-
-    excludedBrands.forEach((brand) => {
-      processed = processed.replace(new RegExp(brand, 'gi'), '').trim();
-    });
-
-    return processed;
-  };
-
-  const processImage = async (uri) => {
-    setImageUri(uri);
-    Image.getSize(uri, (w, h) => setDisplayedSize({ width: w, height: h }));
-
-    try {
-      const result = await TextRecognition.recognize(uri, TextRecognitionScript.KOREAN);
-      if (result?.blocks) {
-        const lines = result.blocks.flatMap((block) =>
-          block.lines.map((line) => ({
-            text: line.text,
-            y: line.bounding?.top ?? 0,
-          }))
-        ).filter((line) =>
-          !/\d{10,}/.test(line.text) &&
-          !/\d{1,3}[,.][^\s]{3}(?![^\s])/.test(line.text)
-        );
-
-        const grouped = [];
-        lines.sort((a, b) => a.y - b.y);
-        lines.forEach((line) => {
-          const lastGroup = grouped[grouped.length - 1];
-          if (!lastGroup || Math.abs(lastGroup[0].y - line.y) > 10) {
-            grouped.push([line]);
-          } else {
-            lastGroup.push(line);
-          }
-        });
-
-        const normalized = lines.filter((line) => /^\s*0{0,2}\d{1,2}P?\b/.test(line.text));
-        setGroupedLines(grouped);
-        setNormalizedLines(normalized);
-
-        const items = normalized.map((line) => line.text);
-        let processed = items.map((item) => preprocessName(item)).filter(Boolean);
-
-        const withText = processed.filter(x => /[a-zA-Z가-힣]/.test(x));
-        const onlyDigits = processed.filter(x => /^[0-9]$/.test(x));
-        const reordered = [...withText, ...onlyDigits];
-
-        setFilteredItems(reordered);
-
-        const jsonResult = [];
-        const len = Math.min(withText.length, onlyDigits.length);
-
-        for (let i = 0; i < len; i++) {
-          let name = withText[i];
-          let weight = '0';
-          let unit = '없음';
-
-          const match = name.match(/(\d+(?:\.\d+)?)(kg|g|ml|l)/i);
-          if (match) {
-            weight = match[1];
-            unit = match[2].toLowerCase();
-            name = name.substring(0, match.index);
-          } else {
-            const numberIndex = name.search(/[0-9]/);
-            if (numberIndex !== -1) {
-              name = name.substring(0, numberIndex);
-            }
-          }
-
-          jsonResult.push({
-            name: name.trim(),
-            weight: weight,
-            unit: unit,
-            count: onlyDigits[i],
-          });
-        }
-
-        setJsonData(jsonResult);
-      }
-    } catch (e) {
-      console.error('OCR 실패:', e);
-    }
-  };
-
-  const chooseImage = () => {
-    launchImageLibrary({ mediaType: 'photo' }, (response) => {
-      if (response.assets && response.assets.length > 0) {
-        processImage(response.assets[0].uri);
-      }
-    });
-  };
-
-  const takePhoto = () => {
-    launchCamera({ mediaType: 'photo' }, (response) => {
-      if (response.assets && response.assets.length > 0) {
-        processImage(response.assets[0].uri);
-      }
-    });
-  };
-
   const reset = () => {
     setImageUri(null);
     setGroupedLines([]);
@@ -198,84 +70,39 @@ const Receipt = ({ navigation }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      {!imageUri ? (
-        <View style={{ flex: 1 }}>
-          <LinearGradient
-            colors={["#2D336B", "#A9B5DF"]}
-            style={styles.background}
-          />
-          <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
-            <Text style={styles.title}>영수증 스캔</Text>
-          </View>
-          <View style={styles.textBox}>
-            <Text style={styles.text}>식재료 등록이 귀찮을 때</Text>
-            <Text style={styles.text}>영수증을 카메라로 촬영하거나</Text>
-            <Text style={styles.text}>이미지를 업로드하여 </Text>
-            <Text style={styles.text}>식재료 등록을 간편하게 해보세요!</Text>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('ReceiptTake')}>
-            <View style={styles.sectionBox}>
-              <Text style={styles.Icon}>📷</Text>
-              <View>
-                <Text style={styles.ButtonText}>카메라로 촬영하기</Text>
-                <Text style={styles.descText}>영수증을 촬영해보세요!</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('ReceiptChoose')}>
-            <View style={styles.sectionBox}>
-              <Text style={styles.Icon}>🖼</Text>
-              <View>
-                <Text style={styles.ButtonText}>이미지 업로드</Text>
-                <Text style={styles.descText}>갤러리의 이미지를 등록해보세요!</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
+      <View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={["#2D336B", "#A9B5DF"]}
+          style={styles.background}
+        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
+          <Text style={styles.title}>영수증 스캔</Text>
         </View>
-      ) : (
-        <View style={{ flex: 1 }}>
-          <LinearGradient
-            colors={["#A9B5DF", "#EEF1FA"]}
-            style={styles.background}
-          />
-          <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 9 }}>
-            <TouchableOpacity onPress={reset} style={{marginLeft: 10, flexDirection: 'row'}}>
-              <Icon name='chevron-back-outline' size={30} color='#2D336B' style={{paddingTop: 2,}} />
-              <Text style={styles.title2}>영수증 스캔 결과</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView>
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.imgStyle}
-            />
-            {jsonData.map((item, idx) => (
-              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, marginVertical: 5 }}>
-                <Text style={{ flex: 1 }}>
-                  🔸 {item.name} - {item.weight * item.count} - {item.unit}
-                </Text>
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: '#2D336B',
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 6,
-                  }}
-                  onPress={() =>
-                    navigation.navigate('AddIngredient', {
-                      foodName: item.name,
-                      amount: String(item.weight * item.count),
-                      unit: item.unit,
-                    })
-                  }       >
-                  <Text style={{ color: 'white' }}>등록</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
+        <View style={styles.textBox}>
+          <Text style={styles.text}>식재료 등록이 귀찮을 때</Text>
+          <Text style={styles.text}>영수증을 카메라로 촬영하거나</Text>
+          <Text style={styles.text}>이미지를 업로드하여 </Text>
+          <Text style={styles.text}>식재료 등록을 간편하게 해보세요!</Text>
         </View>
-
-      )}
+        <TouchableOpacity onPress={() => navigation.navigate('ReceiptTake')}>
+          <View style={styles.sectionBox}>
+            <Icon name='camera' size={50} color='#2D336B' />
+            <View>
+              <Text style={styles.ButtonText}>카메라로 촬영하기</Text>
+              <Text style={styles.descText}>영수증을 촬영해보세요!</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ReceiptChoose')}>
+          <View style={styles.sectionBox}>
+            <Icon name='image' size={50} color='#2D336B' />
+            <View>
+              <Text style={styles.ButtonText}>이미지 업로드</Text>
+              <Text style={styles.descText}>갤러리의 이미지를 등록해보세요!</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -328,18 +155,18 @@ const styles = StyleSheet.create({
     height: 120,
     justifyContent: 'flex-start',
     flexDirection: 'row',
-    paddingLeft: 20,
+    paddingLeft: 25,
   },
   ButtonText: {
-    fontSize: 25,
+    fontSize: 23,
     fontWeight: '600',
     color: '#2D336B',
-    paddingLeft: 15,
+    paddingLeft: 20,
   },
   descText: {
     fontSize: 16,
     color: '#2D336B',
-    paddingLeft: 15,
+    paddingLeft: 20,
     paddingTop: 3,
   },
   Icon: {
