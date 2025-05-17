@@ -24,6 +24,7 @@ import Receipt from './screens/Receipt';
 import RecipeSearch from './screens/RecipeSearch';
 import RecipeDetail from './screens/RecipeDetail';
 import RecipeResult from './screens/RecipeResult';
+import RecipeThumbnails from './screens/RecipeThumbnails';
 import Login from './screens/Login';
 import AddIngredient from './screens/AddIngredient';
 import Badge from './screens/Badge';
@@ -95,6 +96,16 @@ const RecipeStack = () => (
       name="RecipeResult"
       component={RecipeResult}
       options={{ title: '검색결과', headerShown: false }}
+    />
+    <Stack.Screen
+      name="RecipeThumbnails"
+      component={RecipeThumbnails}
+      options={{ title: '레시피 썸네일 목록', headerShown: true }} // 추가: headerShown: true
+    />
+    <Stack.Screen
+      name="IngredientChange"
+      component={require('./screens/IngredientChange').default}
+      options={{ title: '재료 변동 사항', headerShown: true }}
     />
   </Stack.Navigator>
 );
