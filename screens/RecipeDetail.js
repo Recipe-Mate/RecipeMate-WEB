@@ -16,13 +16,13 @@ import apiService from '../src/services/api.service';
 
 // 레시피 이미지 매핑 (RecipeResult와 동일하게 유지)
 const recipeImages = {
-  '닭죽': require('../assets/chicken_porridge.png'),
-  '김치찌개': require('../assets/kimchi_stew.png'),
-  '갈비탕': require('../assets/Galbitang.png'),
-  '제육볶음': require('../assets/Stir_fried_pork.png'),
-  '된장찌개': require('../assets/soy_bean_paste_soup.png'),
+  '닭죽': require('../assets/icon.png'),
+  '김치찌개': require('../assets/icon.png'),
+  '갈비탕': require('../assets/icon.png'),
+  '제육볶음': require('../assets/icon.png'),
+  '된장찌개': require('../assets/icon.png'),
   // 기본 이미지
-  'default': require('../assets/chicken_porridge.png')
+  'default': require('../assets/icon.png')
 };
 
 // Helper function to parse an ingredient line string

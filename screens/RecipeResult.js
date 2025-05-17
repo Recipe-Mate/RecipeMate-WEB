@@ -13,11 +13,11 @@ import {
 import { GOOGLE_API_KEY, GOOGLE_CX } from '../config/api.config';
 
 const recipeImages = {
-  '닭죽': require('../assets/chicken_porridge.png'),
-  '김치찌개': require('../assets/kimchi_stew.png'),
-  '갈비탕': require('../assets/Galbitang.png'),
-  '제육볶음': require('../assets/Stir_fried_pork.png'),
-  '된장찌개': require('../assets/soy_bean_paste_soup.png'),
+  '닭죽': require('../assets/icon.png'),
+  '김치찌개': require('../assets/icon.png'),
+  '갈비탕': require('../assets/icon.png'),
+  '제육볶음': require('../assets/icon.png'),
+  '된장찌개': require('../assets/icon.png'),
 };
 
 // Google 이미지 검색 함수
@@ -100,24 +100,21 @@ const RecipeResult = ({ route, navigation }) => {
     navigation.navigate('RecipeDetail', { recipe });
   };
 
-  // 레시피 썸네일 이미지 로딩 함수 (thumbnail, image, ATT_FILE_NO_MK, ATT_FILE_NO_MAIN, processImage[0] 순)
+  // 썸네일 추출 함수 (http/https URL 우선, 빈 값/비정상 값 무시)
   const getRecipeThumbnail = (recipe) => {
-    if (recipe.thumbnail && typeof recipe.thumbnail === 'string' && recipe.thumbnail.length > 0) {
-      return { uri: recipe.thumbnail };
+    const candidates = [
+      recipe.thumbnail,
+      recipe.image,
+      recipe.ATT_FILE_NO_MK,
+      recipe.ATT_FILE_NO_MAIN,
+      Array.isArray(recipe.processImage) && recipe.processImage.length > 0 ? recipe.processImage[0] : null
+    ];
+    for (const url of candidates) {
+      if (typeof url === 'string' && url.trim().length > 0 && (url.startsWith('http://') || url.startsWith('https://'))) {
+        return { uri: url };
+      }
     }
-    if (recipe.image && typeof recipe.image === 'string' && recipe.image.length > 0) {
-      return { uri: recipe.image };
-    }
-    if (recipe.ATT_FILE_NO_MK && typeof recipe.ATT_FILE_NO_MK === 'string' && recipe.ATT_FILE_NO_MK.length > 0) {
-      return { uri: recipe.ATT_FILE_NO_MK };
-    }
-    if (recipe.ATT_FILE_NO_MAIN && typeof recipe.ATT_FILE_NO_MAIN === 'string' && recipe.ATT_FILE_NO_MAIN.length > 0) {
-      return { uri: recipe.ATT_FILE_NO_MAIN };
-    }
-    if (Array.isArray(recipe.processImage) && recipe.processImage.length > 0 && recipe.processImage[0]) {
-      return { uri: recipe.processImage[0] };
-    }
-    return recipeImages['된장찌개'];
+    return recipeImages['된장찌개']; // 기본 이미지
   };
 
   // 영양 정보 포매팅 함수
@@ -179,7 +176,7 @@ const RecipeResult = ({ route, navigation }) => {
       ) : recipes.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Image 
-            source={require('../assets/soy_bean_paste_soup.png')} 
+            source={require('../assets/icon.png')} 
             style={styles.emptyImage}
           />
           <Text style={styles.emptyText}>

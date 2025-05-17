@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import SimpleRecipeDetailModal from './SimpleRecipeDetailModal'; // SimpleRecipe
 
 // 메인 화면 컴포넌트
 const Main = ({ navigation }) => {
+  const { user } = useAuth(); // user 객체를 AuthContext에서 받아옴
   // React 상태 정의
   const [foodItems, setFoodItems] = useState([]);
   const [recentRecipes, setRecentRecipes] = useState([]);
@@ -25,8 +27,25 @@ const Main = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false); // 모달 표시 여부 상태
   const [selectedRecipe, setSelectedRecipe] = useState(null); // 모달에 표시할 레시피 데이터 상태
-  // 인증 컨텍스트에서 사용자 정보 가져오기
-  const { user } = useAuth();
+  const [emojiMap, setEmojiMap] = useState({}); // { 식재료명: 이모지 }
+  const [emojiLoading, setEmojiLoading] = useState({}); // { 식재료명: boolean }
+
+  // 앱 시작 시 캐시된 이모지 불러오기
+  useEffect(() => {
+    (async () => {
+      try {
+        const cache = await AsyncStorage.getItem('foodEmojiCache');
+        if (cache) setEmojiMap(JSON.parse(cache));
+      } catch (e) {}
+    })();
+  }, []);
+
+  // 캐시 저장 함수
+  const saveEmojiCache = async (newMap) => {
+    try {
+      await AsyncStorage.setItem('foodEmojiCache', JSON.stringify(newMap));
+    } catch (e) {}
+  };
 
   // 앱 바 설정
   useEffect(() => {
@@ -133,6 +152,59 @@ const Main = ({ navigation }) => {
     setSelectedRecipe(null);
   };
 
+  // Gemini AI로 식재료별 이모지 추천 받아오기 (캐시 우선)
+  const fetchEmojiForFood = async (foodName) => {
+    if (!foodName || emojiMap[foodName] || emojiLoading[foodName]) return;
+    // 캐시 확인
+    try {
+      const cache = await AsyncStorage.getItem('foodEmojiCache');
+      if (cache) {
+        const parsed = JSON.parse(cache);
+        if (parsed[foodName]) {
+          setEmojiMap((prev) => ({ ...prev, [foodName]: parsed[foodName] }));
+          return;
+        }
+      }
+    } catch (e) {}
+    setEmojiLoading((prev) => ({ ...prev, [foodName]: true }));
+    try {
+      const res = await apiService.getAlternativeFood('식재료', foodName + '에 어울리는 이모지 하나만 추천해줘. 음식 종류라면 대표 이모지, 채소/과일/육류 등은 그에 맞는 이모지. 텍스트 없이 이모지 하나만.');
+      let emoji = '';
+      if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+        // 응답에서 이모지(유니코드)만 추출, 없으면 첫 글자 사용
+        const raw = res.data[0].trim();
+        const match = raw.match(/([\p{Emoji}\u231A-\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD-\u25FE\u2614-\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA-\u26AB\u26BD-\u26BE\u26C4-\u26C5\u26CE\u26D4\u26EA\u26F2-\u26F3\u26F5\u26FA\u26FD\u2705\u270A-\u270B\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B-\u2B1C\u2B50\u2B55\u1F004\u1F0CF\u1F18E\u1F191-\u1F19A\u1F1E6-\u1F1FF\u1F201-\u1F202\u1F21A\u1F22F\u1F232-\u1F23A\u1F250-\u1F251\u1F300-\u1F320\u1F32D-\u1F335\u1F337-\u1F37C\u1F37E-\u1F393\u1F3A0-\u1F3CA\u1F3CF-\u1F3D3\u1F3E0-\u1F3F0\u1F3F4\u1F3F8-\u1F43E\u1F440\u1F442-\u1F4FC\u1F4FF-\u1F53D\u1F54B-\u1F54E\u1F550-\u1F567\u1F57A\u1F595-\u1F596\u1F5A4\u1F5FB-\u1F64F\u1F680-\u1F6C5\u1F6CC\u1F6D0\u1F6D1-\u1F6D2\u1F6EB-\u1F6EC\u1F6F4-\u1F6F8\u1F910-\u1F93A\u1F93C-\u1F93E\u1F940-\u1F945\u1F947-\u1F94C\u1F950-\u1F96B\u1F980-\u1F997\u1F9C0\u1F9D0-\u1F9E6])/u);
+        emoji = match ? match[1] : raw[0];
+      } else if (res && res.success && typeof res.data === 'string') {
+        const raw = res.data.trim();
+        const match = raw.match(/([\p{Emoji}\u231A-\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD-\u25FE\u2614-\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA-\u26AB\u26BD-\u26BE\u26C4-\u26C5\u26CE\u26D4\u26EA\u26F2-\u26F3\u26F5\u26FA\u26FD\u2705\u270A-\u270B\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B-\u2B1C\u2B50\u2B55\u1F004\u1F0CF\u1F18E\u1F191-\u1F19A\u1F1E6-\u1F1FF\u1F201-\u1F202\u1F21A\u1F22F\u1F232-\u1F23A\u1F250-\u1F251\u1F300-\u1F320\u1F32D-\u1F335\u1F337-\u1F37C\u1F37E-\u1F393\u1F3A0-\u1F3CA\u1F3CF-\u1F3D3\u1F3E0-\u1F3F0\u1F3F4\u1F3F8-\u1F43E\u1F440\u1F442-\u1F4FC\u1F4FF-\u1F53D\u1F54B-\u1F54E\u1F550-\u1F567\u1F57A\u1F595-\u1F596\u1F5A4\u1F5FB-\u1F64F\u1F680-\u1F6C5\u1F6CC\u1F6D0\u1F6D1-\u1F6D2\u1F6EB-\u1F6EC\u1F6F4-\u1F6F8\u1F910-\u1F93A\u1F93C-\u1F93E\u1F940-\u1F945\u1F947-\u1F94C\u1F950-\u1F96B\u1F980-\u1F997\u1F9C0\u1F9D0-\u1F9E6])/u);
+        emoji = match ? match[1] : raw[0];
+      }
+      if (!emoji) emoji = '🍽️'; // fallback
+      setEmojiMap((prev) => {
+        const newMap = { ...prev, [foodName]: emoji };
+        saveEmojiCache(newMap);
+        return newMap;
+      });
+    } catch (e) {
+      setEmojiMap((prev) => {
+        const newMap = { ...prev, [foodName]: '🍽️' };
+        saveEmojiCache(newMap);
+        return newMap;
+      });
+    } finally {
+      setEmojiLoading((prev) => ({ ...prev, [foodName]: false }));
+    }
+  };
+
+  // 식재료 미리보기 목록이 바뀔 때마다 이모지 요청
+  useEffect(() => {
+    foodItems.forEach(item => {
+      if (!emojiMap[item.name || item.foodName]) fetchEmojiForFood(item.name || item.foodName);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foodItems]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -160,7 +232,10 @@ const Main = ({ navigation }) => {
           {foodItems && foodItems.length > 0 ? (
             foodItems.map((item, index) => (
               <View key={index} style={styles.foodItem}>
-                <Icon name="nutrition-outline" size={24} color="#4CAF50" />
+                {/* Gemini 추천 이모지 */}
+                <Text style={{ fontSize: 20, marginRight: 6 }}>
+                  {emojiLoading[item.name || item.foodName] ? '⏳' : (emojiMap[item.name || item.foodName] || '🍽️')}
+                </Text>
                 <Text style={styles.foodItemText}>{item.name || item.foodName || '식재료'}</Text>
                 {item.quantity && (
                   <Text style={styles.foodItemQuantity}>{item.quantity}</Text>

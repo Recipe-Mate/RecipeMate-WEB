@@ -20,6 +20,23 @@ const RecipeThumbnails = ({ route, navigation }) => {
     setModalVisible(true);
   };
 
+  // 썸네일 추출 함수 (RecipeResult.js와 동일)
+  const getRecipeThumbnail = (recipe) => {
+    const candidates = [
+      recipe.thumbnail,
+      recipe.image,
+      recipe.ATT_FILE_NO_MK,
+      recipe.ATT_FILE_NO_MAIN,
+      Array.isArray(recipe.processImage) && recipe.processImage.length > 0 ? recipe.processImage[0] : null
+    ];
+    for (const url of candidates) {
+      if (typeof url === 'string' && url.trim().length > 0 && (url.startsWith('http://') || url.startsWith('https://'))) {
+        return { uri: url };
+      }
+    }
+    return require('../assets/icon.png'); // 기본 이미지
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>레시피 썸네일 목록</Text>
@@ -30,11 +47,11 @@ const RecipeThumbnails = ({ route, navigation }) => {
           {recipes.map((recipe, idx) => (
             <TouchableOpacity key={recipe.id || idx} onPress={() => handlePress(recipe)} style={styles.itemContainer}>
               <Image
-                source={recipe.thumbnail && recipe.thumbnail.startsWith('http')
-                  ? { uri: recipe.thumbnail }
-                  : require('../assets/soy_bean_paste_soup.png') // 기본 이미지
-                }
+                source={getRecipeThumbnail(recipe)}
                 style={styles.thumbnail}
+                onError={(e) => {
+                  e.target && (e.target.src = require('../assets/icon.png'));
+                }}
               />
               <Text style={styles.recipeName} numberOfLines={1}>{recipe.recipeName || recipe.title || '이름 없음'}</Text>
               <TouchableOpacity onPress={() => handleTextPress(recipe)}>

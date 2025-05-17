@@ -49,14 +49,15 @@ const Login = ({ navigation }) => { // navigation prop 추가
       if (!getTokenResponse.ok) throw new Error('토큰 요청 실패');
   
       const data = await getTokenResponse.json();
+      console.log('[카카오 로그인] 서버 응답 전체:', JSON.stringify(data, null, 2));
       const isRegistered = data.isRegistered;
-      console.log('데이터:', data);
       // 수정: 백엔드에서 내려주는 필드명에 맞게 파싱
       console.log('Access Token:', data.access_token);
       console.log('Refresh Token: ', data.refresh_token);
       console.log('userId: ', data.user_id);
 
       if (data.access_token) {
+        console.log('[카카오 로그인] accessToken 저장');
         await AsyncStorage.setItem('accessToken', data.access_token);
         if (data.refresh_token) {
           await AsyncStorage.setItem('refreshToken', data.refresh_token);
@@ -65,6 +66,7 @@ const Login = ({ navigation }) => { // navigation prop 추가
           await AsyncStorage.setItem('userId', String(data.user_id));
         }
         // userData에 token 필드 추가해서 login 호출
+        console.log('[카카오 로그인] login() 호출:', { ...data, token: data.access_token });
         login({
           ...data,
           token: data.access_token
@@ -111,9 +113,22 @@ const Login = ({ navigation }) => { // navigation prop 추가
       }
 
       if (isRegistered === true) {
-        // DB PK와 카카오ID를 명확히 저장
+        // user 객체가 없으면 생성해서 넘김
+        const userObj = data.user || {
+          id: data.user_id,
+          name: data.user_name,
+          kakao_id: data.kakao_id,
+          email: data.email,
+        };
+        console.log('[카카오 로그인] isRegistered=true, login() 호출:', {
+          ...data,
+          user: userObj,
+          id: data.user_id,
+          kakao_id: data.kakao_id || data.user_id
+        });
         login({
           ...data,
+          user: userObj, // 항상 user 객체로 넘김
           id: data.user_id, // DB PK
           kakao_id: data.kakao_id || data.user_id // 카카오ID(백엔드에서 kakao_id가 없으면 user_id 그대로)
         });
@@ -122,7 +137,7 @@ const Login = ({ navigation }) => { // navigation prop 추가
       }
   
     } catch (error) {
-      console.error('카카오 로그인 실패: ', error);
+      console.error('[카카오 로그인] 실패:', error);
       setErrorText('로그인 중 문제가 발생했습니다.');
     } finally {
       setIsLoading(false);

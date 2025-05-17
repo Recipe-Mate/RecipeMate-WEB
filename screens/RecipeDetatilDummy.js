@@ -42,7 +42,7 @@ const RecipeDetatilDummy = () => {
     <ScrollView style={styles.container}>
       {/* 썸네일 */}
       <Image
-        source={require('../assets/kimchi_stew.png')}
+        source={require('../assets/icon.png')}
         style={styles.menuImage}
       />
       {/* 제목 */}
