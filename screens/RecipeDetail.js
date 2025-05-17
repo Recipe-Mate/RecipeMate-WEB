@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../src/context/AuthContext';
 import apiService from '../src/services/api.service';
+import { LinearGradient } from 'react-native-linear-gradient';
 
 // 레시피 이미지 매핑 (RecipeResult와 동일하게 유지)
 const recipeImages = {
@@ -555,11 +556,11 @@ const RecipeDetail = ({ route, navigation }) => {
   }
 
   return (
+    
     <ScrollView style={styles.container} contentContainerStyle={{paddingBottom: 32}}>
+      
       {/* 메뉴 이름 */}
       <Text style={styles.menuName}>{recipeTitle}</Text>
-
-      {/* 알레르기 정보는 데이터가 없어서 일단 생략 */}
       
       {/* 메뉴 사진 */}
       <View style={styles.imageSection}>
@@ -791,10 +792,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#C3CAE8',
   },
   menuName: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#333',

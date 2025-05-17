@@ -95,7 +95,24 @@ const RecipeStack = () => (
     <Stack.Screen
       name="RecipeResult"
       component={RecipeResult}
-      options={{ title: '검색결과', headerShown: false }}
+      options={{
+        headerStyle: {
+          backgroundColor: '#A9B5DF',
+          height: 60,
+        },
+        headerTintColor: '#2D336B',
+        headerBackTitleStyle: {
+          fontSize: 16,
+        },
+        title: '검색 결과',
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "600",
+        },
+        headerShown: true,
+        headerShadowVisible: false,
+        headerBackTitle: '뒤로',
+      }}
     />
     <Stack.Screen
       name="RecipeThumbnails"
