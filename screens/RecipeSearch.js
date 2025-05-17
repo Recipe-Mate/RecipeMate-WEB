@@ -228,18 +228,14 @@ const RecipeSearch = ({ navigation }) => {
           <View style={styles.sectionDivider} />
         </View>
         <View style={styles.box}>
-          <FlatList
-            data={ingredients}
-            renderItem={({ item, index }) => (
-              <View style={styles.ingredientItem}>
-                <Text style={styles.ingredientText}>{item}</Text>
-                <TouchableOpacity onPress={() => deleteIngredient(index)}>
-                  <Text style={styles.deleteButton}>🗑️</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            keyExtractor={(item, index) => index.toString()}
-          />
+          {ingredients.map((item, index) => (
+            <View style={styles.ingredientItem} key={index}>
+              <Text style={styles.ingredientText}>{item}</Text>
+              <TouchableOpacity onPress={() => deleteIngredient(index)}>
+                <Text style={styles.deleteButton}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -286,7 +282,7 @@ const styles = StyleSheet.create({
     padding: 15,
     margin: 10,
     borderRadius: 20,
-    marginBottom: 3,
+    marginBottom: 13,
   },
   container: {
     flex: 1,
