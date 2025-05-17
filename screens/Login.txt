@@ -71,7 +71,7 @@ const Login = ({ navigation }) => { // navigation prop 추가
         });
       } else {
         throw new Error('access_token이 누락되었습니다.');
-      }
+      }      
   
       // 예시로 refreshToken 유효성 확인
       const refreshToken = await AsyncStorage.getItem('refreshToken');

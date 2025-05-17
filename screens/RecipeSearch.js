@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  FlatList,
   TouchableOpacity,
   Alert,
   Switch,
-  ActivityIndicator
+  ActivityIndicator,
+  ScrollView
 } from 'react-native';
 import apiService from '../src/services/api.service';
 import apiConfig from '../config/api.config';
@@ -36,6 +36,7 @@ const RecipeSearch = ({ navigation }) => {
   const [error, setError] = useState(''); // 에러 상태 관리
   const [resultCount, setResultCount] = useState(15); // 기본값 15개
   const [exactMatch, setExactMatch] = useState(false); // 완전히 일치 옵션 상태
+  const [randomSearch, setRandomSearch] = useState(false); // 랜덤 검색 옵션 상태
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
   const toggleCondition = (key) => {
@@ -97,41 +98,31 @@ const RecipeSearch = ({ navigation }) => {
       Alert.alert('입력 오류', '최소 한 개 이상의 재료를 입력하세요.');
       return;
     }
-
     setLoading(true);
-
     try {
-      // 검색 매개변수 구성
       const searchParams = {
-        foodName: ingredients[0], // 첫 번째 재료를 주 재료로 사용
+        ingredients: ingredients,
         ...conditions,
         startIndex: 1,
         endIndex: resultCount,
-        exactMatch, // 완전히 일치 옵션 추가
+        exactMatch,
+        randomSearch, // 랜덤 검색 옵션 추가
       };
-
       console.log('[RecipeSearch] 검색 매개변수:', searchParams);
-
-      // API 호출
       const response = await apiService.searchRecipes(searchParams);
       console.log('[RecipeSearch] 검색 결과:', response);
-
-      // 검색 결과 화면으로 이동 (RecipeResult로)
       if (response && response.success && Array.isArray(response.data)) {
         navigation.navigate('RecipeResult', {
           recipes: response.data,
           conditions: conditions,
-          ingredients: ingredients
+          ingredients: ingredients, // 재료 배열도 함께 전달
         });
       } else {
-        setError('검색 결과가 없습니다.');
+        Alert.alert('검색 실패', '레시피를 찾을 수 없습니다.');
       }
-    } catch (error) {
-      console.error('[RecipeSearch] 검색 오류:', error);
-      Alert.alert(
-        '검색 오류',
-        '레시피 검색 중 오류가 발생했습니다. 다시 시도해주세요.'
-      );
+    } catch (err) {
+      setError('레시피 검색 중 오류가 발생했습니다.');
+      Alert.alert('오류', '레시피 검색 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -155,17 +146,27 @@ const RecipeSearch = ({ navigation }) => {
     ));
   };
 
-  // 완전히 일치 옵션 렌더링
-  const renderExactMatchOption = () => (
+  // 완전히 일치/랜덤 검색 옵션 렌더링
+  const renderOptionsRow = () => (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, marginBottom: 10 }}>
       <Switch
         value={exactMatch}
         onValueChange={setExactMatch}
-        trackColor={{ false: '#d1d5db', true: '#2D336B' }} // 연한 회색/메인 네이비
-        thumbColor={exactMatch ? '#4FC3F7' : '#f4f3f4'} // on: 밝은 파랑, off: 밝은 회색
+        trackColor={{ false: '#d1d5db', true: '#2D336B' }}
+        thumbColor={exactMatch ? '#4FC3F7' : '#f4f3f4'}
       />
       <Text style={{ marginLeft: 10, fontSize: 16, color: exactMatch ? '#2D336B' : '#333', fontWeight: exactMatch ? 'bold' : 'normal' }}>
         완전히 일치
+      </Text>
+      <View style={{ width: 24 }} />
+      <Switch
+        value={randomSearch}
+        onValueChange={setRandomSearch}
+        trackColor={{ false: '#d1d5db', true: '#50C4B7' }}
+        thumbColor={randomSearch ? '#50C4B7' : '#f4f3f4'}
+      />
+      <Text style={{ marginLeft: 10, fontSize: 16, color: randomSearch ? '#50C4B7' : '#333', fontWeight: randomSearch ? 'bold' : 'normal' }}>
+        랜덤 검색
       </Text>
     </View>
   );
@@ -204,7 +205,7 @@ const RecipeSearch = ({ navigation }) => {
       </View>
       {/* <View style={styles.sectionDivider} />  // '재료 추가' 위 구분선 제거 */}
       <Text style={styles.sectionTitle}>재료 추가</Text>
-      {renderExactMatchOption()}
+      {renderOptionsRow()}
       <View style={styles.sectionDivider} />
       {renderResultCountSelector()}
       <View style={styles.sectionDivider} />
@@ -221,6 +222,8 @@ const RecipeSearch = ({ navigation }) => {
           value={newIngredient}
           onChangeText={setNewIngredient}
           onSubmitEditing={addIngredient}
+          blurOnSubmit={false}
+          returnKeyType="done"
         />
         <TouchableOpacity style={styles.addButton} onPress={addIngredient}>
           <Text style={styles.addButtonText}>+</Text>
@@ -244,26 +247,28 @@ const RecipeSearch = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={ingredients}
-        renderItem={({ item, index }) => (
-          <View style={styles.ingredientItem}>
-            <Text style={styles.ingredientText}>{item}</Text>
-            <TouchableOpacity onPress={() => deleteIngredient(index)}>
-              <Text style={styles.deleteButton}>🗑️</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        keyExtractor={(item, index) => index.toString()}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={
+      <ScrollView
+        keyboardShouldPersistTaps="always"
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 18, paddingBottom: 40 }} // 좌우+하단 공간 확보
+      >
+        {renderHeader()}
+        {/* 재료 리스트 수동 렌더링 */}
+        {ingredients.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>아직 추가된 재료가 없습니다</Text>
           </View>
-        }
-        contentContainerStyle={styles.listContainer}
-      />
+        ) : (
+          ingredients.map((item, index) => (
+            <View key={index} style={styles.ingredientItem}>
+              <Text style={styles.ingredientText}>{item}</Text>
+              <TouchableOpacity onPress={() => deleteIngredient(index)}>
+                <Text style={styles.deleteButton}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
+        {renderFooter()}
+      </ScrollView>
     </View>
   );
 };
@@ -272,22 +277,42 @@ const RecipeSearch = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#F6F8FA', // Toss 스타일 밝은 배경
+    padding: 0,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
-    marginBottom: 16,
+    fontSize: 26,
+    fontWeight: '300', // 얇은 폰트
+    color: '#222',
+    textAlign: 'left',
+    paddingLeft: 18,
+    marginTop: 32,
+    marginBottom: 18,
+    letterSpacing: 0.2,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
+  },
+  sectionBox: {
+    backgroundColor: '#fff',
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    marginHorizontal: 0,
+    marginTop: 16,
+    marginBottom: 18,
+    borderRadius: 22,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#555',
-    marginBottom: 10,
-    marginTop: 10,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#222',
+    marginBottom: 18,
+    marginTop: 0,
+    letterSpacing: 0.1,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   conditions: {
     marginBottom: 20,
@@ -296,13 +321,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
+    paddingVertical: 14,
+    marginHorizontal: 0,
   },
   conditionText: {
-    fontSize: 16,
-    color: '#444',
+    fontSize: 15,
+    color: '#222',
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
+  },
+  withSeparator: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F1F4',
   },
   ingredients: {
     marginBottom: 20,
@@ -311,95 +341,135 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: '#fff', // 카드 느낌
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    marginBottom: 8,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F0F1F4',
   },
   ingredientText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
+    color: '#222',
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   deleteButton: {
-    fontSize: 16,
-    color: '#e74c3c',
+    fontSize: 18,
+    color: '#B0B8C1',
+    paddingHorizontal: 6,
   },
   inputContainer: {
     flexDirection: 'row',
+    marginTop: 18,
+    marginBottom: 8,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 6,
     alignItems: 'center',
-    marginTop: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F0F1F4',
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginRight: 10,
+    borderWidth: 0,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    backgroundColor: 'transparent',
+    color: '#222',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   addButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    height: 40,
+    width: 40,
+    backgroundColor: '#50C4B7', // Toss 민트
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   addButtonText: {
-    fontSize: 20,
+    fontSize: 24,
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 24,
   },
   searchButton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 15,
-    marginTop: 20,
-    borderRadius: 8,
+    backgroundColor: '#50C4B7', // Toss 민트
+    height: 54,
+    borderRadius: 16,
+    marginTop: 28,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 2,
+    marginHorizontal: 0,
   },
   searchButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   emptyContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 32,
+    marginBottom: 12,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
+    fontSize: 15,
+    color: '#B0B8C1',
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   listContainer: {
     paddingBottom: 20,
   },
   optionButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: '#F0F1F4',
+    minWidth: 70,
+    alignItems: 'center',
+    marginLeft: 8,
+    marginRight: 0,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   optionButtonText: {
-    fontSize: 16,
-    color: '#fff',
+    fontSize: 15,
+    color: '#222',
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   disabledButton: {
-    backgroundColor: '#95a5a6',
+    backgroundColor: '#E5E8EB',
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: '#e0e0e0', // 연한 회색
-    marginVertical: 12,
+    backgroundColor: '#F0F1F4',
+    marginVertical: 18,
     width: '100%',
-  },
-  sectionBox: {
-    marginBottom: 0,
-    paddingBottom: 0,
-    marginTop: 12,
-    marginBottom: 12,
   },
 });
 

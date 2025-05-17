@@ -26,7 +26,7 @@ const FoodList = ({ navigation, route }) => {
   
   // 모달 상태 관리 추가
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedFoodId, setSelectedFoodId] = useState(null);
+  const [selectedFoodName, setSelectedFoodName] = useState(null);
 
   useEffect(() => {
     // 컴포넌트 마운트 시 ref를 true로 설정
@@ -143,27 +143,26 @@ const FoodList = ({ navigation, route }) => {
     loadFoodItems();
   };
 
-  const handleDeleteFood = (foodId) => {
-    // Alert 대신 모달 사용
-    setSelectedFoodId(foodId);
+  const handleDeleteFood = (foodName) => {
+    setSelectedFoodName(foodName);
     setModalVisible(true);
   };
 
   const confirmDelete = async () => {
-    if (!selectedFoodId) return;
+    if (!selectedFoodName) return;
     
     try {
       setLoading(true);
       setModalVisible(false); // 모달 닫기
       
-      console.log(`[FoodList] 식재료 삭제 진행 중, ID: ${selectedFoodId}`);
-      const response = await apiService.deleteFood(selectedFoodId);
+      console.log(`[FoodList] 식재료 삭제 진행 중, Name: ${selectedFoodName}`);
+      const response = await apiService.deleteFood(user.id, selectedFoodName);
       console.log('[FoodList] 식재료 삭제 응답:', response);
       
       // 삭제 성공 시 목록에서 제거
-      if (response?.data?.success) {
+      if (response?.success) {
         console.log('[FoodList] 식재료 삭제 성공');
-        const updatedItems = foodItems.filter(item => item.id !== selectedFoodId);
+        const updatedItems = foodItems.filter(item => item.name !== selectedFoodName);
         setFoodItems(updatedItems);
       } else {
         console.error('[FoodList] 식재료 삭제 실패:', response);
@@ -172,10 +171,11 @@ const FoodList = ({ navigation, route }) => {
       console.error('[FoodList] 식재료 삭제 중 오류:', error);
     } finally {
       setLoading(false);
-      setSelectedFoodId(null);
+      setSelectedFoodName(null);
     }
   };
 
+  // Toss 스타일: 식재료 카드 렌더링
   const renderFoodItem = ({ item }) => (
     <View style={styles.foodItem}>
       <View style={styles.foodInfo}>
@@ -187,14 +187,14 @@ const FoodList = ({ navigation, route }) => {
           </Text>
         )}
       </View>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.deleteButton, loading && styles.disabledButton]}
-        onPress={() => !loading && handleDeleteFood(item.id)}
+        onPress={() => !loading && handleDeleteFood(item.name)}
         disabled={loading}
         activeOpacity={0.7}
       >
         <View style={styles.deleteButtonInner}>
-          <Icon name="delete" size={24} color={loading ? "#CCCCCC" : "#FF5252"} />
+          <Icon name="delete" size={22} color={loading ? "#CCCCCC" : "#FFA07A"} />
         </View>
       </TouchableOpacity>
     </View>
@@ -235,7 +235,7 @@ const FoodList = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      {/* 네이티브 헤더만 사용, 커스텀 헤더/StatusBar/SafeAreaView 제거 */}
+      {/* Toss 스타일: 식재료 리스트 */}
       {foodItems.length > 0 ? (
         <FlatList
           data={foodItems}
@@ -246,29 +246,30 @@ const FoodList = ({ navigation, route }) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={['#4CAF50']}
+              colors={["#50C4B7"]}
             />
           }
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Icon name="shopping-basket" size={80} color="#E0E0E0" />
+          <Icon name="shopping-basket" size={72} color="#F6F8FA" />
           <Text style={styles.emptyText}>등록된 식재료가 없습니다.</Text>
           <TouchableOpacity
             style={styles.addFoodButton}
             onPress={() => navigation.navigate('AddFood')}
+            activeOpacity={0.8}
           >
             <Text style={styles.addFoodButtonText}>식재료 추가하기</Text>
           </TouchableOpacity>
         </View>
       )}
-      {/* 플로팅 추가 버튼 (앱 바와 겹치지 않게 하단에 고정) */}
+      {/* 플로팅 추가 버튼 */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('AddFood')}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
       >
-        <Icon name="add" size={32} color="#FFF" />
+        <Icon name="add" size={30} color="#FFF" />
       </TouchableOpacity>
       {/* 삭제 확인 모달 */}
       <Modal
@@ -282,15 +283,17 @@ const FoodList = ({ navigation, route }) => {
             <Text style={styles.modalTitle}>식재료 삭제</Text>
             <Text style={styles.modalText}>정말 이 식재료를 삭제하시겠습니까?</Text>
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
+                activeOpacity={0.8}
               >
                 <Text style={styles.cancelButtonText}>취소</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.deleteButton]}
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteModalButton]}
                 onPress={confirmDelete}
+                activeOpacity={0.8}
               >
                 <Text style={styles.deleteButtonText}>삭제</Text>
               </TouchableOpacity>
@@ -305,150 +308,182 @@ const FoodList = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   listContainer: {
-    padding: 16,
+    padding: 20,
+    paddingBottom: 40,
   },
   foodItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    marginBottom: 12,
-    padding: 16,
+    backgroundColor: '#F6F8FA',
+    borderRadius: 20,
+    marginBottom: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 22,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
   foodInfo: {
     flex: 1,
   },
   foodName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontSize: 17,
+    color: '#1E1E1E',
+    fontWeight: '400',
+    fontFamily: 'Pretendard-Regular',
+    marginBottom: 2,
   },
   foodQuantity: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    color: '#8E8E93',
+    fontWeight: '400',
+    fontFamily: 'Pretendard-Regular',
   },
   deleteButton: {
-    width: 44,  // 터치 영역 확대
-    height: 44, // 터치 영역 확대
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: 'transparent',
   },
   deleteButtonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 82, 82, 0.1)', // 배경색 추가로 시각적 피드백 강화
+    backgroundColor: 'rgba(255,160,122,0.12)', // soft warm accent
   },
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#8E8E93',
+    fontFamily: 'Pretendard-Regular',
+    fontWeight: '400',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
+    backgroundColor: '#FFFFFF',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 16,
-    marginBottom: 24,
+    fontSize: 15,
+    color: '#8E8E93',
+    marginTop: 18,
+    marginBottom: 28,
+    fontFamily: 'Pretendard-Regular',
+    fontWeight: '400',
   },
   addFoodButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    backgroundColor: '#50C4B7',
+    paddingVertical: 13,
+    paddingHorizontal: 32,
+    borderRadius: 18,
+    marginTop: 8,
+    shadowColor: '#50C4B7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   addFoodButtonText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  fab: {
+    position: 'absolute',
+    right: 28,
+    bottom: 36,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#50C4B7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#50C4B7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.13,
+    shadowRadius: 12,
+    elevation: 4,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(30,30,30,0.18)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    elevation: 5,
+    width: '82%',
+    backgroundColor: '#F6F8FA',
+    borderRadius: 22,
+    padding: 28,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
+    fontWeight: '600',
+    color: '#1E1E1E',
+    marginBottom: 10,
+    fontFamily: 'Pretendard-SemiBold',
   },
   modalText: {
-    fontSize: 16,
-    marginBottom: 20,
+    fontSize: 15,
+    color: '#8E8E93',
+    marginBottom: 22,
+    fontFamily: 'Pretendard-Regular',
+    fontWeight: '400',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    marginTop: 8,
   },
   modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginLeft: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 22,
+    borderRadius: 14,
+    marginLeft: 8,
+    backgroundColor: '#E5E8EB',
   },
   cancelButton: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#E5E8EB',
   },
   cancelButtonText: {
-    color: '#333',
-    fontWeight: 'bold',
+    color: '#1E1E1E',
+    fontWeight: '500',
+    fontFamily: 'Pretendard-Regular',
   },
-  deleteButton: {
-    backgroundColor: '#FF5252',
+  deleteModalButton: {
+    backgroundColor: '#FFA07A',
   },
   deleteButtonText: {
     color: 'white',
-    fontWeight: 'bold',
-  },
-  fab: {
-    position: 'absolute',
-    right: 24,
-    bottom: 32,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#2D336B',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    fontWeight: '600',
+    fontFamily: 'Pretendard-SemiBold',
   },
 });
 

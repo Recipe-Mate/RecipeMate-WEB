@@ -22,108 +22,95 @@ const Profile = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}></View>
-
-      <View style={styles.user_info}>
-        <View style={{ justifyContent: 'center' }}>
-          {/* 이미지 대신 아이콘 사용 */}
-          <View style={styles.photo}>
-            <Icon name="person" size={40} color="#ffffff" />
+      {/* 상단 Toss-style 프로필 카드 */}
+      <View style={styles.profileCard}>
+        <View style={styles.profileRow}>
+          <View style={styles.profilePhotoWrap}>
+            <View style={styles.profilePhotoShadow}>
+              <View style={styles.photo}>
+                <Icon name="person" size={40} color="#ffffff" />
+              </View>
+            </View>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.nickname}>{user?.name || '닉네임'}</Text>
+            <Text style={styles.email}>{user?.email || '이메일'}</Text>
           </View>
         </View>
-        <View style={{ flexDirection: 'column', justifyContent: 'center', marginLeft: 15 }}>
-          <Text style={styles.nickname}>{user?.name || '닉네임'}</Text>
-          <Text style={styles.email}>{user?.email || '이메일'}</Text>
+        <View style={styles.profileStatsRow}>
+          <View style={styles.profileStatBox}>
+            <Text style={styles.profileStatLabel}>보유 재료</Text>
+            <Text style={styles.profileStatValue}>5</Text>
+          </View>
+          <View style={styles.profileStatBox}>
+            <Text style={styles.profileStatLabel}>완료 레시피</Text>
+            <Text style={styles.profileStatValue}>5</Text>
+          </View>
         </View>
       </View>
 
-      <View style={{ backgroundColor: '#333f50', height: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <View style={styles.horizontal_divider} />
-      </View>
-
-      <View style={styles.number_view}>
-        <View style={{ alignItems: 'center', marginTop: 10 }}>
-          <Text style={styles.title}>가지고 있는 재료 수</Text>
-          <Text style={styles.number}>5</Text>
+      {/* Toss-style 배지 카드 */}
+      <View style={styles.badgeCard}>
+        <Text style={styles.badgeTitle}>획득한 배지</Text>
+        <View style={styles.badgeRow}>
+          <View style={styles.badgeIconWrap}>
+            <Icon name="star" size={30} color="#FFD700" />
+            <Text style={styles.badgeLabel}>스타터</Text>
+          </View>
+          <View style={styles.badgeIconWrap}>
+            <Icon name="local-dining" size={30} color="#50C4B7" />
+            <Text style={styles.badgeLabel}>요리왕</Text>
+          </View>
+          <View style={styles.badgeIconWrap}>
+            <Icon name="emoji-events" size={30} color="#FFB300" />
+            <Text style={styles.badgeLabel}>챌린저</Text>
+          </View>
+          <TouchableOpacity style={styles.badgeAddButton} onPress={() => navigation.navigate('Badge')}>
+            <Icon name="add" size={32} color="#fff" />
+          </TouchableOpacity>
         </View>
-        <View style={styles.vertical_divider} />
-        <View style={{ alignItems: 'center', marginTop: 10 }}>
-          <Text style={styles.title}>만든 레시피 수</Text>
-          <Text style={styles.number}>5</Text>
-        </View>
       </View>
 
-      <View style={{ backgroundColor: '#333f50', height: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <View style={styles.horizontal_divider} />
-      </View>
-
-      <View style={styles.badge_title_view}>
-        <Text style={styles.badge_title}>지금까지 획득한 배지</Text>
-        <Icon name='label' size={20} color='#ffffff'></Icon>
-      </View>
-
-      <View style={styles.badge_view}>
-        {/* 이미지 대신 아이콘 사용 */}
-        <View style={styles.badge_icon}>
-          <Icon name="star" size={30} color="#FFD700" />
-        </View>
-        <View style={styles.badge_icon}>
-          <Icon name="local-dining" size={30} color="#FFD700" />
-        </View>
-        <View style={styles.badge_icon}>
-          <Icon name="emoji-events" size={30} color="#FFD700" />
-        </View>
-        <TouchableOpacity
-          style={styles.badge_button}
-          onPress={() => { navigation.navigate('Badge') }}>
-          <Icon style={{ marginLeft: 20 }} name='add' size={50} color='#ffffff' />
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ flex: 4 }}>
-        <Text style={styles.text1}>정보 수정하기(보류)</Text>
-        <Text style={styles.text2}>계정 로그아웃</Text>
-        <Text style={styles.text3}>탈퇴하기</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>계정 관리</Text>
+      {/* 메뉴 카드: 계정/앱/레시피 관리 */}
+      <View style={styles.menuCard}>
+        <Text style={styles.menuSectionTitle}>계정 관리</Text>
         <TouchableOpacity style={styles.menuItem}>
+          <Icon name="edit" size={20} color="#50C4B7" style={styles.menuIcon} />
           <Text style={styles.menuText}>프로필 수정</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem}>
+          <Icon name="lock" size={20} color="#50C4B7" style={styles.menuIcon} />
           <Text style={styles.menuText}>비밀번호 변경</Text>
         </TouchableOpacity>
       </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>앱 설정</Text>
+      <View style={styles.menuCard}>
+        <Text style={styles.menuSectionTitle}>앱 설정</Text>
         <TouchableOpacity style={styles.menuItem}>
+          <Icon name="notifications" size={20} color="#50C4B7" style={styles.menuIcon} />
           <Text style={styles.menuText}>알림 설정</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem}>
+          <Icon name="language" size={20} color="#50C4B7" style={styles.menuIcon} />
           <Text style={styles.menuText}>언어 설정</Text>
         </TouchableOpacity>
       </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>레시피 관리</Text>
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('FavoriteRecipes')} // FavoriteRecipesScreen으로 이동
-        >
+      <View style={styles.menuCard}>
+        <Text style={styles.menuSectionTitle}>레시피 관리</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('FavoriteRecipes')}>
+          <Icon name="favorite" size={20} color="#50C4B7" style={styles.menuIcon} />
           <Text style={styles.menuText}>즐겨찾는 레시피</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity 
-        style={styles.logoutButton}
-        onPress={handleLogout}
-      >
+      {/* 로그아웃/탈퇴 버튼 */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>로그아웃</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.withdrawButton} onPress={() => Alert.alert('준비 중', '탈퇴 기능은 준비 중입니다.')}>
+        <Text style={styles.withdrawText}>탈퇴하기</Text>
+      </TouchableOpacity>
 
-      <StatusBar barStyle="light" />
+      <StatusBar barStyle="dark-content" />
     </ScrollView>
   );
 };
@@ -132,161 +119,194 @@ const Profile = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#F6F8FA',
   },
-  header: {
-    height: 60,
-    backgroundColor: '#333f50',
+  profileCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    margin: 18,
+    marginBottom: 8,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  user_info: {
-    flex: 1.5,
-    backgroundColor: '#333f50',
-    flexDirection: 'row',
-    marginTop: -10,
-    paddingBottom: 20,
-  },
-  nickname: {
-    fontSize: 25,
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  email: {
-    marginTop: 3,
-    fontSize: 20,
-    color: 'gray',
-  },
-  number_view: {
-    flex: 1.5,
-    backgroundColor: '#333f50',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  title: {
-    fontSize: 20,
-    color: '#ffffff',
-    fontWeight: 'bold',
-    marginTop: -10,
-  },
-  number: {
-    fontSize: 30,
-    color: '#ffffff',
-    fontWeight: 'bold',
-    marginTop: 10,
-  },
-  vertical_divider: {
-    height: '100%',
-    width: 3,
-    backgroundColor: '#aaaaaa',
-    marginLeft: 25,
-    marginRight: 25,
-  },
-  horizontal_divider: {
-    width: '90%',
-    height: 4,
-    backgroundColor: '#aaaaaa',
-  },
-  badge_title_view: {
-    flex: 0.8,
-    backgroundColor: '#333f50',
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginBottom: -10,
-    padding: 10,
-  },
-  badge_title: {
-    marginLeft: 30,
-    fontSize: 22,
-    color: '#ffffff',
-    fontWeight: 'bold',
-    marginRight: 5,
-  },
-  badge_view: {
-    flex: 1.2,
-    backgroundColor: '#333f50',
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -10,
-    padding: 20,
+    marginBottom: 18,
   },
-  badge_icon: {
-    width: 60,
-    height: 60,
-    marginLeft: 30,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#000000',
-    backgroundColor: '#333f50',
-    justifyContent: 'center',
-    alignItems: 'center',
+  profilePhotoWrap: {
+    marginRight: 18,
   },
-  badge_button: {
-    marginLeft: 20,
-  },
-  text1: {
-    marginTop: 30,
-    marginLeft: 25,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  text2: {
-    marginTop: 20,
-    marginLeft: 25,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  text3: {
-    marginTop: 20,
-    marginLeft: 25,
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'tomato',
-  },
-  section: {
-    backgroundColor: 'white',
-    marginBottom: 20,
-    paddingVertical: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    color: '#666',
-  },
-  menuItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  menuText: {
-    fontSize: 16,
-  },
-  logoutButton: {
-    margin: 20,
-    padding: 15,
-    backgroundColor: '#f44336',
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  logoutText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+  profilePhotoShadow: {
+    shadowColor: '#50C4B7',
+    shadowOpacity: 0.13,
+    shadowRadius: 8,
+    elevation: 4,
+    borderRadius: 40,
   },
   photo: {
     width: 70,
     height: 70,
-    marginLeft: 25,
     borderRadius: 35,
-    borderWidth: 2,
-    borderColor: '#000000',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#50C4B7',
     justifyContent: 'center',
     alignItems: 'center',
-  }
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  nickname: {
+    fontSize: 22,
+    color: '#222',
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  email: {
+    fontSize: 15,
+    color: '#888',
+    fontWeight: '400',
+  },
+  profileStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  profileStatBox: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  profileStatLabel: {
+    fontSize: 14,
+    color: '#888',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  profileStatValue: {
+    fontSize: 20,
+    color: '#50C4B7',
+    fontWeight: '700',
+  },
+  badgeCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    marginHorizontal: 18,
+    marginBottom: 8,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  badgeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D336B',
+    marginBottom: 10,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  badgeIconWrap: {
+    alignItems: 'center',
+    marginRight: 18,
+  },
+  badgeLabel: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  badgeAddButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#50C4B7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    shadowColor: '#50C4B7',
+    shadowOpacity: 0.13,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  menuCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    marginHorizontal: 18,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  menuSectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#50C4B7',
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 2,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F1F4',
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuText: {
+    fontSize: 16,
+    color: '#222',
+    fontWeight: '400',
+  },
+  logoutButton: {
+    marginHorizontal: 18,
+    marginTop: 18,
+    backgroundColor: '#50C4B7',
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  withdrawButton: {
+    marginHorizontal: 18,
+    marginTop: 10,
+    marginBottom: 30,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    paddingVertical: 14,
+    borderRadius: 18,
+    alignItems: 'center',
+  },
+  withdrawText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 export default Profile;

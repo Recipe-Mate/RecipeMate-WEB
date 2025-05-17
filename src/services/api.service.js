@@ -679,6 +679,33 @@ const apiService = {
       console.error('[apiService] getAlternativeFood API 호출 실패:', error);
       return { success: false, error: error.message || '대체 식재료 조회 중 오류 발생', data: [] };
     }
+  },
+
+  /**
+   * 식재료 삭제
+   * @param {number|string} userId - 사용자 ID
+   * @param {number|string} foodName - 식재료 이름
+   * @returns {Promise<Object>} 서버 응답
+   */
+  async deleteFood(userId, foodName) {
+    const url = `${apiConfig.getApiUrl()}/food?userId=${userId}`;
+    console.log('[apiService] deleteFood 요청:', url, foodName);
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: this._getCommonHeaders(),
+        body: JSON.stringify({ foodNameList: [foodName] }) // 서버 DTO 요구에 맞게 배열로 전달
+      });
+      if (response.ok) {
+        return { success: true };
+      } else {
+        const result = await this._handleApiResponse(response, '식재료 삭제에 실패했습니다');
+        return result && typeof result === 'object' && result.hasOwnProperty('success') ? result : { success: false, error: result?.message || '식재료 삭제에 실패했습니다.'};
+      }
+    } catch (error) {
+      console.error('[apiService] 식재료 삭제 중 오류:', error);
+      return { success: false, error: error.message };
+    }
   }
   // ...추가 API 함수(식재료 등)는 필요시 이식...
 };

@@ -36,6 +36,8 @@ import HomeScreen from './screens/HomeScreen'; // 추가된 화면
 import RecipeThumbnails from './screens/RecipeThumbnails';
 import UserAddIngredient from './screens/UserAddIngredient'; // 사용자 식재료 추가 화면 import
 import FavoriteRecipesScreen from './screens/FavoriteRecipesScreen'; // 즐겨찾기 레시피 화면 import
+import RecipeDetatilDummy from './screens/RecipeDetatilDummy'; // 추가: RecipeDetatilDummy 화면 import
+
 // CookedRecipeDetailScreen은 TabBar.js 내의 RecipeStack에서 관리하므로 App.js에서 직접 import할 필요는 없을 수 있습니다.
 // 만약 다른 네비게이터에서 사용된다면 여기에 import를 추가합니다.
 
@@ -220,22 +222,27 @@ const RecipeStack = () => (
     <Stack.Screen
       name="RecipeSearch"
       component={RecipeSearch}
-      options={{ title: '레시피 검색', headerShown: true }} // 변경: false -> true
+      options={{ title: '레시피 검색', headerShown: true }}
     />
     <Stack.Screen
       name="RecipeDetail"
       component={RecipeDetail}
-      options={{ title: '레시피 상세', headerShown: true }} // 변경: false -> true
+      options={{ title: '레시피 상세', headerShown: true }}
+    />
+    <Stack.Screen
+      name="RecipeDetatilDummy"
+      component={RecipeDetatilDummy}
+      options={{ title: '레시피 상세(더미)', headerShown: true }}
     />
     <Stack.Screen
       name="RecipeResult"
       component={RecipeResult}
-      options={{ title: '검색결과', headerShown: true }} // 변경: false -> true
+      options={{ title: '검색결과', headerShown: true }}
     />
     <Stack.Screen
       name="RecipeThumbnails"
       component={RecipeThumbnails}
-      options={{ title: '레시피 썸네일 목록', headerShown: true }} // 추가: headerShown: true
+      options={{ title: '레시피 썸네일 목록', headerShown: true }}
     />
     <Stack.Screen
       name="IngredientChange"

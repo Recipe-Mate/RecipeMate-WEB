@@ -221,7 +221,6 @@ const AddFood = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.formContainer}>
-        {/* screens_m/AddIngredient와 동일하게 순서 및 UI 구성 */}
         <Text style={styles.label}>재료명</Text>
         <View>
           <TextInput
@@ -233,6 +232,7 @@ const AddFood = ({ navigation }) => {
             onBlur={() => setTimeout(() => setShowAuto(false), 150)}
             autoCorrect={false}
             autoCapitalize="none"
+            placeholderTextColor="#B0B8C1"
           />
           {showAuto && filteredFoods.length > 0 && (
             <View style={styles.autoDropdown}>
@@ -244,6 +244,7 @@ const AddFood = ({ navigation }) => {
                   <TouchableOpacity
                     style={styles.autoItem}
                     onPress={() => handleAutoSelect(item)}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.autoItemText}>{item}</Text>
                   </TouchableOpacity>
@@ -260,13 +261,17 @@ const AddFood = ({ navigation }) => {
           value={quantity}
           onChangeText={setQuantity}
           keyboardType="numeric"
+          placeholderTextColor="#B0B8C1"
         />
         <Text style={styles.label}>단위</Text>
-        <UnitPicker onSelect={setUnit} value={unit} />
+        <View style={styles.unitPickerWrapper}>
+          <UnitPicker onSelect={setUnit} value={unit} />
+        </View>
         <TouchableOpacity
           style={styles.addButton}
           onPress={handleAddFood}
           disabled={isLoading}
+          activeOpacity={0.85}
         >
           {isLoading ? (
             <ActivityIndicator color="#FFF" />
@@ -278,7 +283,6 @@ const AddFood = ({ navigation }) => {
           )}
         </TouchableOpacity>
       </View>
-      {/* TIP 메시지 영역 완전 제거 */}
     </View>
   );
 };
@@ -286,90 +290,87 @@ const AddFood = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0fdf4', // 연한 초록 계열 배경
+    backgroundColor: '#FFFFFF',
   },
   formContainer: {
-    padding: 16,
-    backgroundColor: 'white',
-    margin: 16,
-    borderRadius: 8,
-    shadowColor: '#4CAF50',
+    padding: 24,
+    backgroundColor: '#F6F8FA',
+    margin: 22,
+    borderRadius: 22,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
     elevation: 2,
+    zIndex: 0, // 버튼이 드롭다운 위로 올라오지 않게
   },
   label: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#3498db',
+    fontSize: 15,
+    marginBottom: 7,
+    color: '#1E1E1E',
+    fontWeight: '500',
+    fontFamily: 'Pretendard-SemiBold',
   },
   input: {
-    backgroundColor: '#f9fdf9',
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#3498db', 
-    padding: 12,
-    borderRadius: 6,
+    borderColor: '#F0F1F4',
+    padding: 15,
+    borderRadius: 14,
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 18,
+    color: '#1E1E1E',
+    fontFamily: 'Pretendard-Regular',
   },
   addButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#50C4B7',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 14,
-    borderRadius: 6,
-    marginTop: 8,
+    padding: 16,
+    borderRadius: 18,
+    marginTop: 10,
+    shadowColor: '#50C4B7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.09,
+    shadowRadius: 8,
+    elevation: 2,
   },
   addButtonText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontWeight: '600',
+    fontSize: 15,
     marginLeft: 8,
-  },
-  infoContainer: {
-    padding: 16,
-    margin: 16,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#3498db', // 약간 어두운 초록
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#3498db',
-    lineHeight: 20,
+    fontFamily: 'Pretendard-SemiBold',
   },
   autoDropdown: {
     position: 'absolute',
-    top: 46,
+    top: 52,
     left: 0,
     right: 0,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#3498db',
-    borderRadius: 10,
+    borderColor: '#F0F1F4',
+    borderRadius: 16,
     zIndex: 2000,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
     elevation: 3,
   },
   autoItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
   },
   autoItemText: {
-    fontSize: 16,
-    color: '#3498db',
+    fontSize: 15,
+    color: '#50C4B7',
+    fontFamily: 'Pretendard-Regular',
+  },
+  unitPickerWrapper: {
+    marginTop: 6,
+    marginBottom: 22, // 기존보다 넉넉하게
   },
 });
 

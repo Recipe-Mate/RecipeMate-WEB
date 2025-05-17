@@ -7,7 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from 'react-native';
 import { GOOGLE_API_KEY, GOOGLE_CX } from '../config/api.config';
 
@@ -136,24 +137,19 @@ const RecipeResult = ({ route, navigation }) => {
 
   // 검색 조건 텍스트 가져오기
   const getConditionText = (conditions) => {
+    if (!conditions || Object.keys(conditions).length === 0) return '없음';
     const texts = [];
-    
     if (conditions.calorie === 'LOW') texts.push('저칼로리');
     if (conditions.calorie === 'HIGH') texts.push('고칼로리');
-    
     if (conditions.fat === 'LOW') texts.push('저지방');
     if (conditions.fat === 'HIGH') texts.push('고지방');
-    
     if (conditions.natrium === 'LOW') texts.push('저나트륨');
     if (conditions.natrium === 'HIGH') texts.push('고나트륨');
-    
-    if (conditions.protien === 'LOW') texts.push('저단백질');
-    if (conditions.protien === 'HIGH') texts.push('고단백질');
-    
+    if (conditions.protien === 'LOW' || conditions.protein === 'LOW') texts.push('저단백질');
+    if (conditions.protien === 'HIGH' || conditions.protein === 'HIGH') texts.push('고단백질');
     if (conditions.carbohydrate === 'LOW') texts.push('저탄수화물');
     if (conditions.carbohydrate === 'HIGH') texts.push('고탄수화물');
-    
-    return texts.length ? texts.join(', ') : '모든 레시피';
+    return texts.length ? texts.join(', ') : '없음';
   };
 
   return (
@@ -161,10 +157,10 @@ const RecipeResult = ({ route, navigation }) => {
       {/* 검색 정보 요약 */}
       <View style={styles.searchSummary}>
         <Text style={styles.searchIngredients}>
-          재료: {ingredients?.join(', ') || '없음'}
+          재료: {Array.isArray(ingredients) && ingredients.length > 0 ? ingredients.join(', ') : '없음'}
         </Text>
         <Text style={styles.searchConditions}>
-          조건: {getConditionText(conditions || {})}
+          조건: {getConditionText(conditions)}
         </Text>
       </View>
 
@@ -268,117 +264,143 @@ const RecipeResult = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9', // 밝은 배경색
-    padding: 10,
+    backgroundColor: '#F6F8FA', // Toss 스타일 밝은 배경
+    padding: 0,
+    // 상단 앱바에 가리지 않도록 패딩 추가 (StatusBar 높이 + 여유)
+    paddingTop: Platform.OS === 'ios' ? 54 : 34,
   },
   searchSummary: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    padding: 22,
+    borderRadius: 22,
+    marginBottom: 18,
+    marginHorizontal: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
     elevation: 2,
   },
   searchIngredients: {
     fontSize: 15,
-    color: '#333',
+    color: '#222',
     marginBottom: 5,
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   searchConditions: {
     fontSize: 15,
-    color: '#666',
+    color: '#50C4B7', // Toss 민트 강조
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
-    color: '#333', // 제목 텍스트 색상
+    fontSize: 26,
+    fontWeight: '300', // 얇은 폰트
+    textAlign: 'left',
+    marginVertical: 18,
+    color: '#222',
+    paddingLeft: 18,
+    letterSpacing: 0.2,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   recipeCard: {
-    marginBottom: 20,
-    borderRadius: 15, // 카드 모서리 둥글게 처리
+    marginBottom: 22,
+    borderRadius: 22,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4, // 그림자 설정 (안드로이드)
-    backgroundColor: 'white',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 2,
+    backgroundColor: '#fff',
+    marginHorizontal: 12,
   },
   recipeImage: {
-    height: 180, // 이미지 높이 설정
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
   },
   recipeImageStyle: {
-    borderRadius: 10,
-    opacity: 0.9, // 이미지 살짝 흐리게 설정
+    borderRadius: 0,
+    opacity: 0.92,
   },
   recipeInfo: {
-    position: 'absolute', // 하단에 정보 표시
+    position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)', // 반투명 배경
-    padding: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    padding: 12,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
   },
   recipeTitle: {
     color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 19,
+    fontWeight: '400',
     textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   nutritionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 12,
+    padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F0F1F4',
+    backgroundColor: '#F7F8FA',
   },
   nutritionItem: {
     alignItems: 'center',
   },
   nutritionLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#888',
     marginBottom: 2,
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   nutritionValue: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '600',
+    color: '#222',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   ingredientsContainer: {
-    padding: 12,
+    padding: 14,
+    backgroundColor: '#F7F8FA',
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
   },
   ingredientsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#555',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#222',
     marginBottom: 5,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   ingredientsText: {
     fontSize: 14,
-    color: '#777',
+    color: '#555',
     lineHeight: 20,
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 30,
+    padding: 40,
   },
   loadingText: {
     marginTop: 15,
     fontSize: 16,
     color: '#666',
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
+    padding: 50,
   },
   emptyImage: {
     width: 120,
@@ -388,23 +410,31 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: 17,
+    color: '#B0B8C1',
     textAlign: 'center',
     lineHeight: 26,
     marginBottom: 30,
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   backButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#50C4B7', // Toss 민트
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   backButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
-  },  noImageContainer: {
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
+  },
+  noImageContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -417,7 +447,7 @@ const styles = StyleSheet.create({
   },
   noImageText: {
     color: '#333',
-    fontWeight: 'bold',
+    fontWeight: '400',
     fontSize: 16,
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 15,
@@ -429,6 +459,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
 });
 

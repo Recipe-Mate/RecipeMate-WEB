@@ -205,76 +205,79 @@ const Receipt = () => {
       ) : (
         <ScrollView 
           style={{ padding: 10 }}
-          contentContainerStyle={{ paddingBottom: 60 }}
+          contentContainerStyle={{ paddingBottom: 80 }}
           keyboardShouldPersistTaps="handled"
         >
           <Image
             source={{ uri: imageUri }}
-            style={{ width: width, height: 300, resizeMode: 'contain' }}
+            style={{ width: width, height: 300, resizeMode: 'contain', borderRadius: 18, marginBottom: 16 }}
           />
 
           <Text style={styles.sectionTitle}>📄 영수증 스캔 결과</Text>
 
-          {/* 편집 가능한 식재료 리스트 (식재료명 | 양 | 단위 | 개수 | (총)양 | 단위) */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={{ width: 80, fontWeight: 'bold' }}>식재료명</Text>
-            <Text style={{ width: 50, fontWeight: 'bold', textAlign: 'right' }}>양</Text>
-            <Text style={{ width: 50, fontWeight: 'bold', textAlign: 'center' }}>단위</Text>
-            <Text style={{ width: 40, fontWeight: 'bold', textAlign: 'right' }}>개수</Text>
-            <Text style={{ width: 70, fontWeight: 'bold', textAlign: 'right' }}>(총)양</Text>
-            <Text style={{ width: 40, fontWeight: 'bold', textAlign: 'center' }}>단위</Text>
+          {/* Toss 스타일 컬럼 헤더 */}
+          <View style={styles.tossHeaderRow}>
+            <Text style={[styles.tossHeaderCell, { flex: 2 }]}>식재료명</Text>
+            <Text style={[styles.tossHeaderCell, { flex: 1, textAlign: 'right' }]}>양</Text>
+            <Text style={[styles.tossHeaderCell, { flex: 1, textAlign: 'center' }]}>단위</Text>
+            <Text style={[styles.tossHeaderCell, { flex: 1, textAlign: 'right' }]}>개수</Text>
+            <Text style={[styles.tossHeaderCell, { flex: 1.5, textAlign: 'right' }]}>(총)양</Text>
+            <Text style={[styles.tossHeaderCell, { flex: 1, textAlign: 'center' }]}>단위</Text>
           </View>
           {editableIngredients.map((item, idx) => {
-            // 총양 계산: (양 * 개수), 단위는 그대로
             const amountNum = parseFloat(item.weight) || 0;
             const countNum = parseFloat(item.count) || 1;
             const totalAmount = amountNum * countNum;
             const displayUnit = (item.unit && item.unit !== '없음') ? item.unit : '';
             return (
-              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <View key={idx} style={styles.tossCardRow}>
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: inputErrorIdx === idx && inputErrorField === 'name' ? 'red' : '#ccc', borderRadius: 4, padding: 4, width: 80, marginRight: 4 }}
+                  style={[styles.tossInput, styles.tossInputName, inputErrorIdx === idx && inputErrorField === 'name' && styles.inputError]}
                   value={item.name}
                   onChangeText={text => handleEditIngredient(idx, 'name', text)}
                   placeholder="식재료명"
+                  placeholderTextColor="#bbb"
                 />
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: inputErrorIdx === idx && inputErrorField === 'weight' ? 'red' : '#ccc', borderRadius: 4, padding: 4, width: 50, marginRight: 4, textAlign: 'right' }}
+                  style={[styles.tossInput, styles.tossInputAmount, inputErrorIdx === idx && inputErrorField === 'weight' && styles.inputError]}
                   value={item.weight}
                   onChangeText={text => handleEditIngredient(idx, 'weight', text)}
                   placeholder="양"
                   keyboardType="numeric"
+                  placeholderTextColor="#bbb"
                 />
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: inputErrorIdx === idx && inputErrorField === 'unit' ? 'red' : '#ccc', borderRadius: 4, padding: 4, width: 50, marginRight: 4, textAlign: 'center' }}
+                  style={[styles.tossInput, styles.tossInputUnit, inputErrorIdx === idx && inputErrorField === 'unit' && styles.inputError]}
                   value={item.unit === '없음' ? '' : item.unit}
                   onChangeText={text => handleEditIngredient(idx, 'unit', text)}
                   placeholder="단위"
+                  placeholderTextColor="#bbb"
                 />
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: inputErrorIdx === idx && inputErrorField === 'count' ? 'red' : '#ccc', borderRadius: 4, padding: 4, width: 40, marginRight: 4, textAlign: 'right' }}
+                  style={[styles.tossInput, styles.tossInputCount, inputErrorIdx === idx && inputErrorField === 'count' && styles.inputError]}
                   value={item.count}
                   onChangeText={text => handleEditIngredient(idx, 'count', text)}
                   placeholder="개수"
                   keyboardType="numeric"
+                  placeholderTextColor="#bbb"
                 />
-                <View style={{ width: 70, alignItems: 'flex-end', marginRight: 4 }}>
-                  <Text style={{ color: '#333', fontWeight: 'bold' }}>{totalAmount > 0 ? totalAmount : ''}</Text>
+                <View style={[styles.tossInput, styles.tossInputTotal, { backgroundColor: '#F6F8FA', borderWidth: 0, alignItems: 'flex-end', justifyContent: 'center' }]}> 
+                  <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 15 }}>{totalAmount > 0 ? totalAmount : ''}</Text>
                 </View>
-                <View style={{ width: 40, alignItems: 'center' }}>
-                  <Text style={{ color: '#333', fontWeight: 'bold' }}>{displayUnit}</Text>
+                <View style={[styles.tossInput, styles.tossInputTotalUnit, { backgroundColor: '#F6F8FA', borderWidth: 0, alignItems: 'center', justifyContent: 'center' }]}> 
+                  <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 15 }}>{displayUnit}</Text>
                 </View>
               </View>
             );
           })}
 
-          <TouchableOpacity onPress={reset} style={{ marginTop: 20 }}>
-            <Text style={{ color: 'blue', fontSize: 16 }}>⬅ 뒤로가기</Text>
+          <TouchableOpacity onPress={reset} style={styles.tossBackButton}>
+            <Text style={styles.tossBackButtonText}>⬅ 뒤로가기</Text>
           </TouchableOpacity>
 
           {jsonData.length > 0 && (
-            <TouchableOpacity onPress={handleAddIngredients} style={{ marginTop: 20, backgroundColor: '#4caf50', padding: 12, borderRadius: 8 }}>
-              <Text style={{ color: 'white', fontSize: 16, textAlign: 'center' }}>식재료 추가</Text>
+            <TouchableOpacity onPress={handleAddIngredients} style={styles.tossAddButton}>
+              <Text style={styles.tossAddButtonText}>식재료 추가</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -290,9 +293,98 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 10,
+    fontSize: 20,
+    fontWeight: '700',
+    marginVertical: 16,
+    color: '#222',
+    letterSpacing: -0.5,
+    paddingLeft: 2,
+  },
+  tossHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F6F8FA',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginBottom: 6,
+    marginHorizontal: 2,
+  },
+  tossHeaderCell: {
+    fontSize: 15,
+    color: '#888',
+    fontWeight: '600',
+    paddingHorizontal: 2,
+  },
+  tossCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 10,
+    marginHorizontal: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F0F1F4',
+  },
+  tossInput: {
+    borderWidth: 1,
+    borderColor: '#E5E8EB',
+    borderRadius: 10,
+    backgroundColor: '#F6F8FA',
+    fontSize: 15,
+    color: '#222',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginHorizontal: 1,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
+  },
+  tossInputName: { flex: 2, minWidth: 60, maxWidth: 120 },
+  tossInputAmount: { flex: 1, minWidth: 40, maxWidth: 60, textAlign: 'right' },
+  tossInputUnit: { flex: 1, minWidth: 40, maxWidth: 60, textAlign: 'center' },
+  tossInputCount: { flex: 1, minWidth: 30, maxWidth: 50, textAlign: 'right' },
+  tossInputTotal: { flex: 1.5, minWidth: 50, maxWidth: 80 },
+  tossInputTotalUnit: { flex: 1, minWidth: 30, maxWidth: 50 },
+  inputError: {
+    borderColor: 'red',
+    backgroundColor: '#FFF0F0',
+  },
+  tossBackButton: {
+    marginTop: 18,
+    alignSelf: 'flex-start',
+    marginLeft: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#E5E8EB',
+  },
+  tossBackButtonText: {
+    color: '#2D336B',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  tossAddButton: {
+    marginTop: 18,
+    backgroundColor: '#50C4B7',
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: 'center',
+    marginHorizontal: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  tossAddButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
 });
 

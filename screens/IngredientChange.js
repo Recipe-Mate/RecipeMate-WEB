@@ -11,10 +11,11 @@ import {
 // import { API_BASE_URL } from '../config/api.config'; // API_BASE_URL은 현재 파일에서 사용되지 않음
 import apiService from '../src/services/api.service';
 
-// 문자열 형태의 양을 숫자로 변환하는 헬퍼 함수 (예: "1/2" -> 0.5, "30" -> 30)
-const interpretIngredientAmount = (amountStr) => {
-  if (amountStr === null || typeof amountStr === 'undefined') return 0;
-  const str = String(amountStr).trim();
+// 문자열 또는 숫자 형태의 양을 숫자로 변환하는 헬퍼 함수 (예: "1/2" -> 0.5, "30" -> 30, 0.5 -> 0.5)
+const interpretIngredientAmount = (amount) => {
+  if (amount === null || typeof amount === 'undefined') return 0;
+  if (typeof amount === 'number') return amount; // 숫자면 그대로 반환
+  const str = String(amount).trim();
   if (str.includes('/')) {
     const parts = str.split('/');
     if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1])) && Number(parts[1]) !== 0) {
@@ -23,8 +24,17 @@ const interpretIngredientAmount = (amountStr) => {
     return 0; // 잘못된 분수 형태
   }
   // 숫자가 아닌 문자(소수점 제외) 제거 후 숫자로 변환
-  const num = parseFloat(str.replace(/[^\\d.]/g, ''));
+  const num = parseFloat(str.replace(/[^\d.]/g, ''));
   return isNaN(num) ? 0 : num;
+};
+
+// ●, 소스, 양념, :, 공백 등 접두사 제거 함수
+const cleanIngredientName = (rawName) => {
+  if (!rawName) return '';
+  return rawName
+    .replace(/^([●•\-\s]*)(소스|양념)?\s*:?\s*/gi, '') // 접두사 제거
+    .replace(/\([^)]*\)/g, '') // 괄호 및 괄호 안 내용 제거
+    .trim();
 };
 
 const IngredientChange = ({ route, navigation }) => {
@@ -192,9 +202,7 @@ const IngredientChange = ({ route, navigation }) => {
       // 이 부분은 사용자의 확인 및 서버 API 명세에 따른 수정이 필요할 수 있습니다.
       const foodDataList = ingredients.map((item) => {
         return {
-          foodName: item.name || item.foodName, 
-          // 아래 amount 계산은 서버 요구사항에 따라 달라져야 합니다.
-          // 현재는 (레시피에 적힌 양 + 사용자가 입력한 양)으로 계산됩니다.
+          foodName: cleanIngredientName(item.name || item.foodName),
           amount: (interpretIngredientAmount(item.amount) || 0) + (Number(item.changeAmount) || 0),
         };
       });
@@ -223,9 +231,14 @@ const IngredientChange = ({ route, navigation }) => {
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={styles.ingredientItem}>
-            <Text style={styles.ingredientName}>{item.name || item.foodName}</Text>
+            <Text style={styles.ingredientName}>{cleanIngredientName(item.name || item.foodName)}</Text>
             <View style={styles.recipeAmountRow}>
-              <Text style={styles.label}>레시피 필요량: {interpretIngredientAmount(item.amount)} {item.unit || item.amountUnit}</Text>
+              <Text style={styles.label}>
+                레시피 필요량: {(() => {
+                  const amount = interpretIngredientAmount(item.amount);
+                  return amount % 1 === 0 ? amount : amount.toFixed(2).replace(/\.00$/, '').replace(/(\.[1-9]*)0+$/, '$1');
+                })()} {item.unit || item.amountUnit}
+              </Text>
             </View>
             <View style={styles.changeAmountControls}>
               <TouchableOpacity 
@@ -238,7 +251,7 @@ const IngredientChange = ({ route, navigation }) => {
               <TextInput
                 style={styles.amountInput}
                 keyboardType="numeric"
-                value={item.displayChangeAmount} // displayChangeAmount 사용
+                value={item.displayChangeAmount}
                 onChangeText={(value) => handleAmountChange(item.id, value)}
                 editable={!loading}
                 placeholder="0"
@@ -255,11 +268,13 @@ const IngredientChange = ({ route, navigation }) => {
           </View>
         )}
         style={styles.list}
+        contentContainerStyle={{ paddingBottom: 140 }} // 버튼 높이+여유만큼 충분히 padding
       />
       <TouchableOpacity
-        style={[styles.confirmButton, loading && { backgroundColor: '#aaa' }]}
+        style={[styles.confirmButton, styles.confirmButtonFixed, loading && { backgroundColor: '#aaa' }]}
         onPress={handleConfirm}
         disabled={loading}
+        activeOpacity={0.8}
       >
         <Text style={styles.confirmButtonText}>{loading ? '처리 중...' : '확인'}</Text>
       </TouchableOpacity>
@@ -270,92 +285,118 @@ const IngredientChange = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 16,
+    backgroundColor: '#F6F8FA', // Toss 스타일 밝은 배경
+    padding: 0,
+    paddingTop: 24,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#34495e',
-    textAlign: 'center',
-    marginBottom: 20,
+    fontWeight: '300', // 얇은 폰트
+    color: '#222',
+    textAlign: 'left',
+    paddingLeft: 18,
+    marginBottom: 18,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   list: {
     flex: 1,
+    paddingHorizontal: 18,
   },
   ingredientItem: {
-    backgroundColor: '#f6f8fa',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
     shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F0F1F4',
   },
   ingredientName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '500',
     marginBottom: 8,
+    color: '#222',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
-  recipeAmountRow: { // 레시피 필요량 표시 스타일
+  recipeAmountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10, // 컨트롤과의 간격
+    marginBottom: 10,
   },
   changeAmountControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    // justifyContent: 'space-between', // 버튼, 입력 필드, 단위 간격 자동 조절 시
-    gap: 8, 
+    gap: 8,
   },
   label: {
     fontSize: 15,
-    color: '#555',
+    color: '#888',
+    fontWeight: '400',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
-  labelUnit: { // 단위 표시용 스타일
+  labelUnit: {
     fontSize: 15,
-    color: '#555',
-    marginLeft: 4, // 입력필드/버튼과의 간격
+    color: '#888',
+    marginLeft: 4,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   amountInput: {
-    flex: 1, // 버튼 사이의 공간을 최대한 차지
-    height: 42, 
+    flex: 1,
+    height: 42,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
+    borderColor: '#E5E8EB',
+    borderRadius: 10,
     paddingHorizontal: 10,
-    fontSize: 18, 
-    backgroundColor: '#fff',
+    fontSize: 17,
+    backgroundColor: '#F6F8FA',
     textAlign: 'center',
+    color: '#222',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
   button: {
-    backgroundColor: '#e9ecef', // 밝은 회색 계열
+    backgroundColor: '#E5E8EB',
     paddingVertical: 8,
-    paddingHorizontal: 16, // 버튼 크기 조절
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 42, // 입력 필드와 높이 맞춤
-    borderWidth: 1,
-    borderColor: '#ced4da',
-  },
-  buttonText: {
-    fontSize: 20, // 아이콘 대신 텍스트 크기
-    fontWeight: 'bold',
-    color: '#495057', // 버튼 텍스트 색상
-  },
-  confirmButton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 15,
+    paddingHorizontal: 16,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
+    height: 42,
+    borderWidth: 0,
+    marginHorizontal: 2,
+  },
+  buttonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2D336B',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
+  },
+  confirmButton: {
+    backgroundColor: '#50C4B7',
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: 'center',
+    marginHorizontal: 18,
+    marginTop: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  confirmButtonFixed: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    bottom: 24,
+    marginTop: 0,
   },
   confirmButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'System',
   },
 });
 
