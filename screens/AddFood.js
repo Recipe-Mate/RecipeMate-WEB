@@ -131,6 +131,7 @@ const AddFood = ({ navigation }) => {
     }
     setIsLoading(true);
     try {
+      // 서버가 기대하는 형식: { foodNameList, quantityList, unitList }
       const foodData = {
         foodNameList: [extractPureName(foodName.trim())],
         quantityList: [quantity.trim()],

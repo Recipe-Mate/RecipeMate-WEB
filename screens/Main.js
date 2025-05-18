@@ -53,11 +53,6 @@ const Main = ({ navigation }) => {
       headerTitle: '홈',
       headerStyle: { backgroundColor: '#ffffff' },
       headerTitleStyle: { fontWeight: 'bold', color: '#333333' },
-      headerRight: () => (
-        <TouchableOpacity style={{ marginRight: 15 }} onPress={() => navigation.navigate('Settings')}>
-          <Icon name="settings-outline" size={24} color="#333333" />
-        </TouchableOpacity>
-      ),
       headerShown: true,
       headerLeft: () => null // 홈에서는 뒤로가기 버튼 없음
     });
@@ -259,7 +254,7 @@ const Main = ({ navigation }) => {
       {/* 최근 레시피 섹션 */}
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>최근 본 레시피</Text> 
+          <Text style={styles.sectionTitle}>최근 요리한 레시피</Text> 
           {/* '모두 보기' 버튼 제거됨 */}
         </View>
 

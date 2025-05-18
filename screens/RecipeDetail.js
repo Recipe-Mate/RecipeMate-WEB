@@ -14,17 +14,6 @@ import {
 import { useAuth } from '../src/context/AuthContext';
 import apiService from '../src/services/api.service';
 
-// 레시피 이미지 매핑 (RecipeResult와 동일하게 유지)
-const recipeImages = {
-  '닭죽': require('../assets/icon.png'),
-  '김치찌개': require('../assets/icon.png'),
-  '갈비탕': require('../assets/icon.png'),
-  '제육볶음': require('../assets/icon.png'),
-  '된장찌개': require('../assets/icon.png'),
-  // 기본 이미지
-  'default': require('../assets/icon.png')
-};
-
 // Helper function to parse an ingredient line string
 const parseIngredientString = (line) => {
   line = String(line || '').trim();
@@ -356,19 +345,12 @@ const RecipeDetail = ({ route, navigation }) => {
   };
 
   // 레시피 이미지 선택 함수
-  const getRecipeImage = (recipeName) => {
-    // If recipeImageUri is directly available from recipeData, use it.
+  const getRecipeImage = (recipeName, recipeImageUri) => {
     if (recipeImageUri) {
         return { uri: recipeImageUri };
     }
-    // Fallback to local images if recipeImageUri is null and recipeName matching is desired
-    if (!recipeName) return recipeImages.default;
-    for (const key of Object.keys(recipeImages)) {
-      if (recipeName.includes(key)) {
-        return recipeImages[key];
-      }
-    }
-    return recipeImages.default;
+    // 더미 매핑 제거: 항상 null 반환 (혹은 기본 이미지가 있다면 그 경로로 대체)
+    return null;
   };  // 영양 정보 포매팅 함수
   const formatNutritionValue = (value, unit = '') => {
     if (value === undefined || value === null || value === '' || Number.isNaN(Number(value))) return '';
@@ -564,7 +546,7 @@ const RecipeDetail = ({ route, navigation }) => {
       {/* 메뉴 사진 */}
       <View style={styles.imageSection}>
         <Image
-          source={getRecipeImage(recipeTitle)}
+          source={getRecipeImage(recipeTitle, recipeImageUri)}
           style={styles.menuImage}
         />
       </View>

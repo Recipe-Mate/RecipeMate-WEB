@@ -12,14 +12,6 @@ import {
 } from 'react-native';
 import { GOOGLE_API_KEY, GOOGLE_CX } from '../config/api.config';
 
-const recipeImages = {
-  '닭죽': require('../assets/icon.png'),
-  '김치찌개': require('../assets/icon.png'),
-  '갈비탕': require('../assets/icon.png'),
-  '제육볶음': require('../assets/icon.png'),
-  '된장찌개': require('../assets/icon.png'),
-};
-
 // Google 이미지 검색 함수
 async function fetchGoogleImageUrl(query) {
   try {
@@ -114,7 +106,8 @@ const RecipeResult = ({ route, navigation }) => {
         return { uri: url };
       }
     }
-    return recipeImages['된장찌개']; // 기본 이미지
+    // 기본 이미지 없음(null 반환)
+    return null;
   };
 
   // 영양 정보 포매팅 함수

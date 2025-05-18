@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI, SERVER_URL } from '@env';
 import { useAuth } from '../src/context/AuthContext';
@@ -146,20 +146,23 @@ const Login = ({ navigation }) => { // navigation prop 추가
   
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       {showWebView ? (
         <WebView
-          style={{ flex: 1 }}
           ref={webviewRef}
           source={{ uri: KAKAO_AUTH_URL }}
           onNavigationStateChange={handleNavigationChange}
-          javaScriptEnabled
-          domStorageEnabled
-          originWhitelist={['*']}
+          style={styles.webView}
         />
       ) : (
         <View style={styles.container}>
-          {isLoading && <ActivityIndicator size="large" color="#333f50" />}
+          {/* 앱 로고 이미지 */}
+          <Image
+            source={require('../assets/recipemate_remove_bg.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          {isLoading && <ActivityIndicator size="large" color="#333f50" style={{ marginTop: 24 }} />}
           {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
           <TouchableOpacity style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>카카오 로그인</Text>
@@ -201,6 +204,12 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    marginBottom: 40,
+    alignSelf: 'center',
   },
 });
 

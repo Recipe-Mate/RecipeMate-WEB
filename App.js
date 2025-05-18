@@ -9,6 +9,8 @@ import ServerStatusCheck from './src/components/ServerStatusCheck';
 import apiConfig from './config/api.config';
 import LinearGradient from 'react-native-linear-gradient';
 import { SERVER_URL } from '@env';
+import apiService from './src/services/api.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 경고 무시 설정 (개발 중에만 사용)
 LogBox.ignoreLogs([
@@ -32,14 +34,10 @@ import FoodList from './screens/FoodList'; // 추가된 화면
 import AddIngredient from './screens/AddIngredient';
 import Badge from './screens/Badge';
 import CookedRecipes from './screens/CookedRecipes';
-import HomeScreen from './screens/HomeScreen'; // 추가된 화면
 import RecipeThumbnails from './screens/RecipeThumbnails';
 import UserAddIngredient from './screens/UserAddIngredient'; // 사용자 식재료 추가 화면 import
 import FavoriteRecipesScreen from './screens/FavoriteRecipesScreen'; // 즐겨찾기 레시피 화면 import
 import RecipeDetatilDummy from './screens/RecipeDetatilDummy'; // 추가: RecipeDetatilDummy 화면 import
-
-// CookedRecipeDetailScreen은 TabBar.js 내의 RecipeStack에서 관리하므로 App.js에서 직접 import할 필요는 없을 수 있습니다.
-// 만약 다른 네비게이터에서 사용된다면 여기에 import를 추가합니다.
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -83,7 +81,7 @@ const MainStack = () => (
     <Stack.Screen
       name="Main"
       component={Main}
-      options={{ headerShown: true }} // 변경: false -> true
+      options={{ headerShown: true }} // headerRight(설정 버튼) 완전 삭제
     />
     <Stack.Screen
       name="AddIngredient"
@@ -254,7 +252,7 @@ const RecipeStack = () => (
 
 // 인증되지 않은 사용자를 위한 스택
 const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: true }}>
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
     {/* Login 화면 등록 */}
     <Stack.Screen name="Login" component={Login} />
     {/* SignUp 화면 등록 */}
@@ -352,6 +350,18 @@ const AppContent = ({ initialError }) => {
           }
         }}
       />
+      <Stack.Screen
+        name="EditProfile"
+        component={require('./screens/EditProfile').default}
+        options={{
+          title: '프로필 수정',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#222',
+          headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+          headerBackTitle: '뒤로',
+          headerShown: true,
+        }}
+      />
     </Stack.Navigator>
   );
 
@@ -372,9 +382,6 @@ const AppContent = ({ initialError }) => {
                 iconName = focused ? 'receipt' : 'receipt-outline';
               } else if (route.name === 'ProfileStack') {
                 iconName = focused ? 'person' : 'person-outline';
-              } else if (route.name === 'ServerStatus') {
-                // server 아이콘이 없으므로 settings로 대체
-                iconName = focused ? 'settings' : 'settings-outline';
               }
 
               // IconPlaceholder 대신 아이콘 직접 사용
@@ -404,11 +411,6 @@ const AppContent = ({ initialError }) => {
             component={ProfileStack}
             options={{ title: '프로필', headerShown: false }}
           />
-          <Tab.Screen
-            name="ServerStatus"
-            component={ServerStatusScreen}
-            options={{ title: '서버 상태' }}
-          />
         </Tab.Navigator>
       ) : (
         <AuthStack />
@@ -423,6 +425,19 @@ const App = () => {
   const [initError, setInitError] = useState(null);
 
   useEffect(() => {
+    // 앱 시작 시 accessToken을 AsyncStorage에서 읽어와 apiService에 설정
+    const initializeAuthToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (token) {
+          apiService.setToken(token);
+        }
+      } catch (e) {
+        console.warn('accessToken 초기화 실패:', e);
+      }
+    };
+    initializeAuthToken();
+
     // 백그라운드에서 초기화 진행
     const initializeAppInBackground = async () => {
       try {

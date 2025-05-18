@@ -34,6 +34,8 @@ export const AuthProvider = ({ children }) => {
         AsyncStorage.removeItem('accessToken'); // 유효하지 않은 경우 AsyncStorage에서 토큰 제거
         console.warn('잘못된 JWT 토큰:', userData.token, userData.access_token);
       }
+      // user 정보도 반드시 저장
+      AsyncStorage.setItem('user', JSON.stringify(userData));
     } else {
       console.log('회원가입이 완료되지 않았습니다.');
       setIsRegistering(true);
@@ -58,41 +60,60 @@ export const AuthProvider = ({ children }) => {
     setIsRegistering(false);  // 회원가입 후 로그인 상태로 전환
   };
 
-  // 앱 시작 시 AsyncStorage에서 토큰을 불러와 apiService에 등록
+  // 사용자 정보 업데이트 함수 (닉네임, 프로필 이미지 등)
+  const updateUser = async (updates) => {
+    try {
+      if (user && (user.id || user.userId)) {
+        await apiService.updateUser(user.id || user.userId, updates);
+      }
+      setUser((prev) => {
+        const newUser = {
+          ...prev,
+          ...updates,
+          profile: updates.profile || prev.profile || ''
+        };
+        if (newUser.userId && !newUser.id) newUser.id = newUser.userId;
+        return newUser;
+      });
+      const merged = { ...user, ...updates, profile: updates.profile || user.profile || '' };
+      if (merged.userId && !merged.id) merged.id = merged.userId;
+      await AsyncStorage.setItem('user', JSON.stringify(merged));
+    } catch (e) {
+      console.error('[AuthContext] updateUser 오류:', e);
+      throw e;
+    }
+  };
+
+  // 앱 시작 시 AsyncStorage에서 토큰과 유저 정보를 불러와 자동 로그인 및 유저 정보 복원
   useEffect(() => {
     (async () => {
       try {
-        // 앱 시작 시 항상 로그아웃 상태로 시작하도록 수정
-        // 기존 토큰이 있더라도 제거하고, 인증 상태를 false로 설정
+        setLoading(true);
         const token = await AsyncStorage.getItem('accessToken');
-        if (token) {
-          console.log('[AuthContext] 앱 시작 시 AsyncStorage에 토큰이 있었으나, 로그인 유지 기능을 비활성화하여 제거합니다. 토큰:', token);
-          await AsyncStorage.removeItem('accessToken');
+        const userStr = await AsyncStorage.getItem('user');
+        if (token && userStr) {
+          apiService.setToken(token);
+          setIsAuthenticated(true);
+          const parsed = JSON.parse(userStr);
+          setUser({ ...parsed, id: parsed.id || parsed.userId });
         } else {
-          console.log('[AuthContext] 앱 시작 시 AsyncStorage에 저장된 accessToken이 없습니다.');
+          // 토큰만 있거나 user 정보가 없으면 인증 처리하지 않음
+          apiService.setToken(null);
+          setIsAuthenticated(false);
+          setUser(null);
         }
-        
-        apiService.setToken(null); // 항상 토큰 초기화
-        setIsAuthenticated(false); // 항상 비인증 상태로 시작
-        console.log('[AuthContext] 앱 시작 시 로그인 유지 기능 비활성화됨. 항상 로그아웃 상태로 시작합니다.');
-
       } catch (e) {
-        console.error('[AuthContext] 앱 시작 처리 중 오류 발생 (로그인 유지 비활성화 로직):', e);
         apiService.setToken(null);
         setIsAuthenticated(false);
-        // 오류 발생 시 만약을 위해 토큰 제거 시도
-        try {
-          await AsyncStorage.removeItem('accessToken');
-          console.log('[AuthContext] 오류로 인해 AsyncStorage의 accessToken 제거 시도 완료 (로그인 유지 비활성화 로직).');
-        } catch (removeError) {
-          console.error('[AuthContext] 오류 후 accessToken 제거 중 추가 오류 (로그인 유지 비활성화 로직):', removeError);
-        }
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loading, user, login, logout, isRegistering, register }}>
+    <AuthContext.Provider value={{ isAuthenticated, loading, user, login, logout, isRegistering, register, updateUser, setUser }}>
       {children}
     </AuthContext.Provider>
   );

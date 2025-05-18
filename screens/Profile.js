@@ -1,12 +1,34 @@
-import React from 'react';
-import { View, Text, StyleSheet, StatusBar, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, StatusBar, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../src/context/AuthContext';
 import { clearToken } from '../src/services/api.service';
+import apiService from '../src/services/api.service';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Profile 컴포넌트: 사용자 프로필 화면을 렌더링함
-const Profile = ({ navigation }) => {
-  const { user, logout } = useAuth();
+const Profile = ({ navigation: navFromProps }) => {
+  const navigation = navFromProps || useNavigation();
+  const { user, logout, setUser } = useAuth();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        if (!user?.id) return;
+        const res = await apiService.getUserInfo(user.id);
+        if (res && (res.nickname || res.email)) {
+          const userObj = { ...res, id: res.id || res.userId, profile: res.profile || '' };
+          setUser(userObj);
+          await AsyncStorage.setItem('user', JSON.stringify(userObj));
+        }
+      } catch (e) {
+        console.warn('유저 정보 갱신 실패:', e);
+      }
+    };
+    const unsubscribe = navigation.addListener('focus', fetchUser);
+    return unsubscribe;
+  }, [navigation, user?.id, setUser]);
 
   const handleLogout = async () => {
     try {
@@ -27,24 +49,18 @@ const Profile = ({ navigation }) => {
         <View style={styles.profileRow}>
           <View style={styles.profilePhotoWrap}>
             <View style={styles.profilePhotoShadow}>
-              <View style={styles.photo}>
-                <Icon name="person" size={40} color="#ffffff" />
-              </View>
+              {user?.profile ? (
+                <Image source={{ uri: user.profile }} style={styles.photo} />
+              ) : (
+                <View style={styles.photo}>
+                  <Icon name="person" size={40} color="#ffffff" />
+                </View>
+              )}
             </View>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.nickname}>{user?.name || '닉네임'}</Text>
+            <Text style={styles.nickname}>{user?.nickname || '닉네임'}</Text>
             <Text style={styles.email}>{user?.email || '이메일'}</Text>
-          </View>
-        </View>
-        <View style={styles.profileStatsRow}>
-          <View style={styles.profileStatBox}>
-            <Text style={styles.profileStatLabel}>보유 재료</Text>
-            <Text style={styles.profileStatValue}>5</Text>
-          </View>
-          <View style={styles.profileStatBox}>
-            <Text style={styles.profileStatLabel}>완료 레시피</Text>
-            <Text style={styles.profileStatValue}>5</Text>
           </View>
         </View>
       </View>
@@ -71,16 +87,12 @@ const Profile = ({ navigation }) => {
         </View>
       </View>
 
-      {/* 메뉴 카드: 계정/앱/레시피 관리 */}
+      {/* 메뉴 카드: 계정/앱 관리 */}
       <View style={styles.menuCard}>
         <Text style={styles.menuSectionTitle}>계정 관리</Text>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
           <Icon name="edit" size={20} color="#50C4B7" style={styles.menuIcon} />
           <Text style={styles.menuText}>프로필 수정</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Icon name="lock" size={20} color="#50C4B7" style={styles.menuIcon} />
-          <Text style={styles.menuText}>비밀번호 변경</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.menuCard}>
@@ -92,13 +104,6 @@ const Profile = ({ navigation }) => {
         <TouchableOpacity style={styles.menuItem}>
           <Icon name="language" size={20} color="#50C4B7" style={styles.menuIcon} />
           <Text style={styles.menuText}>언어 설정</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.menuCard}>
-        <Text style={styles.menuSectionTitle}>레시피 관리</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('FavoriteRecipes')}>
-          <Icon name="favorite" size={20} color="#50C4B7" style={styles.menuIcon} />
-          <Text style={styles.menuText}>즐겨찾는 레시피</Text>
         </TouchableOpacity>
       </View>
 
@@ -171,27 +176,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#888',
     fontWeight: '400',
-  },
-  profileStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  profileStatBox: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  profileStatLabel: {
-    fontSize: 14,
-    color: '#888',
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  profileStatValue: {
-    fontSize: 20,
-    color: '#50C4B7',
-    fontWeight: '700',
   },
   badgeCard: {
     backgroundColor: '#fff',

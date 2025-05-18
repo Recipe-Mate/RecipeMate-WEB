@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import apiService from '../src/services/api.service';
 import apiConfig from '../config/api.config';
+import { useAuth } from '../src/context/AuthContext';
 
 // ValueOption enum - 서버 API와 동일한 값 사용
 const ValueOption = {
@@ -37,6 +38,10 @@ const RecipeSearch = ({ navigation }) => {
   const [resultCount, setResultCount] = useState(15); // 기본값 15개
   const [exactMatch, setExactMatch] = useState(false); // 완전히 일치 옵션 상태
   const [randomSearch, setRandomSearch] = useState(false); // 랜덤 검색 옵션 상태
+  const { user } = useAuth(); // 사용자 정보 가져오기
+
+  // "나만의 레시피" 추천 로딩 상태
+  const [myRecipeLoading, setMyRecipeLoading] = useState(false);
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
   const toggleCondition = (key) => {
@@ -125,6 +130,56 @@ const RecipeSearch = ({ navigation }) => {
       Alert.alert('오류', '레시피 검색 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 나만의 레시피(내 식재료 기반 추천) 버튼 핸들러
+  const handleMyRecipeRecommend = async () => {
+    if (!user || !user.id) {
+      Alert.alert('로그인 필요', '로그인 후 이용 가능합니다.');
+      return;
+    }
+    setMyRecipeLoading(true);
+    setError('');
+    try {
+      // 내 식재료 불러오기
+      const ingRes = await apiService.getIngredients();
+      if (!ingRes.success || !Array.isArray(ingRes.data) || ingRes.data.length === 0) {
+        Alert.alert('식재료 없음', '등록된 내 식재료가 없습니다.');
+        setMyRecipeLoading(false);
+        return;
+      }
+      // 식재료명만 추출 (foodName 또는 name)
+      const ingredientNames = ingRes.data.map(item => item.foodName || item.name).filter(Boolean);
+      if (ingredientNames.length === 0) {
+        Alert.alert('식재료 없음', '식재료명 정보가 없습니다.');
+        setMyRecipeLoading(false);
+        return;
+      }
+      // 기존 조건도 반영 (영양조건 등)
+      const searchParams = {
+        ingredients: ingredientNames,
+        ...conditions,
+        startIndex: 1,
+        endIndex: resultCount,
+        exactMatch,
+        randomSearch,
+      };
+      const response = await apiService.searchRecipes(searchParams);
+      if (response && response.success && Array.isArray(response.data)) {
+        navigation.navigate('RecipeResult', {
+          recipes: response.data,
+          conditions: conditions,
+          ingredients: ingredientNames,
+        });
+      } else {
+        Alert.alert('추천 실패', '추천 레시피를 찾을 수 없습니다.');
+      }
+    } catch (err) {
+      setError('추천 레시피 검색 중 오류가 발생했습니다.');
+      Alert.alert('오류', '추천 레시피 검색 중 오류가 발생했습니다.');
+    } finally {
+      setMyRecipeLoading(false);
     }
   };
 
@@ -240,6 +295,19 @@ const RecipeSearch = ({ navigation }) => {
           <ActivityIndicator color="#fff" size="small" />
         ) : (
           <Text style={styles.searchButtonText}>레시피 검색</Text>
+        )}
+      </TouchableOpacity>
+
+      {/* 나만의 레시피 버튼 */}
+      <TouchableOpacity
+        style={[styles.searchButton, myRecipeLoading && styles.disabledButton, { marginTop: 8, backgroundColor: '#3498db' }]}
+        onPress={handleMyRecipeRecommend}
+        disabled={myRecipeLoading}
+      >
+        {myRecipeLoading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.searchButtonText}>나만의 레시피</Text>
         )}
       </TouchableOpacity>
     </>
