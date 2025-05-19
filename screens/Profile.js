@@ -44,6 +44,9 @@ const Profile = ({ navigation: navFromProps }) => {
 
   return (
     <ScrollView style={styles.container}>
+      <View style={{alignItems: 'center'}}>
+        <Text style={{fontSize:25, marginVertical: 20, fontWeight: 'bold', color: '#fff'}}>프로필</Text>
+      </View>
       {/* 상단 Toss-style 프로필 카드 */}
       <View style={styles.profileCard}>
         <View style={styles.profileRow}>
@@ -91,18 +94,18 @@ const Profile = ({ navigation: navFromProps }) => {
       <View style={styles.menuCard}>
         <Text style={styles.menuSectionTitle}>계정 관리</Text>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
-          <Icon name="edit" size={20} color="#50C4B7" style={styles.menuIcon} />
+          <Icon name="edit" size={20} color="#2D336B" style={styles.menuIcon} />
           <Text style={styles.menuText}>프로필 수정</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.menuCard}>
         <Text style={styles.menuSectionTitle}>앱 설정</Text>
         <TouchableOpacity style={styles.menuItem}>
-          <Icon name="notifications" size={20} color="#50C4B7" style={styles.menuIcon} />
+          <Icon name="notifications" size={20} color="#2D336B" style={styles.menuIcon} />
           <Text style={styles.menuText}>알림 설정</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem}>
-          <Icon name="language" size={20} color="#50C4B7" style={styles.menuIcon} />
+          <Icon name="language" size={20} color="#2D336B" style={styles.menuIcon} />
           <Text style={styles.menuText}>언어 설정</Text>
         </TouchableOpacity>
       </View>
@@ -124,14 +127,15 @@ const Profile = ({ navigation: navFromProps }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F8FA',
+    backgroundColor: '#7886C7',
   },
   profileCard: {
     backgroundColor: '#fff',
     borderRadius: 24,
     margin: 18,
-    marginBottom: 8,
-    padding: 24,
+    marginTop: -3,
+    marginBottom: 10,
+    padding: 20,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -140,7 +144,6 @@ const styles = StyleSheet.create({
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
   },
   profilePhotoWrap: {
     marginRight: 18,
@@ -156,7 +159,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#2D336B',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     marginHorizontal: 18,
-    marginBottom: 8,
+    marginBottom: 10,
     padding: 18,
     shadowColor: '#000',
     shadowOpacity: 0.04,
@@ -213,7 +216,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#2D336B',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 18,
     marginHorizontal: 18,
-    marginBottom: 10,
+    marginBottom: 15,
     paddingVertical: 8,
     paddingHorizontal: 0,
     shadowColor: '#000',
@@ -237,18 +240,16 @@ const styles = StyleSheet.create({
   menuSectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#50C4B7',
+    color: '#2D336B',
     paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 2,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 7,
     paddingHorizontal: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F1F4',
   },
   menuIcon: {
     marginRight: 12,
@@ -260,15 +261,10 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginHorizontal: 18,
-    marginTop: 18,
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#2D336B',
     paddingVertical: 16,
     borderRadius: 18,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
   },
   logoutText: {
     color: '#fff',
@@ -279,7 +275,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 18,
     marginTop: 10,
     marginBottom: 30,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF2F2',
     borderWidth: 1,
     borderColor: '#FF6B6B',
     paddingVertical: 14,

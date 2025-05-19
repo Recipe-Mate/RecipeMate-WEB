@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   imageEditText: {
     marginTop: 8,
-    color: '#50C4B7',
+    color: '#2D336B',
     fontWeight: '600',
   },
   label: {
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     width: '100%',
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#2D336B',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',

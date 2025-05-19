@@ -288,7 +288,7 @@ const AppContent = ({ initialError }) => {
       <Stack.Screen
         name="Profile"
         component={Profile}
-        options={{ headerShown: true }} // 변경: false -> true
+        options={{ headerShown: false, }}
       />
       <Stack.Screen
         name="Badge"
