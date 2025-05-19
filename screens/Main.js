@@ -354,7 +354,7 @@ const Main = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FE',
     padding: 0,
   },
   loadingContainer: {
@@ -374,12 +374,12 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginHorizontal: 18,
     padding: 0,
-    backgroundColor: '#F6F8FA',
+    backgroundColor: '#E8EBFC',
     borderRadius: 20,
     // Toss 스타일: 그림자 최소화
     shadowColor: 'transparent',
     elevation: 0,
-    marginBottom: 28,
+    marginBottom: 30,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 19,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#1E1E1E',
     fontFamily: 'Pretendard-SemiBold',
     marginBottom: 0,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#2D336B',
   },
   seeAllText: {
     color: '#fff',
@@ -510,9 +510,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
   },
   refreshButton: {
-    margin: 32,
+    margin: 20,
     padding: 16,
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#7886C7',
     borderRadius: 20,
     flexDirection: 'row',
     justifyContent: 'center',
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 7,
   },
   addButton: {
-    backgroundColor: '#333f50',
+    backgroundColor: '#2D336B',
   },
   cancelButton: {
     backgroundColor: '#e0e3ee',

@@ -327,7 +327,7 @@ const FoodList = ({ navigation, route }) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={["#50C4B7"]}
+              colors={["#2D336B"]}
             />
           }
         />
@@ -389,7 +389,7 @@ const FoodList = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#D6DCFA',
   },
   listContainer: {
     padding: 20,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F6F8FA',
+    backgroundColor: '#F8F9FE',
     borderRadius: 20,
     marginBottom: 16,
     paddingVertical: 20,
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#7886C7',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#50C4B7',

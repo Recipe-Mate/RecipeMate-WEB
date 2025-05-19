@@ -291,11 +291,11 @@ const AddFood = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F2F4FD',
   },
   formContainer: {
     padding: 24,
-    backgroundColor: '#F6F8FA',
+    backgroundColor: '#D6DCFA',
     margin: 22,
     borderRadius: 22,
     shadowColor: '#000',
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
   },
   addButton: {
-    backgroundColor: '#50C4B7',
+    backgroundColor: '#7886C7',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

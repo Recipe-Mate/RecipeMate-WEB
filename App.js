@@ -81,7 +81,7 @@ const MainStack = () => (
     <Stack.Screen
       name="Main"
       component={Main}
-      options={{ headerShown: true }} // headerRight(설정 버튼) 완전 삭제
+      options={{ headerShown: false }} // headerRight(설정 버튼) 완전 삭제
     />
     <Stack.Screen
       name="AddIngredient"
@@ -127,7 +127,7 @@ const MainStack = () => (
       component={FoodList}
       options={{
         headerStyle: {
-          backgroundColor: '#ffffff', // 색상 통일
+          backgroundColor: '#F8F9FE', // 색상 통일
         },
         headerBackground: () => (
           <LinearGradient
@@ -198,7 +198,7 @@ const HomeStack = () => (
           fontWeight: 'bold',
           color: '#333333',
         },
-        headerShown: true,
+        headerShown: false,
       }}
     />
     {/* <Stack.Screen
