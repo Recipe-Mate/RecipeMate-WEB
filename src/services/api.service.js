@@ -4,29 +4,59 @@
  */
 import apiConfig from '../../config/api.config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SERVER_URL } from '@env';
 
 // 인증 토큰 저장
 let authToken = null;
+let logoutHandler = null; // 전역 로그아웃 핸들러
+
+// 로그아웃 핸들러 등록 함수
+function setLogoutHandler(fn) {
+  logoutHandler = fn;
+}
+
+// 안전한 JSON 파싱 함수: body가 비어있으면 {} 반환
+async function safeJson(response) {
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
+}
 
 // fetchWithAuthRetry: accessToken 만료 시 refreshToken으로 자동 재발급 및 재시도
-async function fetchWithAuthRetry(url, options, defaultErrorMessage) {
+async function fetchWithAuthRetry(url, options = {}, defaultErrorMessage) {
+  // 1. accessToken 적용
+  if (!options.headers) options.headers = {};
+  if (!options.headers['Authorization']) {
+    if (!authToken) authToken = await AsyncStorage.getItem('accessToken');
+    if (authToken) options.headers['Authorization'] = `Bearer ${authToken}`;
+  }
   let response = await fetch(url, options);
   if (response.status === 401 || response.status === 403) {
     // accessToken 만료 → refreshToken으로 재발급 시도
     const refreshToken = await AsyncStorage.getItem('refreshToken');
     if (refreshToken) {
-      const refreshRes = await fetch(`${SERVER_URL}/api/auth/token/health`, {
+      // 서버에 refresh 요청
+      const refreshRes = await fetch(`${process.env.API_URL || 'https://a9f8-121-139-60-63.ngrok-free.app'}/api/auth/token/health`, {
         method: 'POST',
         headers: { 'token': refreshToken },
       });
       const refreshData = await refreshRes.json();
-      if (refreshData.access_token) {
+      if (refreshRes.ok && refreshData.access_token) {
+        // 새 accessToken 저장
         await AsyncStorage.setItem('accessToken', refreshData.access_token);
-        // accessToken 갱신 후 원래 요청 재시도
-        options.headers['Authorization'] = `Bearer ${refreshData.access_token}`;
+        authToken = refreshData.access_token;
+        // 재시도
+        options.headers['Authorization'] = `Bearer ${authToken}`;
         response = await fetch(url, options);
+      } else {
+        // refreshToken도 만료 → 로그아웃 처리 필요
+        await AsyncStorage.removeItem('accessToken');
+        await AsyncStorage.removeItem('refreshToken');
+        if (logoutHandler) logoutHandler(); // 전역 로그아웃 호출
+        throw new Error('세션이 만료되었습니다. 다시 로그인 해주세요.');
       }
+    } else {
+      // refreshToken 없음 → 로그인 필요
+      if (logoutHandler) logoutHandler();
+      throw new Error('로그인이 필요합니다.');
     }
   }
   if (!response.ok) throw new Error(defaultErrorMessage || '서버 오류');
@@ -42,6 +72,7 @@ const apiService = {
   setToken(token) {
     console.log('토큰 설정:', token ? '설정됨' : '없음');
     authToken = token;
+    AsyncStorage.setItem('accessToken', token || '');
   },
 
   /**
@@ -57,19 +88,8 @@ const apiService = {
    * @returns {Object} 기본 헤더 객체
    */
   _getCommonHeaders() {
-    const headers = {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, no-store, must-revalidate', // 캐시 방지
-      'Accept': 'application/json',
-      'X-Client-Version': '1.0.0', // 클라이언트 버전 정보 추가
-      'X-Client-Timestamp': new Date().toISOString() // 요청 시간 추가
-    };
-    
-    // 인증 토큰이 있으면 추가
-    if (this.getToken()) {
-      headers['Authorization'] = `Bearer ${this.getToken()}`;
-    }
-    
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
     return headers;
   },
   
@@ -80,64 +100,15 @@ const apiService = {
    * @returns {Promise<Object>} 처리된 응답 데이터
    */
   async _handleApiResponse(response, defaultErrorMessage = '서버 요청에 실패했습니다') {
-    try {
-      // 응답 상태 로그
-      console.log(`[apiService] 서버 응답 상태: ${response.status}`);
-      
-      // 응답 텍스트 얻기
-      const responseText = await response.text();
-      console.log(`[apiService] 서버 응답 원본:`, responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
-      
-      // 응답이 성공하지 않은 경우
-      if (!response.ok) {
-        let errorMessage = `${defaultErrorMessage} (상태 코드: ${response.status})`;
-        
-        try {
-          // 응답이 JSON인 경우 파싱
-          if (responseText && responseText.trim().startsWith('{')) {
-            const errorData = JSON.parse(responseText);
-            if (errorData.message) {
-              errorMessage = errorData.message;
-            }
-          }
-        } catch (parseError) {
-          console.error('[apiService] 오류 응답 파싱 실패:', parseError);
-        }
-        
-        // 개발 모드에서는 경고만 표시하고 기본값 반환 가능
-        if (__DEV__) {
-          console.warn(`[apiService] 개발 모드: 서버 오류 발생 (${response.status}): ${errorMessage}`);
-          // throw 하지 않고 기본값 또는 성공 표시를 할 수 있음
-          return { 
-            success: true, 
-            data: [],
-            _devMode: true,
-            _originalError: errorMessage 
-          };
-        }
-        
-        throw new Error(errorMessage);
-      }
-      
-      // 응답 파싱
-      let result;
-      
-      if (responseText && responseText.trim()) {
-        try {
-          result = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('[apiService] 응답 파싱 오류:', parseError);
-          result = responseText;
-        }
-      } else {
-        result = {};
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('[apiService] API 응답 처리 중 오류:', error);
-      throw error;
+    if (!response.ok) {
+      let errorMsg = defaultErrorMessage;
+      try {
+        const data = await response.json();
+        if (data && data.message) errorMsg = data.message;
+      } catch {}
+      throw new Error(errorMsg);
     }
+    return response.json();
   },
 
   /**
@@ -291,22 +262,17 @@ const apiService = {
   async addFood(userId, foodData) {
     const url = `${apiConfig.getApiUrl()}/food`;
     try {
-      const response = await fetch(url, {
+      const response = await fetchWithAuthRetry(url, {
         method: 'POST',
         headers: this._getCommonHeaders(),
         body: JSON.stringify(foodData)
-      });
+      }, '식재료 추가에 실패했습니다');
+      const result = await safeJson(response); // 빈 body도 허용
       if (response.ok) {
-        return { success: true, data: await response.json() };
+        return { success: true, data: result };
       } else {
         let errorMsg = '식재료 추가에 실패했습니다';
-        try {
-          const text = await response.text();
-          if (text && text.trim().startsWith('{')) {
-            const err = JSON.parse(text);
-            if (err.message) errorMsg = err.message;
-          }
-        } catch {}
+        if (result && result.message) errorMsg = result.message;
         return { success: false, error: errorMsg };
       }
     } catch (error) {
@@ -470,8 +436,8 @@ const apiService = {
         headers: this._getCommonHeaders(), // userId는 헤더의 토큰으로 처리됨
         body: JSON.stringify(body)
       });
-      const result = await this._handleApiResponse(response, '최근 사용 레시피 저장에 실패했습니다');
-      
+      // const result = await this._handleApiResponse(response, '최근 사용 레시피 저장에 실패했습니다');
+      const result = await safeJson(response); // ← 빈 body도 허용
       if (response.ok) {
         return { success: true, data: result };
       }
@@ -761,8 +727,10 @@ const apiService = {
     } catch (error) {
       return { success: false, error: error.message };
     }
-  }
+  },
+  setLogoutHandler, // <--- 이 부분을 명시적으로 추가
   // ...추가 API 함수(식재료 등)는 필요시 이식...
 };
 
 export default apiService;
+export { fetchWithAuthRetry, setLogoutHandler };

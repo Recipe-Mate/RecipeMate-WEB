@@ -86,6 +86,16 @@ export const AuthProvider = ({ children }) => {
 
   // 앱 시작 시 AsyncStorage에서 토큰과 유저 정보를 불러와 자동 로그인 및 유저 정보 복원
   useEffect(() => {
+    // apiService에 logout 핸들러 등록 (토큰 만료 시 자동 로그아웃)
+    apiService.setLogoutHandler(() => {
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsRegistering(false);
+      apiService.setToken(null);
+      AsyncStorage.removeItem('accessToken');
+      AsyncStorage.removeItem('refreshToken');
+      AsyncStorage.removeItem('user');
+    });
     (async () => {
       try {
         setLoading(true);
