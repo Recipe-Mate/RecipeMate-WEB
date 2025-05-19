@@ -3,9 +3,35 @@
  * 서버와의 통신을 담당하는 서비스
  */
 import apiConfig from '../../config/api.config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SERVER_URL } from '@env';
 
 // 인증 토큰 저장
 let authToken = null;
+
+// fetchWithAuthRetry: accessToken 만료 시 refreshToken으로 자동 재발급 및 재시도
+async function fetchWithAuthRetry(url, options, defaultErrorMessage) {
+  let response = await fetch(url, options);
+  if (response.status === 401 || response.status === 403) {
+    // accessToken 만료 → refreshToken으로 재발급 시도
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    if (refreshToken) {
+      const refreshRes = await fetch(`${SERVER_URL}/api/auth/token/health`, {
+        method: 'POST',
+        headers: { 'token': refreshToken },
+      });
+      const refreshData = await refreshRes.json();
+      if (refreshData.access_token) {
+        await AsyncStorage.setItem('accessToken', refreshData.access_token);
+        // accessToken 갱신 후 원래 요청 재시도
+        options.headers['Authorization'] = `Bearer ${refreshData.access_token}`;
+        response = await fetch(url, options);
+      }
+    }
+  }
+  if (!response.ok) throw new Error(defaultErrorMessage || '서버 오류');
+  return response;
+}
 
 // API 서비스 객체
 const apiService = {
@@ -193,17 +219,13 @@ const apiService = {
    */
   async getIngredients() {
     const url = `${apiConfig.getApiUrl()}/food/ownlist`;
+    const headers = this._getCommonHeaders();
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this._getCommonHeaders(),
-      });
-      const result = await this._handleApiResponse(response, '식재료 목록 조회에 실패했습니다');
-      // 서버 응답이 { foodList: [...] } 형태라면 data에 foodList를 넣어줌
+      const response = await fetchWithAuthRetry(url, { method: 'GET', headers }, '식재료 목록 조회에 실패했습니다');
+      const result = await response.json();
       if (result && result.foodList) {
         return { success: true, data: result.foodList };
       }
-      // 이미 data로 감싸서 올 수도 있음
       if (result && result.data) {
         return { success: true, data: result.data };
       }
@@ -242,22 +264,17 @@ const apiService = {
    */
   async getRecentRecipes(userId) {
     const url = `${apiConfig.getApiUrl()}/recipe/used/${userId}`;
+    const headers = this._getCommonHeaders();
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this._getCommonHeaders(),
-      });
-      const serverResponse = await this._handleApiResponse(response, '최근 사용 레시피 조회에 실패했습니다');
-
+      const response = await fetchWithAuthRetry(url, { method: 'GET', headers }, '최근 사용 레시피 조회에 실패했습니다');
+      const serverResponse = await response.json();
       if (serverResponse && serverResponse._devMode === true && serverResponse.success === true) {
-        return serverResponse; // 개발 모드 오류 처리
+        return serverResponse;
       }
-
-      // 백엔드에서 이제 recipeList에 상세 정보가 포함된 SavedRecipeInfo 객체들을 반환
       if (serverResponse && serverResponse.recipeList) {
         return { success: true, data: serverResponse.recipeList };
       } else {
-        return { success: true, data: [] }; 
+        return { success: true, data: [] };
       }
     } catch (error) {
       console.error('[apiService] getRecentRecipes 실패:', error);
@@ -678,6 +695,71 @@ const apiService = {
     } catch (error) {
       console.error('[apiService] getAlternativeFood API 호출 실패:', error);
       return { success: false, error: error.message || '대체 식재료 조회 중 오류 발생', data: [] };
+    }
+  },
+
+  /**
+   * 식재료 삭제
+   * @param {number|string} userId - 사용자 ID
+   * @param {number|string} foodName - 식재료 이름
+   * @returns {Promise<Object>} 서버 응답
+   */
+  async deleteFood(userId, foodName) {
+    const url = `${apiConfig.getApiUrl()}/food?userId=${userId}`;
+    console.log('[apiService] deleteFood 요청:', url, foodName);
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: this._getCommonHeaders(),
+        body: JSON.stringify({ foodNameList: [foodName] }) // 서버 DTO 요구에 맞게 배열로 전달
+      });
+      if (response.ok) {
+        return { success: true };
+      } else {
+        const result = await this._handleApiResponse(response, '식재료 삭제에 실패했습니다');
+        return result && typeof result === 'object' && result.hasOwnProperty('success') ? result : { success: false, error: result?.message || '식재료 삭제에 실패했습니다.'};
+      }
+    } catch (error) {
+      console.error('[apiService] 식재료 삭제 중 오류:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * 사용자 정보 업데이트 (닉네임, 프로필 이미지 등)
+   * @param {string|number} userId - 사용자 ID
+   * @param {Object} updates - 변경할 정보
+   * @returns {Promise<Object>}
+   */
+  async updateUser(userId, updates) {
+    const url = `${apiConfig.getApiUrl()}/user/${userId}`;
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: this._getCommonHeaders(),
+        body: JSON.stringify(updates)
+      });
+      return await this._handleApiResponse(response, '사용자 정보 수정에 실패했습니다');
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * 유저 정보 조회
+   * @param {string|number} userId
+   * @returns {Promise<Object>} 유저 정보
+   */
+  async getUserInfo(userId) {
+    const url = `${apiConfig.getApiUrl()}/user/${userId}`;
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this._getCommonHeaders(),
+      });
+      return await this._handleApiResponse(response, '유저 정보 조회에 실패했습니다');
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   }
   // ...추가 API 함수(식재료 등)는 필요시 이식...
