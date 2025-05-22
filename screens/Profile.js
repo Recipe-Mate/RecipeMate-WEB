@@ -10,9 +10,11 @@ import { useFocusEffect } from '@react-navigation/native';
 const Profile = ({ navigation }) => {
   const [nickname, setNickname] = useState('Sirius');
   const [newNickname, setNewNickname] = useState('');
-  const [ModalVisible, setModalVisible] = useState(false);  // modal state
+  const [ModalVisible, setModalVisible] = useState(false);
   const [numOfItems, setNumOfItems] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);  // 새로 고침 상태
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [recipes, setRecipes] = useState([]);
+
 
   const handleNicknameChange = () => {
     if (newNickname.trim() !== '') {
@@ -46,13 +48,12 @@ const Profile = ({ navigation }) => {
       }
 
       const data = await response.json();
-      setNickname(data.userName);  // userName 값을 nickname으로 저장
+      setNickname(data.userName);
     } catch (error) {
       console.error('에러 발생:', error);
     }
   };
 
-  // 보유 재료 수 가져오기
   const fetchNumOfItems = async () => {
     const value = await AsyncStorage.getItem('num_of_items');
     if (value !== null) {
@@ -60,20 +61,47 @@ const Profile = ({ navigation }) => {
     }
   };
 
+  const fetchUsedRecipes = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+
+      const response = await fetch(`${SERVER_URL}/recipe/used`, {
+        method: 'GET',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`서버 요청 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('서버에서 받은 데이터:', data);
+
+      if (data.recipeList) {
+        setRecipes(data.recipeList);
+      }
+    } catch (error) {
+      console.error('레시피 사용 내역 가져오기 실패:', error);
+    }
+  };
+
   useEffect(() => {
-    fetchNumOfItems(); // 처음에는 한번만 호출
-    fetchUserInfo(); // 처음에는 한번만 호출
+    fetchNumOfItems();
+    fetchUserInfo();
+    fetchUsedRecipes();
+
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
-      // 화면이 포커스될 때마다 최신 정보 새로 가져오기
       fetchNumOfItems();
       fetchUserInfo();
     }, [])
   );
 
-  // 새로 고침 함수
   const onRefresh = async () => {
     setIsRefreshing(true);
     await fetchNumOfItems();
@@ -83,8 +111,8 @@ const Profile = ({ navigation }) => {
 
   return (
     <ScrollView
-    contentContainerStyle={{ flexGrow: 1 }}  
-    refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={{ flexGrow: 1 }}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
     >
       <SafeAreaView style={styles.safeArea}>
         <LinearGradient
@@ -121,7 +149,7 @@ const Profile = ({ navigation }) => {
               </View>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <Text style={styles.number_title}>요리한 레시피 수</Text>
-                <Text style={styles.number}>3</Text>
+                <Text style={styles.number}>{recipes.length}</Text>
               </View>
             </View>
             <View style={styles.divider}></View>
@@ -133,7 +161,13 @@ const Profile = ({ navigation }) => {
             </TouchableOpacity>
             <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={styles.recipe}>
+                {recipes.map((recipe) => (
+                  <View key={recipe.id} style={styles.recipe}>
+                    <Image source={{ uri: recipe.recipeImage }} style={styles.recipe_photo} />
+                    <Text style={styles.recipe_photo_text}>{recipe.recipeName}</Text>
+                  </View>
+                ))}
+                {/* <View style={styles.recipe}>
                   <Image source={require('../assets/pancake.png')} style={styles.recipe_photo}></Image>
                   <Text style={styles.recipe_photo_text}>팬케이크</Text>
                 </View>
@@ -144,7 +178,7 @@ const Profile = ({ navigation }) => {
                 <View style={styles.recipe}>
                   <Image source={require('../assets/chicken_porridge.png')} style={styles.recipe_photo}></Image>
                   <Text style={styles.recipe_photo_text}>닭죽</Text>
-                </View>
+                </View> */}
               </View>
             </ScrollView>
             <View style={styles.divider}></View>
@@ -259,7 +293,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   recipe_photo_text: {
-    fontSize: 18,
+    fontSize: 17,
     color: '#2D336B',
     fontWeight: '500',
     flexWrap: 'wrap',
@@ -337,7 +371,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     borderColor: '#2D336B',
-    marginVertical: 15,
+    marginVertical: 10,
   },
   background: {
     ...StyleSheet.absoluteFillObject,

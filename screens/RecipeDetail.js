@@ -55,6 +55,48 @@ const RecipeDetail = ({ route }) => {
     );
   }
 
+  const completeCooking = async () => {
+  try {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+
+    const validImages = recipe.processImage.filter(url => url && url.trim() !== '');
+    const lastProcessImage = validImages.length > 0 ? validImages[validImages.length - 1] : null;
+
+    const requestBody = {
+      recipeName: recipeName,
+      recipeImage: lastProcessImage || dishImg,
+    };
+
+    console.log('서버로 전송될 데이터:', JSON.stringify(requestBody));
+
+    const response = await fetch(`${SERVER_URL}/recipe/used`, {
+      method: 'POST',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error('서버 전송 실패');
+    }
+
+    const text = await response.text();
+    console.log('서버 응답 원본:', text);
+
+    if (text) {
+      const result = JSON.parse(text);
+      console.log('요리 완료 전송 성공:', result);
+    } else {
+      console.log('요리 완료 전송 성공 (응답 없음)');
+    }
+  } catch (error) {
+    console.error('요리 완료 전송 중 오류:', error instanceof Error ? error.stack : error);
+  }
+};
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>{recipe.recipeName}</Text>
@@ -100,7 +142,7 @@ const RecipeDetail = ({ route }) => {
       <View style={styles.nutritionSection}>
         <Text style={styles.sectionTitle}>재료</Text>
         {recipe.ingredient.map((item, index) => (
-          <Text key={index}>• {item}</Text>
+          <Text key={index} style={{marginTop: 3}}>• {item}</Text>
         ))}
       </View>
 
@@ -124,6 +166,9 @@ const RecipeDetail = ({ route }) => {
           );
         })}
       </View>
+      <TouchableOpacity style={styles.completeButton} onPress={completeCooking}>
+        <Text style={styles.completeButtonText}>요리 완료</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -166,7 +211,7 @@ const styles = StyleSheet.create({
   },
   nutritionSection: {
     backgroundColor: '#EEF1FA',
-    padding: 15,
+    padding: 12,
     margin: 5,
     borderRadius: 15,
   },
@@ -228,8 +273,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF1FA',
     padding: 15,
     margin: 5,
-    marginBottom: 20,
     borderRadius: 15,
+  },
+  completeButton: {
+    backgroundColor: '#2D336B',
+    borderRadius: 15,
+    padding: 15,
+    margin: 5,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  completeButtonText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
   },
 })
 

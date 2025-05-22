@@ -1,95 +1,89 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SERVER_URL } from '@env';
 
-const RecipeCompletedList = ({ navigation }) => {
-  const [recipes, setRecipes] = React.useState([]);
-  const { user } = require('../src/context/AuthContext').useAuth();
-  const [loading, setLoading] = React.useState(true);
+const UsedRecipes = () => {
+  const [recipes, setRecipes] = useState([]);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      let isActive = true;
-      const fetchData = async () => {
-        setLoading(true);
-        try {
-          if (user && user.id) {
-            const result = await require('../src/services/api.service').default.getRecentRecipes(user.id);
-            if (isActive && result && result.success && result.data) {
-              setRecipes(result.data);
-            } else if (isActive) {
-              setRecipes([]);
-            }
-          } else if (isActive) {
-            setRecipes([]);
-          }
-        } catch (e) {
-          if (isActive) setRecipes([]);
-        } finally {
-          if (isActive) setLoading(false);
-        }
-      };
-      fetchData();
-      return () => { isActive = false; };
-    }, [user])
-  );
+  const fetchUsedRecipes = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
 
-  const handleRecipePress = (recipeId) => {
-    navigation.navigate('RecipeDetail', { recipeId });
+      const response = await fetch(`${SERVER_URL}/recipe/used`, {
+        method: 'GET',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`서버 요청 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('서버에서 받은 데이터:', data);
+
+      // recipeList 배열이 있으면 상태로 저장
+      if (data.recipeList) {
+        setRecipes(data.recipeList);
+      }
+    } catch (error) {
+      console.error('레시피 사용 내역 가져오기 실패:', error);
+    }
   };
 
+  useEffect(() => {
+    fetchUsedRecipes();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      {loading ? (
-        <Text style={styles.emptyText}>불러오는 중...</Text>
-      ) : recipes.length === 0 ? (
-        <Text style={styles.emptyText}>최근에 요리 완료한 레시피가 없습니다.</Text>
-      ) : (
-        <FlatList
-          data={recipes}
-          keyExtractor={(item) => item.id?.toString() || item.name}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.item} onPress={() => handleRecipePress(item.id)}>
-              <Icon name="restaurant-outline" size={28} color="#4CAF50" style={{ marginRight: 12 }} />
-              <Text style={styles.itemText}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-    </View>
+    <ScrollView contentContainerStyle={styles.box}>
+      {recipes.map((recipe) => (
+        <View key={recipe.id} style={styles.recipe_view}>
+          <Image source={{ uri: recipe.recipeImage }} style={styles.recipe_photo} />
+          <Text style={styles.recipe_text}>{recipe.recipeName}</Text>
+        </View>
+      ))}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 18,
-    color: '#2c6e91',
-  },
-  item: {
+  box: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 10,
+    backgroundColor: '#EEF1FA',
+    flex: 1
+  },
+ recipe_photo: {
+    width: 80,
+    height: 80,
+    borderWidth: 1,
+    borderRadius: 20,
+    borderColor: '#2D336B',
+  },
+  recipe_view: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    padding: 10,
+    paddingRight: 20,
+    marginRight: 15,
+    marginBottom: 15,
+    borderRadius: 25,
     alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
+    width: 340, 
+    elevation: 5,
   },
-  itemText: {
-    fontSize: 17,
-    color: '#333',
-  },
-  emptyText: {
-    color: '#999',
-    fontSize: 15,
-    textAlign: 'center',
-    marginTop: 40,
+  recipe_text: {
+    paddingLeft: 18,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2D336B',
+    flexShrink: 1,
   },
 });
 
-export default RecipeCompletedList;
+export default UsedRecipes;
