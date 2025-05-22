@@ -8,13 +8,13 @@ import { SERVER_URL } from '@env';
 import { useFocusEffect } from '@react-navigation/native';
 
 const Profile = ({ navigation }) => {
-  const [nickname, setNickname] = useState('Sirius');
+  const [nickname, setNickname] = useState('사용자');
+  const [email, setEmail] = useState('abc1234@gmail.com');
   const [newNickname, setNewNickname] = useState('');
   const [ModalVisible, setModalVisible] = useState(false);
   const [numOfItems, setNumOfItems] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recipes, setRecipes] = useState([]);
-
 
   const handleNicknameChange = () => {
     if (newNickname.trim() !== '') {
@@ -48,7 +48,9 @@ const Profile = ({ navigation }) => {
       }
 
       const data = await response.json();
+      console.log(data);
       setNickname(data.userName);
+      setEmail(data.userEmail);
     } catch (error) {
       console.error('에러 발생:', error);
     }
@@ -92,13 +94,13 @@ const Profile = ({ navigation }) => {
     fetchNumOfItems();
     fetchUserInfo();
     fetchUsedRecipes();
-
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
       fetchNumOfItems();
       fetchUserInfo();
+      fetchUsedRecipes();
     }, [])
   );
 
@@ -106,6 +108,7 @@ const Profile = ({ navigation }) => {
     setIsRefreshing(true);
     await fetchNumOfItems();
     await fetchUserInfo();
+    await fetchUsedRecipes();
     setIsRefreshing(false);
   };
 
@@ -135,6 +138,7 @@ const Profile = ({ navigation }) => {
             handleNicknameChange={handleNicknameChange}
             styles={styles}
           />
+          <Text style={styles.email}>{email}</Text>
         </View>
         <View style={{ backgroundColor: '#EEF1FA', flex: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
           <View style={{ padding: 20 }}>
@@ -271,14 +275,14 @@ const styles = StyleSheet.create({
   },
   nickname: {
     fontSize: 25,
+    marginTop: -5,
     fontWeight: 'bold',
     color: '#F7F9FD',
-    paddingBottom: 20,
   },
   email: {
-    fontSize: 18,
-    marginTop: 5,
-    marginBottom: 20,
+    fontSize: 16,
+    marginTop: 2,
+    marginBottom: 10,
     color: '#C3CBE9'
   },
   number_view: {
