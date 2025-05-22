@@ -15,6 +15,9 @@ import {
 import apiService from '../src/services/api.service';
 import apiConfig from '../config/api.config';
 import { LinearGradient } from 'react-native-linear-gradient';
+import { SERVER_URL } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 // ValueOption enum - 서버 API와 동일한 값 사용
 const ValueOption = {
@@ -39,6 +42,7 @@ const RecipeSearch = ({ navigation }) => {
   const [error, setError] = useState(''); // 에러 상태 관리
   const [resultCount, setResultCount] = useState(15); // 기본값 15개
   const [exactMatch, setExactMatch] = useState(false); // 완전히 일치 옵션 상태
+  const [foodNameState, setFoodName] = useState('');  
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
   const toggleCondition = (key) => {
@@ -59,15 +63,6 @@ const RecipeSearch = ({ navigation }) => {
     });
   };
 
-  // 재료 추가 함수
-  const addIngredient = () => {
-    if (newIngredient.trim()) {
-      setIngredients([...ingredients, newIngredient.trim()]); // 입력된 재료를 추가
-      setNewIngredient(''); // 입력 필드를 초기화
-    } else {
-      Alert.alert('입력 오류', '재료를 입력하세요.');
-    }
-  };
 
   // 재료 삭제 함수
   const deleteIngredient = (index) => {
@@ -94,69 +89,66 @@ const RecipeSearch = ({ navigation }) => {
     }
   };
 
-  // 레시피 검색 함수
   const searchRecipes = async () => {
-    if (ingredients.length === 0) {
-      Alert.alert('입력 오류', '최소 한 개 이상의 재료를 입력하세요.');
-      return;
+  try {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+
+    const requestBody = {
+      foodName: foodNameState,
+      calorie: conditions.calorie,
+      fat: conditions.fat,
+      natrium: "NONE",
+      protien: conditions.protien,
+      carbohydrate: conditions.carbohydrate
+    };
+
+    console.log('서버에 보낼 데이터:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(`${SERVER_URL}/recipe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'accept': '*/*',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error('레시피 전송 실패');
     }
 
-    setLoading(true);
+    const result = await response.json();
+    console.log('레시피 전송 성공:', result);
 
-    try {
-      // 검색 매개변수 구성
-      const searchParams = {
-        foodName: ingredients[0], // 첫 번째 재료를 주 재료로 사용
-        ...conditions,
-        startIndex: 1,
-        endIndex: resultCount,
-        exactMatch, // 완전히 일치 옵션 추가
-      };
-
-      console.log('[RecipeSearch] 검색 매개변수:', searchParams);
-
-      // API 호출
-      const response = await apiService.searchRecipes(searchParams);
-      console.log('[RecipeSearch] 검색 결과:', response);
-
-      // 검색 결과 화면으로 이동 (RecipeResult로)
-      if (response && response.success && Array.isArray(response.data)) {
-        navigation.navigate('RecipeResult', {
-          recipes: response.data,
-          conditions: conditions,
-          ingredients: ingredients
-        });
-      } else {
-        setError('검색 결과가 없습니다.');
-      }
-    } catch (error) {
-      console.error('[RecipeSearch] 검색 오류:', error);
-      Alert.alert(
-        '검색 오류',
-        '레시피 검색 중 오류가 발생했습니다. 다시 시도해주세요.'
-      );
-    } finally {
-      setLoading(false);
+    if (result && result.success && Array.isArray(result.data)) {
+      navigation.navigate('RecipeResult', {
+        recipes: result.data,
+        conditions: conditions,
+        ingredients: ingredients
+      });
+    } else {
+      setError('검색 결과가 없습니다.');
     }
-  };
+
+  } catch (err) {
+    console.error('레시피 전송 중 오류 발생:', err);
+  }
+};
 
   const conditionLabels = ['탄수화물', '단백질', '지방', '칼로리'];
   const conditionKeys = ['carbohydrate', 'protien', 'fat', 'calorie'];
 
   return (
     <SafeAreaView style={styles.safeArea}>
-
       <LinearGradient
         colors={["#2D336B", "#A9B5DF"]}
         style={styles.background}
       />
-
       <View style={{ flexDirection: 'row', alignItems: 'center', height: 50, paddingTop: 8 }}>
         <Text style={styles.title}>레시피 검색</Text>
       </View>
       <ScrollView>
-
-        {/* 조건 섹션 */}
         <View style={styles.sectionBox}>
           <Text style={styles.sectionTitle}>영양성분 기준</Text>
           {conditionKeys.map((key, index) => (
@@ -178,78 +170,27 @@ const RecipeSearch = ({ navigation }) => {
           ))}
 
         </View>
-
-        {/* 재료 추가 섹션 */}
-        <View style={styles.sectionBox}>
-          <Text style={styles.sectionTitle}>재료 추가</Text>
-
-          {/* 완전히 일치 옵션 */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, marginBottom: 10 }}>
-            <Switch
-              value={exactMatch}
-              onValueChange={setExactMatch}
-              trackColor={{ false: '#bbb', true: '#2D336B' }}
-              thumbColor={exactMatch ? '#A9B5DF' : '#999'}
-            />
-            <Text style={{
-              marginLeft: 10,
-              fontSize: 16,
-              color: exactMatch ? '#2D336B' : '#2D336B',
-              fontWeight: exactMatch ? 'bold' : 'normal'
-            }}>
-              완전히 일치
-            </Text>
-          </View>
-
-          {/* 구분선 */}
-          <View style={styles.sectionDivider} />
-
-          {/* 결과 개수 선택 */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-            <Text style={{ fontSize: 16, marginRight: 10, color: '#2D336B' }}>결과 개수:</Text>
-            {[5, 15, 30].map((count) => (
-              <TouchableOpacity
-                key={count}
-                style={{
-                  backgroundColor: resultCount === count ? '#2D336B' : '#A9B5DF',
-                  paddingVertical: 6,
-                  paddingHorizontal: 16,
-                  borderRadius: 13,
-                  marginRight: 8,
-                }}
-                onPress={() => setResultCount(count)}
-              >
-                <Text style={{ color: resultCount === count ? '#fff' : '#333', fontWeight: 'bold' }}>{count}개</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* 구분선 */}
-          <View style={styles.sectionDivider} />
-        </View>
+        
         <View style={styles.box}>
-          {ingredients.map((item, index) => (
-            <View style={styles.ingredientItem} key={index}>
-              <Text style={styles.ingredientText}>{item}</Text>
-              <TouchableOpacity onPress={() => deleteIngredient(index)}>
-                <Text style={styles.deleteButton}>🗑️</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+          <Text style={styles.sectionTitle}>사용할 재료</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               placeholder="재료를 입력하세요"
               placeholderTextColor="#7886C7"
-              value={newIngredient}
-              onChangeText={setNewIngredient}
+              value={foodNameState}
+              onChangeText={setFoodName}
             />
-            <TouchableOpacity style={styles.addButton} onPress={addIngredient}>
-              <Text style={styles.addButtonText}>+</Text>
-            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
+            style={styles.btnArea}
+            onPress={() => searchRecipes(ingredients[0])}
+          >
+            <Text style={styles.searchButtonText}>레시피 검색</Text>
+          </TouchableOpacity>
+
+          {/* <TouchableOpacity
             style={[styles.btnArea, loading && styles.disabledButton]}
             onPress={() => {
               if (!loading) searchRecipes();
@@ -261,7 +202,7 @@ const RecipeSearch = ({ navigation }) => {
             ) : (
               <Text style={styles.searchButtonText}>레시피 검색</Text>
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
         </View>
       </ScrollView>
@@ -360,9 +301,9 @@ const styles = StyleSheet.create({
     borderColor: '#7886C7',
     borderRadius: 8,
     padding: 10,
+    marginTop: 12,
     fontSize: 18,
     backgroundColor: '#fff',
-    marginRight: 10,
   },
   addButton: {
     height: 45,
