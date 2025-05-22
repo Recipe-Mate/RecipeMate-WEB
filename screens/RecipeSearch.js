@@ -1,23 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  Switch,
-  ActivityIndicator,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
-import apiService from '../src/services/api.service';
-import apiConfig from '../config/api.config';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { LinearGradient } from 'react-native-linear-gradient';
 import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 
 // ValueOption enum - 서버 API와 동일한 값 사용
 const ValueOption = {
@@ -37,11 +22,6 @@ const RecipeSearch = ({ navigation }) => {
   });
 
   const [ingredients, setIngredients] = useState([]); // 재료 목록 상태 관리
-  const [newIngredient, setNewIngredient] = useState(''); // 새로운 재료 입력 상태 관리
-  const [loading, setLoading] = useState(false); // 로딩 상태 관리
-  const [error, setError] = useState(''); // 에러 상태 관리
-  const [resultCount, setResultCount] = useState(15); // 기본값 15개
-  const [exactMatch, setExactMatch] = useState(false); // 완전히 일치 옵션 상태
   const [foodNameState, setFoodName] = useState('');
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
@@ -61,12 +41,6 @@ const RecipeSearch = ({ navigation }) => {
 
       return { ...prev, [key]: nextValue };
     });
-  };
-
-
-  // 재료 삭제 함수
-  const deleteIngredient = (index) => {
-    setIngredients(ingredients.filter((_, i) => i !== index)); // 선택한 재료를 삭제
   };
 
   // 값 옵션에 따른 UI 표시 텍스트
@@ -164,9 +138,7 @@ const RecipeSearch = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           ))}
-
         </View>
-
         <View style={styles.box}>
           <Text style={styles.sectionTitle}>사용할 재료</Text>
           <View style={styles.inputContainer}>
@@ -178,33 +150,16 @@ const RecipeSearch = ({ navigation }) => {
               onChangeText={setFoodName}
             />
           </View>
-
           <TouchableOpacity
             style={styles.btnArea}
             onPress={() => searchRecipes(ingredients[0])}
           >
             <Text style={styles.searchButtonText}>레시피 검색</Text>
           </TouchableOpacity>
-
-          {/* <TouchableOpacity
-            style={[styles.btnArea, loading && styles.disabledButton]}
-            onPress={() => {
-              if (!loading) searchRecipes();
-            }}
-            activeOpacity={0.7}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.searchButtonText}>레시피 검색</Text>
-            )}
-          </TouchableOpacity> */}
-
         </View>
       </ScrollView>
     </SafeAreaView>
   );
-
 };
 
 const styles = StyleSheet.create({

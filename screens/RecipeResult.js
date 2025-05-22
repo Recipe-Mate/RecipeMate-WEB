@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView, Alert, ScrollView, RefreshControl } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
-import NicknameModal from './NicknameModal';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SERVER_URL } from '@env';
-import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 
 const RecipeResult = ({ route, navigation }) => {
-  const { recipes, conditions, ingredients } = route.params || {};
+  const { recipes: passedRecipes, conditions, ingredients } = route.params || {};
+  const [recipes, setRecipes] = useState(null);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRecipes(passedRecipes || []);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!recipes) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>레시피를 불러오고 있습니다.</Text>
+      </View>
+    );
+  }
   const getConditionText = (conditions) => {
     const texts = [];
 
@@ -45,13 +55,17 @@ const RecipeResult = ({ route, navigation }) => {
         <TouchableOpacity
           key={index}
           style={styles.recipeCard}
-          onPress={() => navigation.navigate('RecipeDetail', { recipe })}
+          onPress={() =>
+            navigation.navigate('RecipeDetail', {
+              recipeName: recipe.recipeName,
+              dishImg: recipe.dishImg,
+            })
+          }
         >
           <View style={styles.recipeContainer}>
             <Image
               source={{ uri: recipe.dishImg }}
               style={styles.recipeImage}
-
             />
             <Text style={styles.recipeTitle}>{recipe.recipeName}</Text>
           </View>
@@ -81,7 +95,6 @@ const RecipeResult = ({ route, navigation }) => {
             <Text style={styles.ingredientsTitle}>주요 재료</Text>
             <Text>{recipe.ingredient.join(', ')}</Text>
           </View>
-
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -93,7 +106,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#A9B5DF', // 밝은 배경색
     padding: 10,
-    paddingTop: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#A9B5DF',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#333',
   },
   searchSummary: {
     backgroundColor: '#fff',

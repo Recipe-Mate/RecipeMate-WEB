@@ -5,7 +5,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { StatusBar, StyleSheet, View, Text, ActivityIndicator, LogBox } from 'react-native';
-import ServerStatusCheck from './src/components/ServerStatusCheck';
 import apiConfig from './config/api.config';
 import LinearGradient from 'react-native-linear-gradient';
 import { SERVER_URL } from '@env';
