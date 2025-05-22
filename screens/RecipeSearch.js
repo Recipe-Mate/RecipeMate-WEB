@@ -42,7 +42,7 @@ const RecipeSearch = ({ navigation }) => {
   const [error, setError] = useState(''); // 에러 상태 관리
   const [resultCount, setResultCount] = useState(15); // 기본값 15개
   const [exactMatch, setExactMatch] = useState(false); // 완전히 일치 옵션 상태
-  const [foodNameState, setFoodName] = useState('');  
+  const [foodNameState, setFoodName] = useState('');
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
   const toggleCondition = (key) => {
@@ -90,51 +90,47 @@ const RecipeSearch = ({ navigation }) => {
   };
 
   const searchRecipes = async () => {
-  try {
-    const accessToken = await AsyncStorage.getItem('accessToken');
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
 
-    const requestBody = {
-      foodName: foodNameState,
-      calorie: conditions.calorie,
-      fat: conditions.fat,
-      natrium: "NONE",
-      protien: conditions.protien,
-      carbohydrate: conditions.carbohydrate
-    };
+      const requestBody = {
+        foodName: foodNameState,
+        calorie: conditions.calorie,
+        fat: conditions.fat,
+        natrium: "NONE",
+        protien: conditions.protien,
+        carbohydrate: conditions.carbohydrate
+      };
 
-    console.log('서버에 보낼 데이터:', JSON.stringify(requestBody, null, 2));
+      console.log('서버에 보낼 데이터:', JSON.stringify(requestBody, null, 2));
 
-    const response = await fetch(`${SERVER_URL}/recipe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'accept': '*/*',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error('레시피 전송 실패');
-    }
-
-    const result = await response.json();
-    console.log('레시피 전송 성공:', result);
-
-    if (result && result.success && Array.isArray(result.data)) {
-      navigation.navigate('RecipeResult', {
-        recipes: result.data,
-        conditions: conditions,
-        ingredients: ingredients
+      const response = await fetch(`${SERVER_URL}/recipe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': '*/*',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(requestBody),
       });
-    } else {
-      setError('검색 결과가 없습니다.');
-    }
 
-  } catch (err) {
-    console.error('레시피 전송 중 오류 발생:', err);
-  }
-};
+      if (!response.ok) {
+        throw new Error('레시피 전송 실패');
+      }
+
+      const result = await response.json();
+      console.log('레시피 전송 성공:', result);
+
+      navigation.navigate('RecipeResult', {
+        recipes: result.recipeList,
+        conditions: conditions,
+        ingredients: foodNameState
+      });
+
+    } catch (err) {
+      console.error('레시피 전송 중 오류 발생:', err);
+    }
+  };
 
   const conditionLabels = ['탄수화물', '단백질', '지방', '칼로리'];
   const conditionKeys = ['carbohydrate', 'protien', 'fat', 'calorie'];
@@ -170,7 +166,7 @@ const RecipeSearch = ({ navigation }) => {
           ))}
 
         </View>
-        
+
         <View style={styles.box}>
           <Text style={styles.sectionTitle}>사용할 재료</Text>
           <View style={styles.inputContainer}>
