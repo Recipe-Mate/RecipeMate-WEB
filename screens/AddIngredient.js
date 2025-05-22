@@ -118,10 +118,9 @@ export default function AddIngredient({ route, navigation }) {
         const imageData = image
             ? { uri: image, type: 'image/jpeg', name: 'uploaded.jpg' }
             : { uri: defaultImage.uri, type: 'image/jpeg', name: 'default.jpg' };
-        // 이미지가 있으면 전달하고 없으면 null로 전달
         addFood(foodList, imageData);
 
-        navigation.navigate('Main');
+        navigation.goBack()
     };
 
     useEffect(() => {
