@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, StatusBar, Image, TouchableOpacity, SafeAreaView, Alert, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import NicknameModal from './NicknameModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,20 +9,11 @@ import { useFocusEffect } from '@react-navigation/native';
 const Profile = ({ navigation }) => {
   const [nickname, setNickname] = useState('사용자');
   const [email, setEmail] = useState('abc1234@gmail.com');
-  const [newNickname, setNewNickname] = useState('');
-  const [ModalVisible, setModalVisible] = useState(false);
+  const [profileImage, setProfileImage] = useState('');
   const [numOfItems, setNumOfItems] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recipes, setRecipes] = useState([]);
 
-  const handleNicknameChange = () => {
-    if (newNickname.trim() !== '') {
-      setNickname(newNickname); // 닉네임 변경
-      setModalVisible(false); // 모달 닫기
-    } else {
-      Alert.alert('닉네임을 입력하세요.');
-    }
-  };
 
   // 사용자 정보 가져오기
   const fetchUserInfo = async () => {
@@ -51,6 +41,7 @@ const Profile = ({ navigation }) => {
       console.log(data);
       setNickname(data.userName);
       setEmail(data.userEmail);
+      setProfileImage(data.profileImg);
     } catch (error) {
       console.error('에러 발생:', error);
     }
@@ -124,20 +115,8 @@ const Profile = ({ navigation }) => {
           style={styles.background}
         />
         <View style={styles.user_info}>
-          <Image source={require('../assets/Profile_photo.png')} style={styles.photo}></Image>
-          <TouchableOpacity
-            style={styles.badge_button}
-            onPress={() => setModalVisible(true)}>
-            <Text style={styles.nickname}>{nickname}</Text>
-          </TouchableOpacity>
-          <NicknameModal
-            visible={ModalVisible}
-            setVisible={setModalVisible}
-            newNickname={newNickname}
-            setNewNickname={setNewNickname}
-            handleNicknameChange={handleNicknameChange}
-            styles={styles}
-          />
+          <Image source={{ uri: profileImage }} style={styles.photo} />
+          <Text style={styles.nickname}>{nickname}</Text>
           <Text style={styles.email}>{email}</Text>
         </View>
         <View style={{ backgroundColor: '#EEF1FA', flex: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
@@ -171,25 +150,8 @@ const Profile = ({ navigation }) => {
                     <Text style={styles.recipe_photo_text}>{recipe.recipeName}</Text>
                   </View>
                 ))}
-                {/* <View style={styles.recipe}>
-                  <Image source={require('../assets/pancake.png')} style={styles.recipe_photo}></Image>
-                  <Text style={styles.recipe_photo_text}>팬케이크</Text>
-                </View>
-                <View style={styles.recipe}>
-                  <Image source={require('../assets/kimchi_stew.png')} style={styles.recipe_photo}></Image>
-                  <Text style={styles.recipe_photo_text}>김치찌개</Text>
-                </View>
-                <View style={styles.recipe}>
-                  <Image source={require('../assets/chicken_porridge.png')} style={styles.recipe_photo}></Image>
-                  <Text style={styles.recipe_photo_text}>닭죽</Text>
-                </View> */}
               </View>
             </ScrollView>
-            <View style={styles.divider}></View>
-            <TouchableOpacity
-              onPress={() => setModalVisible(true)}>
-              <Text style={styles.text1}>정보 수정하기</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
