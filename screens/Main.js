@@ -7,6 +7,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setMergedUserIngredients } from '../src/utils/userIngredientsStore';
+import { useUserIngredients } from '../src/context/UserIngredientsContext';
 
 const Main = ({ navigation }) => {
   const [foodNameList, setFoodNameList] = useState([]);
@@ -14,6 +16,7 @@ const Main = ({ navigation }) => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const { setUserIngredientsRaw } = useUserIngredients();
 
   const toggleEditMode = () => {
     setIsEditMode(prev => !prev);
@@ -33,6 +36,8 @@ const Main = ({ navigation }) => {
       });
 
       const data = await response.json();
+      console.log('[Main] 서버에서 받은 식재료 원본 데이터:', data); // 추가된 로그
+      setUserIngredientsRaw(data.ownFoodList || []); // Context에 원본 저장
       const parsedItems = data.ownFoodList.map(item => ({
         id: item.foodId,
         name: item.foodName,
@@ -41,16 +46,60 @@ const Main = ({ navigation }) => {
         amount: item.amount,
       }));
 
-      setFoodNameList(parsedItems);
-      await AsyncStorage.setItem('num_of_items', parsedItems.length.toString());
+      // 동일한 이름+단위의 식재료를 합산하여 하나로 묶기
+      const mergedMap = {};
+      data.ownFoodList.forEach(item => {
+        const key = item.foodName + '|' + (item.unit || '');
+        if (!mergedMap[key]) {
+          mergedMap[key] = {
+            id: item.foodId, // 대표 id(첫번째)
+            name: item.foodName,
+            unit: item.unit,
+            imageUrl: item.imgUrl,
+            amount: 0,
+          };
+        }
+        mergedMap[key].amount += Number(item.amount) || 0;
+      });
+      const mergedItems = Object.values(mergedMap);
+      setFoodNameList(mergedItems);
+      await AsyncStorage.setItem('num_of_items', mergedItems.length.toString());
     } catch (error) {
       console.error('Food List 요청 실패:', error);
     }
   };
 
+  // 이름+단위별 합산 함수 (RecipeDetail.js와 동일)
+  function mergeUserIngredients(ingredientList) {
+    const merged = {};
+    for (const item of ingredientList) {
+      const normName = (item.name || '').replace(/\s/g, '').toLowerCase();
+      const normUnit = (item.unit || '').replace(/\s/g, '').toLowerCase();
+      const key = `${normName}__${normUnit}`;
+      if (!merged[key]) {
+        merged[key] = {
+          name: normName,
+          unit: normUnit,
+          quantity: 0,
+        };
+      }
+      merged[key].quantity += Number(item.amount || 0);
+    }
+    return Object.values(merged);
+  }
+
   useEffect(() => {
     fetchFoodList();
   }, []);
+
+  // Main화면 진입 시마다 합산 리스트 로그 출력
+  useEffect(() => {
+    if (foodNameList.length > 0) {
+      const merged = mergeUserIngredients(foodNameList);
+      setMergedUserIngredients(merged); // 전역 저장
+      console.log('[Main] 사용자 식재료 합산 리스트:', merged);
+    }
+  }, [foodNameList]);
 
   const handleDelete = async () => {
     try {
@@ -80,6 +129,14 @@ const Main = ({ navigation }) => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchFoodList().finally(() => setRefreshing(false));
+  };
+
+  const handleRecipeDetail = (recipe) => {
+    // foodNameList는 이미 합산된 리스트임
+    navigation.navigate('RecipeDetail', {
+      recipe,
+      mergedUserIngredients: mergeUserIngredients(foodNameList),
+    });
   };
 
   const unitMap = {

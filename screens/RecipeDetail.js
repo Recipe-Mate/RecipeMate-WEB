@@ -2,11 +2,58 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
+import apiService from '../src/services/api.service';
+import { useAuth } from '../src/context/AuthContext';
+import { useRoute } from '@react-navigation/native'; // useRoute 임포트
+import { getMergedUserIngredients } from '../src/utils/userIngredientsStore'; // 전역 상태 관리 유틸 임포트
 
 
-const RecipeDetail = ({ route }) => {
-  const { recipeName, dishImg } = route.params;
+const RecipeDetail = ({ route: propRoute, navigation }) => {
+  const { recipeName, dishImg } = propRoute.params;
   const [recipe, setRecipe] = useState(null);
+  const [userIngredients, setUserIngredients] = useState([]);
+  const [userIngredientsRaw, setUserIngredientsRaw] = useState([]); // 원본 데이터
+  const { user } = useAuth();
+  const route = useRoute();
+  // mergedUserIngredients를 전역 util에서만 읽음
+  const mergedUserIngredients = getMergedUserIngredients();
+
+  // 식재료명에서 단위/수량/괄호 등 제거 (예: "오렌지 100g(1/2개)" → "오렌지")
+  const extractPureName = (name) => name.replace(/\s*\d+[a-zA-Z가-힣()\/.]*|\([^)]*\)/g, '').trim();
+
+  // 사용자 식재료 불러오기
+  useEffect(() => {
+    const fetchUserIngredients = async () => {
+      try {
+        const result = await apiService.getIngredients();
+        let foodArray = [];
+        if (Array.isArray(result.data)) {
+          foodArray = result.data;
+        } else if (Array.isArray(result.foodList)) {
+          foodArray = result.foodList;
+        } else if (Array.isArray(result.ownFoodNameList)) {
+          foodArray = result.ownFoodNameList.map((name, idx) => ({ name, unit: '' }));
+        } else if (Array.isArray(result)) {
+          foodArray = result;
+        } else if (result && typeof result === 'object') {
+          const arrField = Object.values(result).find(v => Array.isArray(v));
+          if (arrField) foodArray = arrField;
+        }
+        setUserIngredientsRaw(foodArray); // 원본 저장
+        // 정규화
+        const normalized = foodArray.map(item => ({
+          name: extractPureName(item.foodName || item.name || ''),
+          quantity: item.quantity || item.amount || '',
+          unit: item.unit || '',
+        })).filter(f => f.name);
+        setUserIngredients(normalized);
+      } catch (e) {
+        setUserIngredients([]);
+        setUserIngredientsRaw([]);
+      }
+    };
+    fetchUserIngredients();
+  }, []);
 
   const fetchRecipeDetail = async (recipeName) => {
     try {
@@ -46,6 +93,15 @@ const RecipeDetail = ({ route }) => {
     loadRecipe();
   }, [recipeName]);
 
+  useEffect(() => {
+    if (recipe && Array.isArray(recipe.ingredient)) {
+      const parsedList = recipe.ingredient
+        .filter(item => /\(.+\)/.test(item))
+        .map(item => parseIngredientString(item));
+      console.log('레시피 정제된 ingredient 리스트:', parsedList);
+    }
+  }, [recipe]);
+
   if (!recipe) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -56,46 +112,256 @@ const RecipeDetail = ({ route }) => {
   }
 
   const completeCooking = async () => {
-  try {
-    const accessToken = await AsyncStorage.getItem('accessToken');
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const validImages = recipe.processImage.filter(url => url && url.trim() !== '');
+      const lastProcessImage = validImages.length > 0 ? validImages[validImages.length - 1] : null;
+      const requestBody = {
+        recipeName: recipeName,
+        recipeImage: lastProcessImage || dishImg,
+      };
+      console.log('서버로 전송될 데이터:', JSON.stringify(requestBody));
+      const response = await fetch(`${SERVER_URL}/recipe/used`, {
+        method: 'POST',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+      if (!response.ok) {
+        throw new Error('서버 전송 실패');
+      }
+      const text = await response.text();
+      console.log('서버 응답 원본:', text);
 
-    const validImages = recipe.processImage.filter(url => url && url.trim() !== '');
-    const lastProcessImage = validImages.length > 0 ? validImages[validImages.length - 1] : null;
-
-    const requestBody = {
-      recipeName: recipeName,
-      recipeImage: lastProcessImage || dishImg,
-    };
-
-    console.log('서버로 전송될 데이터:', JSON.stringify(requestBody));
-
-    const response = await fetch(`${SERVER_URL}/recipe/used`, {
-      method: 'POST',
-      headers: {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error('서버 전송 실패');
+      // 서버 응답과 상관없이 재료 소진 화면으로 이동
+      // 레시피 ingredient(원본)와 userIngredientsRaw, userId를 넘김
+      navigation.navigate('IngredientChange', {
+        ingredients: recipe.ingredient
+          .filter(item => /\(.+\)/.test(item))
+          .map((item, idx) => {
+            // 괄호 앞의 순수명, 괄호 안의 수량/단위 추출
+            const match = item.match(/^([^\(]+)/);
+            const pureName = match ? extractPureName(match[1]) : extractPureName(item);
+            const bracket = item.match(/\(([^)]+)\)/);
+            let amount = '', unit = '';
+            if (match) {
+              // 괄호 앞에서 수량/단위 추출 (예: '100g')
+              const beforeBracket = match[1].trim();
+              const beforeMatch = beforeBracket.match(/([\d\./]+)\s*([a-zA-Z가-힣]+)/);
+              if (beforeMatch) {
+                amount = beforeMatch[1];
+                unit = beforeMatch[2];
+              }
+            }
+            if ((!amount || !unit) && bracket) {
+              // 괄호 안에서 수량/단위 추출 (예: '1/2개')
+              const parts = bracket[1].split(/\s+/);
+              if (parts.length === 2) {
+                if (!amount) amount = parts[0];
+                if (!unit) unit = parts[1];
+              } else if (parts.length === 1) {
+                const numMatch = parts[0].match(/([\d\./]+)([a-zA-Z가-힣]+)/);
+                if (numMatch) {
+                  if (!amount) amount = numMatch[1];
+                  if (!unit) unit = numMatch[2];
+                } else {
+                  if (!amount) amount = parts[0];
+                }
+              }
+            }
+            // name, foodName 모두 순수명으로 정제해서 넘김
+            return {
+              id: idx + '_' + pureName + '_' + unit,
+              name: pureName,
+              foodName: pureName,
+              amount,
+              unit,
+            };
+          }),
+        userIngredientsRaw: userIngredientsRaw,
+        userId: user && (user.id || user.user_id),
+      });
+    } catch (error) {
+      console.error('요리 완료 전송 중 오류:', error instanceof Error ? error.stack : error);
+      // 서버 오류여도 재료 소진 화면으로 이동
+      navigation.navigate('IngredientChange', {
+        ingredients: recipe.ingredient
+          .filter(item => /\(.+\)/.test(item))
+          .map((item, idx) => {
+            const match = item.match(/^([^\(]+)/);
+            const pureName = match ? extractPureName(match[1]) : extractPureName(item);
+            const bracket = item.match(/\(([^)]+)\)/);
+            let amount = '', unit = '';
+            if (bracket) {
+              // 예: '100g(1/2개)' 또는 '100g 1/2개' 등 다양한 케이스 처리
+              // 1. 괄호 앞쪽(예: '100g')에서 단위 추출
+              const beforeBracket = match ? match[1].trim() : '';
+              const beforeUnitMatch = beforeBracket.match(/([\d\./]+)\s*([a-zA-Z가-힣]+)/);
+              let beforeUnit = '';
+              if (beforeUnitMatch) {
+                beforeUnit = beforeUnitMatch[2];
+              }
+              // 2. 괄호 안쪽(예: '1/2개')에서 단위 추출
+              const parts = bracket[1].split(/\s+/);
+              let bracketAmount = '', bracketUnit = '';
+              if (parts.length === 2) {
+                bracketAmount = parts[0];
+                bracketUnit = parts[1];
+              } else if (parts.length === 1) {
+                const numMatch = parts[0].match(/([\d\./]+)([a-zA-Z가-힣]+)/);
+                if (numMatch) {
+                  bracketAmount = numMatch[1];
+                  bracketUnit = numMatch[2];
+                } else {
+                  bracketAmount = parts[0];
+                }
+              }
+              // 3. amount/unit 결정: 앞쪽 단위가 있으면 그걸 우선 사용
+              if (beforeUnit) {
+                amount = beforeBracket.match(/[\d\./]+/)?.[0] || '';
+                unit = beforeUnit;
+              } else if (bracketUnit) {
+                amount = bracketAmount;
+                unit = bracketUnit;
+              } else {
+                amount = beforeBracket.match(/[\d\./]+/)?.[0] || bracketAmount;
+                unit = beforeUnit || bracketUnit;
+              }
+            }
+            return {
+              id: idx + '_' + pureName + '_' + unit,
+              name: pureName,
+              amount,
+              unit,
+            };
+          }),
+        userIngredientsRaw: userIngredientsRaw,
+        userId: user && (user.id || user.user_id),
+      });
     }
+  };
 
-    const text = await response.text();
-    console.log('서버 응답 원본:', text);
-
-    if (text) {
-      const result = JSON.parse(text);
-      console.log('요리 완료 전송 성공:', result);
-    } else {
-      console.log('요리 완료 전송 성공 (응답 없음)');
+  // 사용자 식재료 합산(이름+단위별 수량 합침, 단위는 소문자+trim으로 일반화)
+  function mergeUserIngredients(ingredientList) {
+    const merged = {};
+    for (const item of ingredientList) {
+      const normName = (item.name || '').replace(/\s/g, '').toLowerCase();
+      const normUnit = (item.unit || '').replace(/\s/g, '').toLowerCase();
+      const key = `${normName}__${normUnit}`;
+      if (!merged[key]) {
+        merged[key] = {
+          name: normName,
+          unit: normUnit,
+          quantity: 0,
+        };
+      }
+      merged[key].quantity += Number(item.quantity || item.amount || 0);
     }
-  } catch (error) {
-    console.error('요리 완료 전송 중 오류:', error instanceof Error ? error.stack : error);
+    return Object.values(merged);
   }
-};
+
+  // ingredient 문자열을 {name, stdAmount, stdUnit, amount, unit} 객체로 파싱하는 함수
+  function parseIngredientString(ingredientStr) {
+    // 예: '당근 100g(1/2개)' → name: '당근', stdAmount: '100', stdUnit: 'g', amount: '1/2', unit: '개'
+    const match = ingredientStr.match(/^([^\(]+)/);
+    const pureName = match ? extractPureName(match[1]) : extractPureName(ingredientStr);
+    const beforeBracket = match ? match[1].trim() : '';
+    let stdAmount = '', stdUnit = '';
+    const beforeUnitMatch = beforeBracket.match(/([\d\./]+)\s*([a-zA-Z가-힣]+)/);
+    if (beforeUnitMatch) {
+      stdAmount = beforeUnitMatch[1];
+      stdUnit = beforeUnitMatch[2];
+    }
+    const bracket = ingredientStr.match(/\(([^)]+)\)/);
+    let amount = '', unit = '';
+    if (bracket) {
+      const parts = bracket[1].split(/\s+/);
+      if (parts.length === 2) {
+        amount = parts[0];
+        unit = parts[1];
+      } else if (parts.length === 1) {
+        const numMatch = parts[0].match(/([\d\./]+)([a-zA-Z가-힣]+)/);
+        if (numMatch) {
+          amount = numMatch[1];
+          unit = numMatch[2];
+        } else {
+          amount = parts[0];
+        }
+      }
+    }
+    return { name: pureName, stdAmount, stdUnit, amount, unit };
+  }
+
+  // getIngredientStatus는 {name, stdAmount, stdUnit, amount, unit} 객체를 받아서 비교
+  const getIngredientStatus = ({ name, stdAmount, stdUnit, amount, unit }) => {
+    const pureName = (name || '').replace(/\s/g, '').toLowerCase();
+    const neededAmount = amount;
+    const neededUnit = unit;
+    const neededStdAmount = stdAmount;
+    const neededStdUnit = stdUnit;
+    const norm = v => (v || '').replace(/\s/g, '').toLowerCase();
+    // [디버깅] 비교 직전 로그
+    console.log('[비교-DEBUG] pureName:', pureName, 'neededUnit:', neededUnit, 'neededStdUnit:', neededStdUnit, 'mergedUserIngredients:', mergedUserIngredients);
+    // 1. 이름+단위 일치
+    const userItem = mergedUserIngredients.find(f => f.name === pureName && norm(f.unit) === norm(neededUnit));
+    if (userItem) {
+      if (neededAmount && neededUnit && userItem.unit && userItem.quantity) {
+        if (norm(userItem.unit) === norm(neededUnit)) {
+          const parseNum = (v) => {
+            if (typeof v !== 'string') return Number(v) || 0;
+            if (v.includes('/')) {
+              const [a, b] = v.split('/').map(Number);
+              return b ? a / b : a;
+            }
+            return parseFloat(v);
+          };
+          const need = parseNum(neededAmount);
+          const have = parseNum(userItem.quantity);
+          console.log(`[비교] 이름+단위: ${pureName} ${neededAmount}${neededUnit} vs 사용자 ${have}${userItem.unit}`);
+          if (!isNaN(need) && !isNaN(have)) {
+            if (have >= need) return { status: '보유', color: '#50C4B7' };
+            else return { status: '부족', color: '#FFD600' };
+          }
+        }
+      }
+      return { status: '보유', color: '#50C4B7' };
+    }
+    // 2. 이름+stdUnit 일치 (정량 단위로도 비교)
+    if (neededStdUnit) {
+      const userStdItem = mergedUserIngredients.find(f => f.name === pureName && norm(f.unit) === norm(neededStdUnit));
+      if (userStdItem && neededStdAmount) {
+        const parseNum = (v) => {
+          if (typeof v !== 'string') return Number(v) || 0;
+          if (v.includes('/')) {
+            const [a, b] = v.split('/').map(Number);
+            return b ? a / b : a;
+          }
+          return parseFloat(v);
+        };
+        const need = parseNum(neededStdAmount);
+        const have = parseNum(userStdItem.quantity);
+        console.log(`[비교] 이름+정량단위: ${pureName} ${neededStdAmount}${neededStdUnit} vs 사용자 ${have}${userStdItem.unit}`);
+        if (!isNaN(need) && !isNaN(have)) {
+          if (have >= need) return { status: '보유', color: '#50C4B7' };
+          else return { status: '부족', color: '#FFD600' };
+        }
+        return { status: '보유', color: '#50C4B7' };
+      }
+    }
+    // 3. 이름만 일치하는 사용자 식재료(단위 다름)도 찾아서 변환 시도 (기존 로직 유지)
+    const userItemNameOnly = mergedUserIngredients.find(f => f.name === pureName);
+    if (userItemNameOnly && neededAmount && neededUnit && userItemNameOnly.unit && userItemNameOnly.quantity) {
+      console.log(`[비교] 이름만 일치: ${pureName} (${neededAmount}${neededUnit}) vs 사용자 ${userItemNameOnly.quantity}${userItemNameOnly.unit}`);
+      // 단위 변환 테이블 활용 등 추가 로직 필요시 여기에 작성
+      // 일단 '보유' 처리
+      return { status: '보유', color: '#50C4B7' };
+    }
+    console.log(`[비교] 미보유: ${pureName} (${neededAmount}${neededUnit} / ${neededStdAmount}${neededStdUnit})`);
+    return { status: '미보유', color: '#E0E0E0' };
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -141,9 +407,18 @@ const RecipeDetail = ({ route }) => {
 
       <View style={styles.nutritionSection}>
         <Text style={styles.sectionTitle}>재료</Text>
-        {recipe.ingredient.map((item, index) => (
-          <Text key={index} style={{marginTop: 3}}>• {item}</Text>
-        ))}
+        {recipe.ingredient
+          .filter(item => /\(.+\)/.test(item))
+          .map((item, index) => {
+            const parsed = parseIngredientString(item);
+            const { status, color } = getIngredientStatus(parsed);
+            return (
+              <View key={index} style={styles.ingredientRow}>
+                <Text style={{marginTop: 3, flex: 1}}>• {item}</Text>
+                <Text style={[styles.statusText, { backgroundColor: color }]}>{status}</Text>
+              </View>
+            );
+          })}
       </View>
 
       <View style={styles.finalBox}>
@@ -287,6 +562,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  statusText: {
+    color: '#222',
+    fontWeight: 'bold',
+    fontSize: 13,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginLeft: 8,
+    overflow: 'hidden',
+    minWidth: 44,
+    textAlign: 'center',
   },
 })
 

@@ -38,6 +38,25 @@ const RecipeResult = ({ route, navigation }) => {
     return texts.length ? texts.join(', ') : '모든 레시피';
   };
 
+  // Main.js의 mergeUserIngredients 함수 복사
+  function mergeUserIngredients(ingredientList) {
+    const merged = {};
+    for (const item of ingredientList) {
+      const normName = (item.name || '').replace(/\s/g, '').toLowerCase();
+      const normUnit = (item.unit || '').replace(/\s/g, '').toLowerCase();
+      const key = `${normName}__${normUnit}`;
+      if (!merged[key]) {
+        merged[key] = {
+          name: normName,
+          unit: normUnit,
+          quantity: 0,
+        };
+      }
+      merged[key].quantity += Number(item.amount || 0);
+    }
+    return Object.values(merged);
+  }
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.searchSummary}>
@@ -59,6 +78,7 @@ const RecipeResult = ({ route, navigation }) => {
             navigation.navigate('RecipeDetail', {
               recipeName: recipe.recipeName,
               dishImg: recipe.dishImg,
+              mergedUserIngredients: mergeUserIngredients(route.params?.userIngredients || []),
             })
           }
         >

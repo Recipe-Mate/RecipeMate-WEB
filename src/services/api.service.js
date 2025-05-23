@@ -316,17 +316,21 @@ const apiService = {
 
   /**
    * 식재료(재고) 차감/업데이트
-   * @param {number} userId
    * @param {Array} foodDataList - [{ foodId, amount, unit }]
    * @returns {Promise<Object>} 서버 응답
    */
-  async updateFoodAmount(userId, foodDataList) {
-    const url = `${apiConfig.getApiUrl()}/food/amount-update`;
+  async updateFoodAmount(foodDataList) {
+    const url = `${SERVER_URL}/food/amount-update`;
     const body = { foodDataList };
+    const headers = this._getCommonHeaders();
+    // 요청 정보 로그 추가
+    console.log('[updateFoodAmount] 요청 URL:', url);
+    console.log('[updateFoodAmount] 요청 헤더:', headers);
+    console.log('[updateFoodAmount] 요청 body:', JSON.stringify(body));
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: this._getCommonHeaders(),
+        headers,
         body: JSON.stringify(body)
       });
       if (response.ok) {

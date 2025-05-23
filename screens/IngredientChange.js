@@ -10,6 +10,9 @@ import {
 } from 'react-native';
 // import { API_BASE_URL } from '../config/api.config'; // API_BASE_URL은 현재 파일에서 사용되지 않음
 import apiService from '../src/services/api.service';
+import { useIsFocused } from '@react-navigation/native';
+import { useUserIngredients } from '../src/context/UserIngredientsContext';
+import { useAuth } from '../src/context/AuthContext';
 
 // 문자열 형태의 양을 숫자로 변환하는 헬퍼 함수 (예: "1/2" -> 0.5, "30" -> 30)
 const interpretIngredientAmount = (amountStr) => {
@@ -22,13 +25,23 @@ const interpretIngredientAmount = (amountStr) => {
     }
     return 0; // 잘못된 분수 형태
   }
-  // 숫자가 아닌 문자(소수점 제외) 제거 후 숫자로 변환
+  // 숫자가 아닌 문자(소수점 제외) 제거 후 숫으로 변환
   const num = parseFloat(str.replace(/[^\\d.]/g, ''));
   return isNaN(num) ? 0 : num;
 };
 
 const IngredientChange = ({ route, navigation }) => {
-  const { ingredients: initialIngredients, userId } = route.params || {};
+  const isFocused = useIsFocused();
+  // const { ingredients: initialIngredients, userId } = route.params || {};
+  const { ingredients: initialIngredients } = route.params || {};
+  const { userIngredientsRaw } = useUserIngredients();
+  const { user } = useAuth();
+  const userId = user?.id || user?.user_id || user?.userId;
+
+  useEffect(() => {
+    console.log('[IngredientChange] user:', user);
+    console.log('[IngredientChange] userId:', userId);
+  }, [user]);
 
   // useEffect를 사용하여 initialIngredients 로깅
   useEffect(() => {
@@ -45,11 +58,9 @@ const IngredientChange = ({ route, navigation }) => {
   const [ingredients, setIngredients] = useState(
     Array.isArray(initialIngredients) && initialIngredients.length > 0
       ? initialIngredients
-          // RecipeDetail에서 이미 필터링된 데이터를 받지만, 안전장치로 amount나 unit 존재 여부 확인 가능
           .filter(item => {
             const hasAmount = item.amount !== null && typeof item.amount !== 'undefined';
             const hasUnit = item.unit && String(item.unit).trim() !== '';
-            // 디버깅을 위해 필터링되는 아이템 로그 추가
             if (!(hasAmount || hasUnit)) {
               console.log('[IngredientChange] Filtering out item due to missing amount/unit:', JSON.stringify(item, null, 2));
             }
@@ -59,9 +70,13 @@ const IngredientChange = ({ route, navigation }) => {
             const numericAmount = interpretIngredientAmount(item.amount);
             return {
               ...item,
-              changeAmount: numericAmount, 
-              displayChangeAmount: String(numericAmount), // 화면 표시용 문자열 상태 추가
-              id: item.id || item.foodName || Math.random().toString(), 
+              changeAmount: numericAmount,
+              displayChangeAmount: String(numericAmount),
+              id: item.id || item.foodName || Math.random().toString(),
+              displayUnit: item.unit ? String(item.unit) : '',
+              // 레시피 필요량/단위 원본도 별도 보존
+              recipeAmount: item.amount,
+              recipeUnit: item.unit,
             };
           })
       : []
@@ -175,41 +190,156 @@ const IngredientChange = ({ route, navigation }) => {
     );
   };
 
-  // 서버로 변화량 반영
-  const handleConfirm = async () => {
+  // FIFO 소진 로직: 한 재료(ingredient)에 대해 userIngredientsRaw에서 오래된 foodId부터 차감
+  function getFifoConsumptionList(ingredient, userIngredientsRaw) {
+    if (!userIngredientsRaw) return [];
+    const norm = v => (v || '').replace(/\s/g, '').toLowerCase();
+    // 단위 표준화: g, kg, ml, l 등 대문자/소문자/한글 모두 소문자 영문으로 통일
+    const unitMap = {
+      'g': 'g', '그램': 'g', 'G': 'g',
+      'kg': 'kg', '킬로그램': 'kg', 'KG': 'kg',
+      'ml': 'ml', '밀리리터': 'ml', 'ML': 'ml',
+      'l': 'l', '리터': 'l', 'L': 'l',
+    };
+    const normUnit = u => unitMap[norm(u)] || norm(u);
+
+    const ingName = norm(ingredient.foodName || ingredient.name);
+    const ingUnit = normUnit(ingredient.unit);
+
+    // 디버깅: 후보군 추출 전 원본 데이터 로그
+    console.log('[FIFO DEBUG] ingredient:', ingName, ingUnit);
+    console.log('[FIFO DEBUG] userIngredientsRaw 원본:', userIngredientsRaw);
+    userIngredientsRaw.forEach(f => {
+      console.log('[FIFO DEBUG] userRaw:', norm(f.foodName), normUnit(f.unit), f.foodId, f.amount, f.unit, f.foodName);
+    });
+
+    // 일치하는 식재료만 추출 (이름, 단위 모두 표준화해서 비교)
+    const candidates = userIngredientsRaw
+      .filter(f => norm(f.foodName) === ingName && normUnit(f.unit) === ingUnit)
+      .sort((a, b) => (a.foodId || a.id) - (b.foodId || b.id));
+
+    console.log('[FIFO DEBUG] candidates:', candidates);
+
+    let remain = Number(ingredient.changeAmount) || 0;
+    const result = [];
+    for (const batch of candidates) {
+      if (remain <= 0) break;
+      const available = Number(batch.amount || batch.quantity || 0);
+      const consume = Math.min(remain, available);
+      if (consume > 0) {
+        result.push({ foodId: batch.foodId || batch.id, amount: consume });
+        remain -= consume;
+      }
+    }
+    return result;
+  }
+
+  // AmountUnit enum 변환 함수 (서버와 맞춤)
+  function toAmountUnitEnum(unit) {
+    const map = {
+      'g': 'G', '그램': 'G', 'G': 'G',
+      'kg': 'KG', '킬로그램': 'KG', 'KG': 'KG',
+      'ml': 'ML', '밀리리터': 'ML', 'ML': 'ML',
+      'l': 'L', '리터': 'L', 'L': 'L',
+      '개': 'EA', 'ea': 'EA', 'EA': 'EA'
+    };
+    return map[String(unit).trim().toLowerCase()] || 'EA';
+  }
+
+  // 서버에 변경된 식재료 전송
+  const handleSendChanges = async () => {
     setLoading(true);
     try {
-      // 디버깅용 콘솔 출력 추가
-      console.log('[IngredientChange] initialIngredients (prop):', initialIngredients);
-      console.log('[IngredientChange] ingredients (state):', ingredients);
-      
-      // 서버에 보낼 데이터 구조 맞추기
-      // 현재 item.amount는 레시피 양, item.changeAmount는 사용자가 입력한 변화량(소모량)
-      // 서버 API가 어떤 값을 기대하는지에 따라 이 부분의 로직이 달라져야 합니다.
-      // 예시: 서버가 (기존 보유량 - 소모량)을 기대한다면, 이 화면에서 기존 보유량을 알아야 합니다.
-      // 예시: 서버가 순수 소모량(델타값, 음수)을 기대한다면, -item.changeAmount를 보내야 합니다.
-      // 현재 코드는 (레시피 양 + 입력된 변화량)을 보내고 있어, 의도와 다를 수 있습니다.
-      // 이 부분은 사용자의 확인 및 서버 API 명세에 따른 수정이 필요할 수 있습니다.
-      const foodDataList = ingredients.map((item) => {
-        return {
-          foodName: item.name || item.foodName, 
-          // 아래 amount 계산은 서버 요구사항에 따라 달라져야 합니다.
-          // 현재는 (레시피에 적힌 양 + 사용자가 입력한 양)으로 계산됩니다.
-          amount: (interpretIngredientAmount(item.amount) || 0) + (Number(item.changeAmount) || 0),
-        };
-      });
-      
-      console.log('[IngredientChange] 서버로 전송되는 foodDataList:', JSON.stringify(foodDataList, null, 2));
-      
-      const result = await apiService.updateFoodAmount(userId, foodDataList);
-      if (result && result.success) {
-        Alert.alert('성공', '식재료 소유량이 업데이트되었습니다.');
-        navigation.goBack();
-      } else {
-        Alert.alert('오류', `업데이트 실패: ${result && result.error ? result.error : '알 수 없는 오류'}`);
+      // 1. 변화량이 0인 식재료는 제외
+      const ingredientsToUpdate = ingredients.filter(
+        (ingredient) => ingredient.changeAmount > 0
+      );
+
+      if (ingredientsToUpdate.length === 0) {
+        Alert.alert('변경사항 없음', '변경된 식재료가 없습니다.');
+        setLoading(false);
+        return;
       }
-    } catch (e) {
-      Alert.alert('오류', e.message);
+
+      // 2. FIFO 로직에 따라 각 재료별로 userIngredientsRaw 차감
+      // → 서버에 일괄 업데이트 API 사용 (updateFoodAmount)
+      let overConsume = false;
+      const foodDataList = ingredientsToUpdate.flatMap((ingredient) => {
+        const consumptionList = getFifoConsumptionList(ingredient, userIngredientsRaw);
+        const totalRequested = Number(ingredient.changeAmount) || 0;
+        const totalConsumable = consumptionList.reduce((sum, c) => sum + c.amount, 0);
+        if (totalConsumable < totalRequested) {
+          overConsume = true;
+          Alert.alert(
+            '차감 불가',
+            `${ingredient.foodName}의 보유량보다 많은 양을 차감할 수 없습니다.`
+          );
+          return [];
+        }
+        // unit 변환 적용
+        const amountUnit = toAmountUnitEnum(ingredient.unit);
+        return consumptionList.map(consumed => ({
+          foodId: consumed.foodId,
+          amount: consumed.amount,
+          unit: amountUnit
+        }));
+      });
+
+      if (overConsume) {
+        setLoading(false);
+        return;
+      }
+
+      if (foodDataList.length === 0) {
+        Alert.alert('변경사항 없음', '차감할 식재료가 없습니다.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('[IngredientChange] 최종 서버 전송 foodDataList:', JSON.stringify(foodDataList));
+      console.log('[IngredientChange] userId:', userId);
+
+      if (!userId) {
+        console.log('[IngredientChange] user is missing or has no id:', user);
+        Alert.alert('오류', '유저 정보가 없습니다. 다시 로그인해 주세요.');
+        setLoading(false);
+        return;
+      }
+
+      // 실제 서버 API 호출 (updateFoodAmount)
+      let result;
+      try {
+        result = await apiService.updateFoodAmount(foodDataList);
+        console.log('[IngredientChange] updateFoodAmount 응답:', result);
+      } catch (apiError) {
+        console.error('[IngredientChange] updateFoodAmount 예외:', apiError);
+        if (apiError && apiError.response) {
+          try {
+            const text = await apiError.response.text();
+            console.error('[IngredientChange] 서버 에러 응답 본문:', text);
+          } catch (e) {
+            console.error('[IngredientChange] 서버 에러 응답 파싱 실패:', e);
+          }
+        }
+        Alert.alert('오류', 'API 호출 중 예외가 발생했습니다: ' + apiError.message);
+        setLoading(false);
+        return;
+      }
+      if (!result.success) {
+        console.error('Error updating ingredients:', result);
+        if (result && result.error) {
+          console.error('[IngredientChange] 서버 에러 메시지:', result.error);
+        }
+        Alert.alert('오류', result.error || '식재료 업데이트에 실패했습니다.');
+        setLoading(false);
+        return;
+      }
+      Alert.alert('성공', '식재료 변경이 완료되었습니다.', [
+        { text: '확인', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('오류', '예기치 않은 오류가 발생했습니다. 나중에 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -217,51 +347,48 @@ const IngredientChange = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>재료 소진/변화량 수정</Text>
+      <Text style={styles.title}>식재료 변화량 설정</Text>
       <FlatList
         data={ingredients}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <View style={styles.ingredientItem}>
-            <Text style={styles.ingredientName}>{item.name || item.foodName}</Text>
-            <View style={styles.recipeAmountRow}>
-              <Text style={styles.label}>레시피 필요량: {interpretIngredientAmount(item.amount)} {item.unit || item.amountUnit}</Text>
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          return (
+            <View style={styles.ingredientContainer}>
+              <Text style={styles.ingredientName}>{item.foodName}</Text>
+              <View style={styles.amountContainer}>
+                <TouchableOpacity
+                  style={styles.changeButton}
+                  onPress={() => handleChangeAmountWithButtons(item.id, 'decrease')}
+                >
+                  <Text style={styles.buttonText}>-</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.amountInput}
+                  value={item.displayChangeAmount}
+                  onChangeText={(text) => handleAmountChange(item.id, text)}
+                  keyboardType="numeric"
+                />
+                <TouchableOpacity
+                  style={styles.changeButton}
+                  onPress={() => handleChangeAmountWithButtons(item.id, 'increase')}
+                >
+                  <Text style={styles.buttonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.ingredientUnit}>{item.displayUnit}</Text>
             </View>
-            <View style={styles.changeAmountControls}>
-              <TouchableOpacity 
-                style={styles.button}
-                onPress={() => handleChangeAmountWithButtons(item.id, 'decrease')}
-                disabled={loading}
-              >
-                <Text style={styles.buttonText}>-</Text>
-              </TouchableOpacity>
-              <TextInput
-                style={styles.amountInput}
-                keyboardType="numeric"
-                value={item.displayChangeAmount} // displayChangeAmount 사용
-                onChangeText={(value) => handleAmountChange(item.id, value)}
-                editable={!loading}
-                placeholder="0"
-              />
-              <TouchableOpacity 
-                style={styles.button}
-                onPress={() => handleChangeAmountWithButtons(item.id, 'increase')}
-                disabled={loading}
-              >
-                <Text style={styles.buttonText}>+</Text>
-              </TouchableOpacity>
-              <Text style={styles.labelUnit}>{item.unit || item.amountUnit}</Text>
-            </View>
-          </View>
-        )}
-        style={styles.list}
+          );
+        }}
+        contentContainerStyle={styles.listContainer}
       />
       <TouchableOpacity
-        style={[styles.confirmButton, loading && { backgroundColor: '#aaa' }]}
-        onPress={handleConfirm}
+        style={styles.confirmButton}
+        onPress={handleSendChanges}
         disabled={loading}
       >
-        <Text style={styles.confirmButtonText}>{loading ? '처리 중...' : '확인'}</Text>
+        <Text style={styles.confirmButtonText}>
+          {loading ? '저장 중...' : '변경 사항 저장'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -270,92 +397,79 @@ const IngredientChange = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
     padding: 16,
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#34495e',
-    textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  list: {
-    flex: 1,
-  },
-  ingredientItem: {
-    backgroundColor: '#f6f8fa',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 3,
-    elevation: 1,
+  ingredientContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   ingredientName: {
+    flex: 1,
     fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 8,
   },
-  recipeAmountRow: { // 레시피 필요량 표시 스타일
+  amountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10, // 컨트롤과의 간격
+    flex: 2,
   },
-  changeAmountControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // justifyContent: 'space-between', // 버튼, 입력 필드, 단위 간격 자동 조절 시
-    gap: 8, 
-  },
-  label: {
-    fontSize: 15,
-    color: '#555',
-  },
-  labelUnit: { // 단위 표시용 스타일
-    fontSize: 15,
-    color: '#555',
-    marginLeft: 4, // 입력필드/버튼과의 간격
-  },
-  amountInput: {
-    flex: 1, // 버튼 사이의 공간을 최대한 차지
-    height: 42, 
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    fontSize: 18, 
-    backgroundColor: '#fff',
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#e9ecef', // 밝은 회색 계열
-    paddingVertical: 8,
-    paddingHorizontal: 16, // 버튼 크기 조절
-    borderRadius: 6,
+  changeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 42, // 입력 필드와 높이 맞춤
-    borderWidth: 1,
-    borderColor: '#ced4da',
+    marginHorizontal: 8,
   },
   buttonText: {
-    fontSize: 20, // 아이콘 대신 텍스트 크기
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#495057', // 버튼 텍스트 색상
+    color: '#333',
+  },
+  amountInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  ingredientUnit: {
+    width: 50,
+    textAlign: 'center',
+    fontSize: 18,
+    color: '#666',
+  },
+  listContainer: {
+    paddingBottom: 100,
   },
   confirmButton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 15,
-    borderRadius: 10,
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#007bff',
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
   },
   confirmButtonText: {
-    color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#fff',
   },
 });
 

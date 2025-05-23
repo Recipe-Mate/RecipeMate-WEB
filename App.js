@@ -8,6 +8,8 @@ import { StatusBar, StyleSheet, View, Text, ActivityIndicator, LogBox } from 're
 import apiConfig from './config/api.config';
 import LinearGradient from 'react-native-linear-gradient';
 import { SERVER_URL } from '@env';
+import apiService from './src/services/api.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 경고 무시 설정 (개발 중에만 사용)
 LogBox.ignoreLogs([
@@ -33,6 +35,7 @@ import ReceiptChoose from './screens/ReceiptChoose';
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { UserIngredientsProvider } from './src/context/UserIngredientsContext';
 
 // 초기화 화면 컴포넌트
 const InitializingScreen = () => (
@@ -287,6 +290,24 @@ const App = () => {
   const [initError, setInitError] = useState(null);
 
   useEffect(() => {
+    // 앱 시작 시 accessToken을 AsyncStorage에서 읽어와 apiService에 설정
+    const initializeAuthToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (token) {
+          apiService.setToken(token);
+          console.log('[App] accessToken을 apiService에 설정:', token);
+        } else {
+          console.log('[App] accessToken 없음, apiService 토큰 미설정');
+        }
+      } catch (e) {
+        console.warn('[App] accessToken 초기화 실패:', e);
+      }
+    };
+    initializeAuthToken();
+  }, []);
+
+  useEffect(() => {
     // 백그라운드에서 초기화 진행
     const initializeAppInBackground = async () => {
       try {
@@ -318,7 +339,9 @@ const App = () => {
   // 초기화 화면을 표시하지 않고 바로 앱 내용 표시
   return (
     <AuthProvider>
-      <AppContent initialError={initError} />
+      <UserIngredientsProvider>
+        <AppContent initialError={initError} />
+      </UserIngredientsProvider>
     </AuthProvider>
   );
 };
