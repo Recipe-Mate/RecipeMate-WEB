@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, ActivityIndicator, ScrollView, TouchableOpacity, Modal, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
 import apiService from '../src/services/api.service';
@@ -10,13 +10,18 @@ import { getMergedUserIngredients } from '../src/utils/userIngredientsStore'; //
 
 const RecipeDetail = ({ route: propRoute, navigation }) => {
   const { recipeName, dishImg } = propRoute.params;
+  // 모든 훅 선언을 최상단에 모음
   const [recipe, setRecipe] = useState(null);
   const [userIngredients, setUserIngredients] = useState([]);
   const [userIngredientsRaw, setUserIngredientsRaw] = useState([]); // 원본 데이터
   const { user } = useAuth();
   const route = useRoute();
-  // mergedUserIngredients를 전역 util에서만 읽음
   const mergedUserIngredients = getMergedUserIngredients();
+  // 대체 식재료 관련 상태
+  const [showAlternativeModal, setShowAlternativeModal] = useState(false);
+  const [alternativeList, setAlternativeList] = useState([]);
+  const [alternativeLoading, setAlternativeLoading] = useState(false);
+  const [selectedIngredientName, setSelectedIngredientName] = useState('');
 
   // 식재료명에서 단위/수량/괄호 등 제거 (예: "오렌지 100g(1/2개)" → "오렌지")
   const extractPureName = (name) => name.replace(/\s*\d+[a-zA-Z가-힣()\/.]*|\([^)]*\)/g, '').trim();
@@ -363,6 +368,38 @@ const RecipeDetail = ({ route: propRoute, navigation }) => {
     return { status: '미보유', color: '#E0E0E0' };
   };
 
+  // 대체 식재료 API 호출 함수
+  const fetchAlternativeIngredients = async (ingredientName) => {
+    if (!recipeName || !ingredientName) return;
+    setAlternativeLoading(true);
+    setAlternativeList([]);
+    setShowAlternativeModal(true);
+    setSelectedIngredientName(ingredientName);
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const url = `${SERVER_URL}/recipe/alternative-food?menu=${encodeURIComponent(recipeName)}&replaceFood=${encodeURIComponent(ingredientName)}`;
+      // 로그 추가
+      console.log('[대체식재료 요청] URL:', url);
+      console.log('[대체식재료 요청] Authorization:', accessToken);
+      console.log('[대체식재료 요청] menu:', recipeName, 'replaceFood:', ingredientName);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+      if (!response.ok) throw new Error('대체 식재료 조회 실패');
+      const data = await response.json();
+      setAlternativeList(Array.isArray(data.replacableFoodNames) ? data.replacableFoodNames : []);
+    } catch (e) {
+      setAlternativeList([]);
+      Alert.alert('오류', '대체 식재료 정보를 불러오지 못했습니다.');
+    } finally {
+      setAlternativeLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>{recipe.recipeName}</Text>
@@ -407,18 +444,33 @@ const RecipeDetail = ({ route: propRoute, navigation }) => {
 
       <View style={styles.nutritionSection}>
         <Text style={styles.sectionTitle}>재료</Text>
-        {recipe.ingredient
-          .filter(item => /\(.+\)/.test(item))
-          .map((item, index) => {
-            const parsed = parseIngredientString(item);
-            const { status, color } = getIngredientStatus(parsed);
-            return (
-              <View key={index} style={styles.ingredientRow}>
-                <Text style={{marginTop: 3, flex: 1}}>• {item}</Text>
-                <Text style={[styles.statusText, { backgroundColor: color }]}>{status}</Text>
-              </View>
-            );
-          })}
+        <View style={styles.ingredientListContainer}>
+          {recipe.ingredient
+            .filter(item => /\(.+\)/.test(item))
+            .map((item, index) => {
+              const parsed = parseIngredientString(item);
+              const { status, color } = getIngredientStatus(parsed);
+              return (
+                <TouchableOpacity
+                  key={index}
+                  activeOpacity={0.7}
+                  onPress={() => fetchAlternativeIngredients(parsed.name)}
+                  style={[
+                    styles.ingredientChip,
+                    { width: '92%', justifyContent: 'space-between' },
+                    status === '보유'
+                      ? { backgroundColor: '#e0f7ff' }
+                      : status === '부족'
+                      ? { backgroundColor: '#fffbe0' }
+                      : { backgroundColor: '#ffe0e0' },
+                  ]}
+                >
+                  <Text style={[styles.ingredientName, { flex: 1, textAlign: 'left' }]}>• {item}</Text>
+                  <Text style={[styles.statusText, { backgroundColor: color, color: '#222', marginLeft: 8, textAlign: 'right', flexShrink: 0 }]}>{status}</Text>
+                </TouchableOpacity>
+              );
+            })}
+        </View>
       </View>
 
       <View style={styles.finalBox}>
@@ -444,6 +496,32 @@ const RecipeDetail = ({ route: propRoute, navigation }) => {
       <TouchableOpacity style={styles.completeButton} onPress={completeCooking}>
         <Text style={styles.completeButtonText}>요리 완료</Text>
       </TouchableOpacity>
+
+      {/* 대체 식재료 모달 */}
+      <Modal
+        visible={showAlternativeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAlternativeModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '80%', maxHeight: '70%' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>{selectedIngredientName}의 대체 식재료</Text>
+            {alternativeLoading ? (
+              <ActivityIndicator size="large" color="#2D336B" style={{ marginVertical: 20 }} />
+            ) : alternativeList.length > 0 ? (
+              alternativeList.map((alt, idx) => (
+                <Text key={idx} style={{ fontSize: 16, marginBottom: 8, color: '#2D336B' }}>• {alt}</Text>
+              ))
+            ) : (
+              <Text style={{ color: '#888', fontSize: 15, marginVertical: 20 }}>대체 식재료를 찾을 수 없습니다.</Text>
+            )}
+            <TouchableOpacity onPress={() => setShowAlternativeModal(false)} style={{ marginTop: 18, alignSelf: 'center', backgroundColor: '#2D336B', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 24 }}>
+              <Text style={{ color: '#fff', fontSize: 16 }}>닫기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -579,6 +657,31 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minWidth: 44,
     textAlign: 'center',
+  },
+  ingredientListContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 8,
+  },
+  ingredientChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: '#F6F8FA',
+    // width, justifyContent는 인라인에서 적용
+  },
+  ingredientName: {
+    fontSize: 15,
+    color: '#1E1E1E',
+    fontWeight: '500',
+    marginRight: 6,
+    // flex, textAlign 인라인에서 적용
   },
 })
 
