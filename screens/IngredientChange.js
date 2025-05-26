@@ -30,6 +30,22 @@ const interpretIngredientAmount = (amountStr) => {
   return isNaN(num) ? 0 : num;
 };
 
+// 단위 정규화 함수 (RecipeDetail.js와 동일)
+const normalizeUnit = (unit) => {
+  const normalized = (unit || '').trim().toLowerCase();
+  const unitMap = {
+    'ea': 'ea', '개': 'ea', 'pcs': 'ea', 'piece': 'ea', 'pieces': 'ea',
+    'g': 'g', '그램': 'g', 'gram': 'g', 'grams': 'g',
+    'kg': 'kg', '킬로그램': 'kg', 'kilogram': 'kg', 'kilograms': 'kg',
+    'ml': 'ml', '밀리리터': 'ml', 'milliliter': 'ml', 'milliliters': 'ml',
+    'l': 'l', '리터': 'l', 'liter': 'l', 'liters': 'l',
+    'tsp': 'tsp', '티스푼': 'tsp', 'teaspoon': 'tsp', 'teaspoons': 'tsp',
+    'tbsp': 'tbsp', '테이블스푼': 'tbsp', 'tablespoon': 'tbsp', 'tablespoons': 'tbsp',
+    'cup': 'cup', '컵': 'cup', 'cups': 'cup',
+  };
+  return unitMap[normalized] || normalized;
+};
+
 const IngredientChange = ({ route, navigation }) => {
   const isFocused = useIsFocused();
   // const { ingredients: initialIngredients, userId } = route.params || {};
@@ -68,13 +84,44 @@ const IngredientChange = ({ route, navigation }) => {
           })
           .map((item) => {
             const numericAmount = interpretIngredientAmount(item.amount);
+            const itemNameFromRecipe = (item.name || '').trim().toLowerCase();
+            
+            // 단위 표시 우선순위:
+            // 1. 사용자 식재료 리스트에 같은 이름의 재료가 있으면 그 단위 사용 (이름만으로 매칭)
+            // 2. 없으면 레시피 단위 사용            let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
+            let finalApiUnit = item.unit ? String(item.unit) : ''; // API 전송용 원본 단위
+            
+            if (userIngredientsRaw && Array.isArray(userIngredientsRaw) && userIngredientsRaw.length > 0) {
+              // 이름이 일치하는 식재료들을 모두 찾기
+              const matchedUserIngredients = userIngredientsRaw.filter(
+                uig => (uig.foodName || '').trim().toLowerCase() === itemNameFromRecipe
+              );
+              
+              // amount > 0인 식재료 우선 선택, 없으면 첫 번째 식재료 사용
+              const prioritizedIngredient = matchedUserIngredients.find(
+                uig => uig.amount > 0 && uig.unit
+              ) || matchedUserIngredients.find(uig => uig.unit);
+              
+              if (prioritizedIngredient && prioritizedIngredient.unit) {
+                finalDisplayUnit = String(prioritizedIngredient.unit);
+                finalApiUnit = String(prioritizedIngredient.unit); // API용도 사용자 단위 사용
+              }
+            }            
+            // 표시용 단위는 영어 소문자로 통일 (시각화 목적)
+            const displayUnitForUI = finalDisplayUnit.toLowerCase();
+            
+            // item from initialIngredients is { name, amount, unit, original, hasUnitInfo }
+            // item.id and item.foodName are not present on 'item' here.
+            // Using item.original for a more stable key if available.
+            const itemId = item.original || (item.name ? `${item.name}_${Math.random().toString()}` : Math.random().toString());
+
             return {
               ...item,
               changeAmount: numericAmount,
               displayChangeAmount: String(numericAmount),
-              id: item.id || item.foodName || Math.random().toString(),
-              displayUnit: item.unit ? String(item.unit) : '',
-              // 레시피 필요량/단위 원본도 별도 보존
+              id: itemId, // Use the new stable itemId
+              displayUnit: displayUnitForUI, // 화면 표시용 (영어 소문자)
+              apiUnit: finalApiUnit, // API 전송용 (원본 단위)
               recipeAmount: item.amount,
               recipeUnit: item.unit,
             };
@@ -143,34 +190,14 @@ const IngredientChange = ({ route, navigation }) => {
       })
     );
   };
-
   // +/- 버튼으로 변화량 조절 핸들러
   const handleChangeAmountWithButtons = (id, operation) => {
     setIngredients((prev) =>
       prev.map((item) => {
         if (item.id === id) {
           const currentNumericAmount = Number(item.changeAmount) || 0;
-          let step = 1; // 기본 스텝
-          const unit = String(item.unit || item.amountUnit || '').toLowerCase();
+          let step = 5; // 모든 단위에 대해 증감량을 5로 고정
           
-          // 단위에 따른 스텝 설정
-          // 이산형 단위 목록 (사용자 정의 가능)
-          const discreteUnits = ['개', '장', '쪽', '줄기', '포기', '송이', '톨', '마리', '조각', '캔', '봉지', '병', '팩', '단', '뿌리', '컵', '술', '줌', '알'];
-          // 연속형 단위 키워드
-          const continuousKeywords = ['g', 'ml', 'kg', 'l', '그램', '미리', '키로', '리터', 'cc'];
-
-          // 단위 문자열에 이산형 단위가 포함되어 있는지 확인
-          const isDiscrete = discreteUnits.some(du => unit.includes(du));
-          // 단위 문자열에 연속형 단위 키워드가 포함되어 있는지 확인
-          const isContinuous = continuousKeywords.some(ck => unit.includes(ck));
-
-          if (isContinuous && !isDiscrete) { // 명확히 연속형으로 판단될 때
-            step = 10;
-          } else if (isDiscrete) { // 명확히 이산형으로 판단될 때
-            step = 1;
-          }
-          // 그 외 (단위가 없거나 애매한 경우) 기본 step = 1 사용
-
           let newNumericAmount;
           if (operation === 'increase') {
             newNumericAmount = currentNumericAmount + step;
@@ -189,33 +216,22 @@ const IngredientChange = ({ route, navigation }) => {
       })
     );
   };
-
   // FIFO 소진 로직: 한 재료(ingredient)에 대해 userIngredientsRaw에서 오래된 foodId부터 차감
   function getFifoConsumptionList(ingredient, userIngredientsRaw) {
     if (!userIngredientsRaw) return [];
-    const norm = v => (v || '').replace(/\s/g, '').toLowerCase();
-    // 단위 표준화: g, kg, ml, l 등 대문자/소문자/한글 모두 소문자 영문으로 통일
-    const unitMap = {
-      'g': 'g', '그램': 'g', 'G': 'g',
-      'kg': 'kg', '킬로그램': 'kg', 'KG': 'kg',
-      'ml': 'ml', '밀리리터': 'ml', 'ML': 'ml',
-      'l': 'l', '리터': 'l', 'L': 'l',
-    };
-    const normUnit = u => unitMap[norm(u)] || norm(u);
-
-    const ingName = norm(ingredient.foodName || ingredient.name);
-    const ingUnit = normUnit(ingredient.unit);
+    const norm = v => (v || '').replace(/\s/g, '').toLowerCase();    const ingName = norm(ingredient.foodName || ingredient.name);
+    const ingUnit = normalizeUnit(ingredient.apiUnit || ingredient.unit); // API 단위 사용
 
     // 디버깅: 후보군 추출 전 원본 데이터 로그
     console.log('[FIFO DEBUG] ingredient:', ingName, ingUnit);
     console.log('[FIFO DEBUG] userIngredientsRaw 원본:', userIngredientsRaw);
     userIngredientsRaw.forEach(f => {
-      console.log('[FIFO DEBUG] userRaw:', norm(f.foodName), normUnit(f.unit), f.foodId, f.amount, f.unit, f.foodName);
+      console.log('[FIFO DEBUG] userRaw:', norm(f.foodName), normalizeUnit(f.unit), f.foodId, f.amount, f.unit, f.foodName);
     });
 
     // 일치하는 식재료만 추출 (이름, 단위 모두 표준화해서 비교)
     const candidates = userIngredientsRaw
-      .filter(f => norm(f.foodName) === ingName && normUnit(f.unit) === ingUnit)
+      .filter(f => norm(f.foodName) === ingName && normalizeUnit(f.unit) === ingUnit)
       .sort((a, b) => (a.foodId || a.id) - (b.foodId || b.id));
 
     console.log('[FIFO DEBUG] candidates:', candidates);
@@ -233,17 +249,17 @@ const IngredientChange = ({ route, navigation }) => {
     }
     return result;
   }
-
   // AmountUnit enum 변환 함수 (서버와 맞춤)
   function toAmountUnitEnum(unit) {
+    const normalizedUnit = normalizeUnit(unit);
     const map = {
-      'g': 'G', '그램': 'G', 'G': 'G',
-      'kg': 'KG', '킬로그램': 'KG', 'KG': 'KG',
-      'ml': 'ML', '밀리리터': 'ML', 'ML': 'ML',
-      'l': 'L', '리터': 'L', 'L': 'L',
-      '개': 'EA', 'ea': 'EA', 'EA': 'EA'
+      'g': 'G',
+      'kg': 'KG', 
+      'ml': 'ML',
+      'l': 'L',
+      'ea': 'EA'
     };
-    return map[String(unit).trim().toLowerCase()] || 'EA';
+    return map[normalizedUnit] || 'EA';
   }
 
   // 서버에 변경된 식재료 전송
@@ -259,10 +275,9 @@ const IngredientChange = ({ route, navigation }) => {
         Alert.alert('변경사항 없음', '변경된 식재료가 없습니다.');
         setLoading(false);
         return;
-      }
-
-      // 2. FIFO 로직에 따라 각 재료별로 userIngredientsRaw 차감
+      }      // 2. FIFO 로직에 따라 각 재료별로 userIngredientsRaw 차감
       // → 서버에 일괄 업데이트 API 사용 (updateFoodAmount)
+      // 서버 API가 새로운 설정량을 요구하므로, 현재 보유량에서 차감량을 뺀 값을 전송
       let overConsume = false;
       const foodDataList = ingredientsToUpdate.flatMap((ingredient) => {
         const consumptionList = getFifoConsumptionList(ingredient, userIngredientsRaw);
@@ -274,15 +289,24 @@ const IngredientChange = ({ route, navigation }) => {
             '차감 불가',
             `${ingredient.foodName}의 보유량보다 많은 양을 차감할 수 없습니다.`
           );
-          return [];
-        }
-        // unit 변환 적용
-        const amountUnit = toAmountUnitEnum(ingredient.unit);
-        return consumptionList.map(consumed => ({
-          foodId: consumed.foodId,
-          amount: consumed.amount,
-          unit: amountUnit
-        }));
+          return [];        }
+        // unit 변환 적용 - API 전송용 원본 단위 사용
+        const amountUnit = toAmountUnitEnum(ingredient.apiUnit || ingredient.unit);
+        // 각 배치에서 차감 후 남은 양을 계산하여 서버에 전송
+        return consumptionList.map(consumed => {
+          // 원본에서 consumed.amount만큼 차감한 새로운 양 계산
+          const originalBatch = userIngredientsRaw.find(batch => 
+            (batch.foodId || batch.id) === consumed.foodId
+          );
+          const originalAmount = Number(originalBatch?.amount || originalBatch?.quantity || 0);
+          const newAmount = Math.max(0, originalAmount - consumed.amount);
+          
+          return {
+            foodId: consumed.foodId,
+            amount: newAmount, // 차감 후 남은 양 (새로운 설정량)
+            unit: amountUnit
+          };
+        });
       });
 
       if (overConsume) {
@@ -333,9 +357,17 @@ const IngredientChange = ({ route, navigation }) => {
         Alert.alert('오류', result.error || '식재료 업데이트에 실패했습니다.');
         setLoading(false);
         return;
-      }
-      Alert.alert('성공', '식재료 변경이 완료되었습니다.', [
-        { text: '확인', onPress: () => navigation.goBack() },
+      }      Alert.alert('성공', '식재료 변경이 완료되었습니다.', [
+        { 
+          text: '확인', 
+          onPress: () => {
+            // Recipe 스택을 초기화하여 RecipeSearch로 돌아가기
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'RecipeSearch' }],
+            });
+          }
+        },
       ]);
     } catch (error) {
       console.error('Unexpected error:', error);
