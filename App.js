@@ -1,21 +1,25 @@
 import 'react-native-gesture-handler';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext, useContext } from 'react';
+import { StatusBar, StyleSheet, View, Text, ActivityIndicator, LogBox } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { StatusBar, StyleSheet, View, Text, ActivityIndicator, LogBox } from 'react-native';
-import apiConfig from './config/api.config';
-import LinearGradient from 'react-native-linear-gradient';
-import { SERVER_URL } from '@env';
-import apiService from './src/services/api.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 경고 무시 설정 (개발 중에만 사용)
+// 예시용 apiService, 실제 파일 경로와 구현에 맞게 교체하세요
+const apiService = {
+  setToken: (token) => {
+    // 토큰 설정 (ex. axios 헤더에 넣기)
+    console.log('[apiService] 토큰 세팅:', token);
+  },
+};
+
+// 경고 무시 (개발 시 편의용)
 LogBox.ignoreLogs([
-  'ViewManagerResolver returned null',  // RNSScreen 관련 경고 무시
-  'ViewManagerRegistry.js',             // 화면 관련 경고 무시
-  'ViewManager for component',           // 컴포넌트 관련 경고 무시
+  'ViewManagerResolver returned null',
+  'ViewManagerRegistry.js',
+  'ViewManager for component',
 ]);
 
 // 현재 가지고 있는 화면들
@@ -177,13 +181,11 @@ const AuthStack = () => (
 // 메인 앱 컴포넌트 (사용자 인증 상태에 따라 다른 화면 표시)
 const AppContent = ({ initialError }) => {
   const { isAuthenticated, loading } = useAuth();
-  // 항상 인증된 상태로 처리
-  // const alwaysAuthenticated = true;
 
   // 로딩 중일 때 초기화 화면 표시
-  if (loading) {
-    return <InitializingScreen />;
-  }
+  // if (loading) {
+  //   return <InitializingScreen />;
+  // }
 
   const ProfileStack = () => (
     <Stack.Navigator initialRouteName='Profile'>
@@ -296,52 +298,52 @@ const App = () => {
   const [isInitialized, setIsInitialized] = useState(true); // 기본값을 true로 설정하여 초기화 화면 건너뛰기
   const [initError, setInitError] = useState(null);
 
-  useEffect(() => {
-    // 앱 시작 시 accessToken을 AsyncStorage에서 읽어와 apiService에 설정
-    const initializeAuthToken = async () => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
-        if (token) {
-          apiService.setToken(token);
-          console.log('[App] accessToken을 apiService에 설정:', token);
-        } else {
-          console.log('[App] accessToken 없음, apiService 토큰 미설정');
-        }
-      } catch (e) {
-        console.warn('[App] accessToken 초기화 실패:', e);
-      }
-    };
-    initializeAuthToken();
-  }, []);
+  // useEffect(() => {
+  //   // 앱 시작 시 accessToken을 AsyncStorage에서 읽어와 apiService에 설정
+  //   const initializeAuthToken = async () => {
+  //     try {
+  //       const token = await AsyncStorage.getItem('accessToken');
+  //       if (token) {
+  //         apiService.setToken(token);
+  //         console.log('[App] accessToken을 apiService에 설정:', token);
+  //       } else {
+  //         console.log('[App] accessToken 없음, apiService 토큰 미설정');
+  //       }
+  //     } catch (e) {
+  //       console.warn('[App] accessToken 초기화 실패:', e);
+  //     }
+  //   };
+  //   initializeAuthToken();
+  // }, []);
 
-  useEffect(() => {
-    // 백그라운드에서 초기화 진행
-    const initializeAppInBackground = async () => {
-      try {
-        console.log('백그라운드에서 앱 초기화 시작...');
-        // Metro 서버 로그만 출력
-        if (__DEV__) {
-          console.log('개발 모드 실행 중');
-          console.log('Metro URL:', `${SERVER_URL}`);
-        }
+  // useEffect(() => {
+  //   // 백그라운드에서 초기화 진행
+  //   const initializeAppInBackground = async () => {
+  //     try {
+  //       console.log('백그라운드에서 앱 초기화 시작...');
+  //       // Metro 서버 로그만 출력
+  //       if (__DEV__) {
+  //         console.log('개발 모드 실행 중');
+  //         console.log('Metro URL:', `${SERVER_URL}`);
+  //       }
 
-        // 서버 설정 초기화는 비동기적으로 백그라운드에서 수행
-        apiConfig.initializeServerConfig().then(result => {
-          if (!result.success) {
-            console.warn('서버 설정을 가져오는 데 실패했습니다. 기본 URL을 사용합니다.');
-          }
-        }).catch(error => {
-          console.error('서버 설정 초기화 중 오류:', error);
-        });
-      } catch (error) {
-        console.error('앱 초기화 중 오류가 발생했습니다:', error);
-        setInitError(error.message);
-      }
-    };
+  //       // 서버 설정 초기화는 비동기적으로 백그라운드에서 수행
+  //       apiConfig.initializeServerConfig().then(result => {
+  //         if (!result.success) {
+  //           console.warn('서버 설정을 가져오는 데 실패했습니다. 기본 URL을 사용합니다.');
+  //         }
+  //       }).catch(error => {
+  //         console.error('서버 설정 초기화 중 오류:', error);
+  //       });
+  //     } catch (error) {
+  //       console.error('앱 초기화 중 오류가 발생했습니다:', error);
+  //       setInitError(error.message);
+  //     }
+  //   };
 
-    // 초기화를 백그라운드에서 실행
-    initializeAppInBackground();
-  }, []);
+  //   // 초기화를 백그라운드에서 실행
+  //   initializeAppInBackground();
+  // }, []);
 
   // 초기화 화면을 표시하지 않고 바로 앱 내용 표시
   return (
