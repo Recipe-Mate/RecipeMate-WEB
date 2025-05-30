@@ -248,8 +248,8 @@ const Receipt = ({ navigation }) => {
     }
   };
 
-  const chooseImage = () => {
-    launchImageLibrary({ mediaType: 'photo' }, (response) => {
+  const takePhoto = () => {
+    launchCamera({ mediaType: 'photo' }, (response) => {
       if (response.assets && response.assets.length > 0) {
         processImage(response.assets[0].uri);
       }
