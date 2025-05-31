@@ -148,6 +148,10 @@ export default function AddIngredient({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
                 <View style={styles.divider}></View>
+<<<<<<< HEAD
+=======
+
+>>>>>>> app_merge
                 <View style={styles.type_view}>
                     <View style={styles.text1_view}>
                         <Text style={styles.text1}>식재료명</Text>

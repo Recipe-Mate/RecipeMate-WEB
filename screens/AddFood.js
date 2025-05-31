@@ -9,23 +9,36 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
+<<<<<<< HEAD
   Keyboard,
   Image // Image 추가
+=======
+  Keyboard
+>>>>>>> app_merge
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../src/context/AuthContext';
 import apiService from '../src/services/api.service';
 import UnitPicker from './UnitPicker';
 import { useFocusEffect } from '@react-navigation/native';
+<<<<<<< HEAD
 import { launchImageLibrary } from 'react-native-image-picker'; // image picker 추가
+=======
+>>>>>>> app_merge
 
 const AddFood = ({ navigation }) => {
   const [foodName, setFoodName] = useState('');
   const [quantity, setQuantity] = useState('');
+<<<<<<< HEAD
   const [unit, setUnit] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState(null); // 선택된 이미지 상태 추가
+=======
+  const [unit, setUnit] = useState(null); // UnitPicker에 맞게 null 초기화
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
+>>>>>>> app_merge
 
   // 자동완성 관련 상태
   const [userFoods, setUserFoods] = useState([]); // 내 식재료명+단위 목록
@@ -99,6 +112,7 @@ const AddFood = ({ navigation }) => {
   // 식재료명에서 단위/수량/괄호 등 제거 (예: "오렌지 100g(1/2개)" → "오렌지")
   const extractPureName = (name) => name.replace(/\s*\d+[a-zA-Z가-힣()\/\.]*|\([^)]*\)/g, '').trim();
 
+<<<<<<< HEAD
   const handleChoosePhoto = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response) => {
       if (response.didCancel) {
@@ -118,6 +132,8 @@ const AddFood = ({ navigation }) => {
     });
   };
 
+=======
+>>>>>>> app_merge
   const handleAddFood = async () => {
     console.log('[AddFood] user:', user);
     // access_token이 있으면 항상 등록
@@ -153,11 +169,16 @@ const AddFood = ({ navigation }) => {
     }
     setIsLoading(true);
     try {
+<<<<<<< HEAD
       const foodDetails = { // foodData에서 foodDetails로 변경 또는 API 서비스에 맞게 조정
+=======
+      const foodData = {
+>>>>>>> app_merge
         foodNameList: [extractPureName(foodName.trim())],
         quantityList: [quantity.trim()],
         unitList: [unit.trim()]
       };
+<<<<<<< HEAD
       
       // headers 확인용 로그 - FormData 사용 시 api.service.js에서 처리하므로 여기서는 제거 가능
       // const headers = apiService._getCommonHeaders(); 
@@ -167,6 +188,13 @@ const AddFood = ({ navigation }) => {
       // apiService.addFood 호출 시 selectedImage 전달
       const response = await apiService.addFood(numericUserId, foodDetails, selectedImage); 
       
+=======
+      // headers 확인용 로그
+      const headers = apiService._getCommonHeaders();
+      console.log('[AddFood] 식재료 추가 요청:', JSON.stringify(foodData));
+      console.log('[AddFood] 요청 헤더:', headers);
+      const response = await apiService.addFood(numericUserId, foodData);
+>>>>>>> app_merge
       console.log('[AddFood] 응답:', JSON.stringify(response));
       if (response.success) {
         Alert.alert(
@@ -175,10 +203,13 @@ const AddFood = ({ navigation }) => {
           [{ 
             text: '확인', 
             onPress: () => {
+<<<<<<< HEAD
               setSelectedImage(null); // 성공 시 이미지 초기화
               setFoodName('');
               setQuantity('');
               setUnit(null);
+=======
+>>>>>>> app_merge
               navigation.navigate('FoodList', { 
                 refresh: true, 
                 timestamp: Date.now()
@@ -293,6 +324,7 @@ const AddFood = ({ navigation }) => {
         />
         <Text style={styles.label}>단위</Text>
         <UnitPicker onSelect={setUnit} value={unit} />
+<<<<<<< HEAD
 
         {/* 이미지 선택 버튼 추가 */}
         <TouchableOpacity style={styles.imagePickerButton} onPress={handleChoosePhoto}>
@@ -310,6 +342,8 @@ const AddFood = ({ navigation }) => {
           </View>
         )}
 
+=======
+>>>>>>> app_merge
         <TouchableOpacity
           style={styles.addButton}
           onPress={handleAddFood}
@@ -360,6 +394,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
   },
+<<<<<<< HEAD
   imagePickerButton: { // 이미지 선택 버튼 스타일
     backgroundColor: '#5cb85c', // 초록색 계열
     flexDirection: 'row',
@@ -396,6 +431,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 5,
   },
+=======
+>>>>>>> app_merge
   addButton: {
     backgroundColor: '#3498db',
     flexDirection: 'row',

@@ -283,6 +283,7 @@ const apiService = {
   },
 
   /**
+<<<<<<< HEAD
    * 식재료 추가 (서버 DTO에 맞게, FormData 지원)
    * @param {number} userId
    * @param {Object} foodDetails - { foodNameList, quantityList, unitList }
@@ -364,6 +365,36 @@ const apiService = {
     } catch (error) {
       console.error('[api.service][addFood] 요청 중 오류 발생:', error);
       return { success: false, error: error.message || '식재료 추가 중 알 수 없는 오류가 발생했습니다.' };
+=======
+   * 식재료 추가 (서버 DTO에 맞게)
+   * @param {number} userId
+   * @param {Object} foodData { foodList: [{ foodName, amount, unit }] }
+   * @returns {Promise<Object>} 서버 응답
+   */
+  async addFood(userId, foodData) {
+    const url = `${apiConfig.getApiUrl()}/food`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: this._getCommonHeaders(),
+        body: JSON.stringify(foodData)
+      });
+      if (response.ok) {
+        return { success: true, data: await response.json() };
+      } else {
+        let errorMsg = '식재료 추가에 실패했습니다';
+        try {
+          const text = await response.text();
+          if (text && text.trim().startsWith('{')) {
+            const err = JSON.parse(text);
+            if (err.message) errorMsg = err.message;
+          }
+        } catch {}
+        return { success: false, error: errorMsg };
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+>>>>>>> app_merge
     }
   },
 

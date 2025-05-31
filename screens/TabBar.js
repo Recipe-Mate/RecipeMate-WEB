@@ -4,17 +4,24 @@ import { StyleSheet, Text, View, FlatList, Button } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+<<<<<<< HEAD
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Main from "./Main";
 import AddIngredient from "./AddIngredient";
+=======
+import Main from "./Main";
+>>>>>>> app_merge
 import RecipeSearch from './RecipeSearch';
 import RecipeDetail from './RecipeDetail';
 import Bill from "./Receipt";
 import Profile from "./Profile";
+<<<<<<< HEAD
 import Badge from "./Badge";
 import CookedRecipes from "./CookedRecipes";
 import RecipeCompletedList from "./RecipeCompletedList";
+=======
+>>>>>>> app_merge
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -110,6 +117,7 @@ const ProfileStack = () => (
                     paddingBottom: 10,
                 },
                 headerBackTitle: '뒤로',
+<<<<<<< HEAD
                 headerShown: true,                headerLeftContainerStyle: {
                     paddingBottom: 10,
                 },
@@ -136,6 +144,8 @@ const ProfileStack = () => (
                     paddingBottom: 10,
                 },
                 headerBackTitle: '뒤로',
+=======
+>>>>>>> app_merge
                 headerShown: true,
                 headerLeftContainerStyle: {
                     paddingBottom: 10,

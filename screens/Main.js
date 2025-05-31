@@ -9,6 +9,10 @@ import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setMergedUserIngredients } from '../src/utils/userIngredientsStore';
 import { useUserIngredients } from '../src/context/UserIngredientsContext';
+<<<<<<< HEAD
+=======
+import { useIsFocused } from '@react-navigation/native';
+>>>>>>> app_merge
 
 const Main = ({ navigation }) => {
   const [foodNameList, setFoodNameList] = useState([]);
@@ -17,6 +21,10 @@ const Main = ({ navigation }) => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const { setUserIngredientsRaw } = useUserIngredients();
+<<<<<<< HEAD
+=======
+  const isFocused = useIsFocused();
+>>>>>>> app_merge
 
   const toggleEditMode = () => {
     setIsEditMode(prev => !prev);
@@ -34,6 +42,7 @@ const Main = ({ navigation }) => {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
+<<<<<<< HEAD
 
       const data = await response.json();
       console.log('[Main] 서버에서 받은 식재료 원본 데이터:', data); // 추가된 로그
@@ -44,10 +53,33 @@ const Main = ({ navigation }) => {
         unit: item.unit,
         imageUrl: item.imgUrl,
         amount: item.amount,
+=======
+      
+      const data = await response.json();
+      console.log('[Main] 서버에서 받은 식재료 원본 데이터:', data); // 추가된 로그
+      
+      // null/undefined 안전성 체크
+      const ownFoodList = data?.ownFoodList || [];
+      setUserIngredientsRaw(ownFoodList); // Context에 원본 저장
+      
+      if (ownFoodList.length === 0) {
+        setFoodNameList([]);
+        await AsyncStorage.setItem('num_of_items', '0');
+        return;
+      }
+
+      const parsedItems = ownFoodList.map(item => ({
+        id: item?.foodId || 0,
+        name: item?.foodName || '알 수 없음',
+        unit: item?.unit || '',
+        imageUrl: item?.imgUrl || null,
+        amount: item?.amount || 0,
+>>>>>>> app_merge
       }));
 
       // 동일한 이름+단위의 식재료를 합산하여 하나로 묶기
       const mergedMap = {};
+<<<<<<< HEAD
       data.ownFoodList.forEach(item => {
         const key = item.foodName + '|' + (item.unit || '');
         if (!mergedMap[key]) {
@@ -62,17 +94,47 @@ const Main = ({ navigation }) => {
         mergedMap[key].amount += Number(item.amount) || 0;
       });
       const mergedItems = Object.values(mergedMap);
+=======
+      ownFoodList.forEach(item => {
+        if (!item || !item.foodName) return; // null/undefined 아이템 스킵
+        
+        const key = (item.foodName || '') + '|' + (item.unit || '');
+        if (!mergedMap[key]) {
+          mergedMap[key] = {
+            id: item.foodId || 0, // 대표 id(첫번째)
+            name: item.foodName || '알 수 없음',
+            unit: item.unit || '',
+            imageUrl: item.imgUrl || null,
+            amount: 0,
+          };
+        }
+        mergedMap[key].amount += Number(item.amount) || 0;      });
+      const mergedItems = Object.values(mergedMap).filter(item => item.amount > 0); // 양이 0인 식재료 제거
+>>>>>>> app_merge
       setFoodNameList(mergedItems);
       await AsyncStorage.setItem('num_of_items', mergedItems.length.toString());
     } catch (error) {
       console.error('Food List 요청 실패:', error);
     }
   };
+<<<<<<< HEAD
 
   // 이름+단위별 합산 함수 (RecipeDetail.js와 동일)
   function mergeUserIngredients(ingredientList) {
     const merged = {};
     for (const item of ingredientList) {
+=======
+  // 이름+단위별 합산 함수 (RecipeDetail.js와 동일)
+  function mergeUserIngredients(ingredientList) {
+    if (!Array.isArray(ingredientList) || ingredientList.length === 0) {
+      return [];
+    }
+    
+    const merged = {};
+    for (const item of ingredientList) {
+      if (!item || !item.name) continue; // null/undefined 아이템 스킵
+      
+>>>>>>> app_merge
       const normName = (item.name || '').replace(/\s/g, '').toLowerCase();
       const normUnit = (item.unit || '').replace(/\s/g, '').toLowerCase();
       const key = `${normName}__${normUnit}`;
@@ -87,17 +149,39 @@ const Main = ({ navigation }) => {
     }
     return Object.values(merged);
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> app_merge
   useEffect(() => {
     fetchFoodList();
   }, []);
 
+<<<<<<< HEAD
   // Main화면 진입 시마다 합산 리스트 로그 출력
   useEffect(() => {
     if (foodNameList.length > 0) {
       const merged = mergeUserIngredients(foodNameList);
       setMergedUserIngredients(merged); // 전역 저장
       console.log('[Main] 사용자 식재료 합산 리스트:', merged);
+=======
+  // 화면이 포커스될 때마다 식재료 리스트 새로고침 (양이 0인 항목 자동 제거)
+  useEffect(() => {
+    if (isFocused) {
+      fetchFoodList();
+    }
+  }, [isFocused]);
+  // Main화면 진입 시마다 합산 리스트 로그 출력
+  useEffect(() => {
+    if (Array.isArray(foodNameList) && foodNameList.length > 0) {
+      const merged = mergeUserIngredients(foodNameList);
+      setMergedUserIngredients(merged); // 전역 저장
+      console.log('[Main] 사용자 식재료 합산 리스트:', merged);
+    } else {
+      // 빈 배열이거나 null인 경우에도 빈 배열로 초기화
+      setMergedUserIngredients([]);
+      console.log('[Main] 사용자 식재료 합산 리스트: 빈 배열로 초기화');
+>>>>>>> app_merge
     }
   }, [foodNameList]);
 
@@ -130,12 +214,21 @@ const Main = ({ navigation }) => {
     setRefreshing(true);
     fetchFoodList().finally(() => setRefreshing(false));
   };
+<<<<<<< HEAD
 
   const handleRecipeDetail = (recipe) => {
     // foodNameList는 이미 합산된 리스트임
     navigation.navigate('RecipeDetail', {
       recipe,
       mergedUserIngredients: mergeUserIngredients(foodNameList),
+=======
+  const handleRecipeDetail = (recipe) => {
+    // foodNameList가 null/undefined일 때 안전 처리
+    const safeIngredientList = Array.isArray(foodNameList) ? foodNameList : [];
+    navigation.navigate('RecipeDetail', {
+      recipe,
+      mergedUserIngredients: mergeUserIngredients(safeIngredientList),
+>>>>>>> app_merge
     });
   };
 
@@ -160,6 +253,7 @@ const Main = ({ navigation }) => {
           <TouchableOpacity style={styles.badge_button} onPress={toggleEditMode}>
             {isEditMode ? <Text style={{ color: '#fff', fontSize: 17 }}>완료</Text> : <Icon name='edit' size={30} color='#fff' />}
           </TouchableOpacity>
+<<<<<<< HEAD
 
         </View>
       </View>
@@ -196,6 +290,47 @@ const Main = ({ navigation }) => {
               )}
             </View>
           )}
+=======
+        </View>
+      </View>
+      <View style={styles.box}>
+        <FlatList
+          data={Array.isArray(foodNameList) ? foodNameList : []}
+          keyExtractor={(item, index) => item?.id?.toString?.() ?? index.toString()}
+          showsVerticalScrollIndicator={false}
+          numColumns={3}
+          renderItem={({ item }) => {
+            // item null 체크
+            if (!item) return null;
+            
+            return (
+              <View style={styles.gridItem}>
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={styles.photo} />
+                ) : (
+                  <View style={styles.photoPlaceholder}>
+                    <Text>이미지 없음</Text>
+                  </View>
+                )}
+                <Text style={styles.name}>{item.name || '알 수 없음'}</Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={styles.category}>{item.amount || 0}</Text>
+                  <Text style={styles.category}>{unitMap[item.unit] || item.unit || ''}</Text>
+                </View>
+                {isEditMode && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => {
+                      setItemToDelete(item);
+                      setDeleteModalVisible(true);
+                    }}>
+                    <Icon name="close" size={18} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          }}
+>>>>>>> app_merge
           refreshing={refreshing}
           onRefresh={onRefresh}
         />

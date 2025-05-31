@@ -88,16 +88,25 @@ const IngredientChange = ({ route, navigation }) => {
             
             // 단위 표시 우선순위:
             // 1. 사용자 식재료 리스트에 같은 이름의 재료가 있으면 그 단위 사용 (이름만으로 매칭)
+<<<<<<< HEAD
             // 2. 없으면 레시피 단위 사용            
             let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
             let finalApiUnit = item.unit ? String(item.unit) : ''; // API 전송용 원본 단위
             
             if (userIngredientsRaw && Array.isArray(userIngredientsRaw) && userIngredientsRaw.length > 0) {
+=======
+            // 2. 없으면 레시피 단위 사용            let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
+            let finalApiUnit = item.unit ? String(item.unit) : ''; // API 전송용 원본 단위
+            
+            if (userIngredientsRaw && Array.isArray(userIngredientsRaw) && userIngredientsRaw.length > 0) {
+              // 이름이 일치하는 식재료들을 모두 찾기
+>>>>>>> app_merge
               const matchedUserIngredients = userIngredientsRaw.filter(
                 uig => (uig.foodName || '').trim().toLowerCase() === itemNameFromRecipe
               );
               
               // amount > 0인 식재료 우선 선택, 없으면 첫 번째 식재료 사용
+<<<<<<< HEAD
               // .unit 접근은 나중에 try-catch로 처리
               const prioritizedUserIngredient = matchedUserIngredients.find(
                 uig => uig.amount > 0
@@ -119,6 +128,15 @@ const IngredientChange = ({ route, navigation }) => {
                   console.warn(`[IngredientChange] Error accessing unit for user ingredient '${foodNameToLog}'. Defaulting to recipe unit. Error:`, e);
                   // finalDisplayUnit 및 finalApiUnit은 이미 레시피 단위로 설정되어 있으므로 추가 작업 없음
                 }
+=======
+              const prioritizedIngredient = matchedUserIngredients.find(
+                uig => uig.amount > 0 && uig.unit
+              ) || matchedUserIngredients.find(uig => uig.unit);
+              
+              if (prioritizedIngredient && prioritizedIngredient.unit) {
+                finalDisplayUnit = String(prioritizedIngredient.unit);
+                finalApiUnit = String(prioritizedIngredient.unit); // API용도 사용자 단위 사용
+>>>>>>> app_merge
               }
             }            
             // 표시용 단위는 영어 소문자로 통일 (시각화 목적)
@@ -393,6 +411,10 @@ const IngredientChange = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+<<<<<<< HEAD
+=======
+      <Text style={styles.title}>식재료 변화량 설정</Text>
+>>>>>>> app_merge
       <FlatList
         data={ingredients}
         keyExtractor={(item) => item.id}
@@ -443,7 +465,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+<<<<<<< HEAD
     backgroundColor: '#EEF1FA',
+=======
+    backgroundColor: '#fff',
+>>>>>>> app_merge
   },
   title: {
     fontSize: 24,
@@ -455,8 +481,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
+<<<<<<< HEAD
     borderBottomWidth: 0.3,
     borderBottomColor: '#2D336B',
+=======
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+>>>>>>> app_merge
   },
   ingredientName: {
     flex: 1,
@@ -468,6 +499,7 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   changeButton: {
+<<<<<<< HEAD
     width: 30,
     height: 30,
     borderRadius: 20,
@@ -477,6 +509,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     borderWidth: 0.4,
     borderColor: '#000'
+=======
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+>>>>>>> app_merge
   },
   buttonText: {
     fontSize: 24,
@@ -490,11 +531,19 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 4,
     paddingHorizontal: 8,
+<<<<<<< HEAD
     fontSize: 15,
     textAlign: 'center',
   },
   ingredientUnit: {
     width: 40,
+=======
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  ingredientUnit: {
+    width: 50,
+>>>>>>> app_merge
     textAlign: 'center',
     fontSize: 18,
     color: '#666',
@@ -508,15 +557,24 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     height: 50,
+<<<<<<< HEAD
     borderRadius: 15,
     backgroundColor: '#A9B5DF',
+=======
+    borderRadius: 25,
+    backgroundColor: '#007bff',
+>>>>>>> app_merge
     alignItems: 'center',
     justifyContent: 'center',
   },
   confirmButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
+<<<<<<< HEAD
     color: '#2D336B',
+=======
+    color: '#fff',
+>>>>>>> app_merge
   },
 });
 

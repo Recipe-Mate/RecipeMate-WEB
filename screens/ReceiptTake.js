@@ -247,6 +247,10 @@ const Receipt = ({ navigation }) => {
       console.error('OCR 실패:', e);
     }
   };
+<<<<<<< HEAD
+=======
+
+>>>>>>> app_merge
   const chooseImage = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response) => {
       if (response.assets && response.assets.length > 0) {
@@ -255,6 +259,7 @@ const Receipt = ({ navigation }) => {
     });
   };
 
+<<<<<<< HEAD
   const takePhoto = () => {
     const options = {
       mediaType: 'photo',
@@ -277,6 +282,8 @@ const Receipt = ({ navigation }) => {
     });
   };
 
+=======
+>>>>>>> app_merge
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>

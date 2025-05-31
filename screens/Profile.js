@@ -73,7 +73,13 @@ const Profile = ({ navigation }) => {
       const data = await response.json();
       console.log('서버에서 받은 데이터:', data);
 
+<<<<<<< HEAD
       setRecipes(data.recipeList);
+=======
+      if (data.recipeList) {
+        setRecipes(data.recipeList);
+      }
+>>>>>>> app_merge
     } catch (error) {
       console.error('레시피 사용 내역 가져오기 실패:', error);
     }
@@ -100,6 +106,10 @@ const Profile = ({ navigation }) => {
     await fetchUsedRecipes();
     setIsRefreshing(false);
   };
+<<<<<<< HEAD
+=======
+
+>>>>>>> app_merge
   return (
     <ScrollView
       contentContainerStyle={{ flexGrow: 1 }}
@@ -112,10 +122,14 @@ const Profile = ({ navigation }) => {
           style={styles.background}
         />
         <View style={styles.user_info}>
+<<<<<<< HEAD
           <Image 
             source={profileImage ? { uri: profileImage } : require('../assets/default.png')} 
             style={styles.photo} 
           />
+=======
+          <Image source={{ uri: profileImage }} style={styles.photo} />
+>>>>>>> app_merge
           <Text style={styles.nickname}>{nickname}</Text>
           <Text style={styles.email}>{email}</Text>
         </View>
@@ -127,6 +141,7 @@ const Profile = ({ navigation }) => {
                 <TouchableOpacity
                   style={styles.badge_button}
                   onPress={() => { navigation.navigate('MainStack'); }}>
+<<<<<<< HEAD
                   <Text style={styles.number}>{numOfItems}</Text></TouchableOpacity>
               </View>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -136,6 +151,14 @@ const Profile = ({ navigation }) => {
                   onPress={() => { navigation.navigate('RecipeCompletedList') }}>
                   <Text style={styles.number}>{recipes.length}</Text>
                 </TouchableOpacity>
+=======
+                  <Text style={styles.number}>{numOfItems}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={styles.number_title}>요리한 레시피 수</Text>
+                <Text style={styles.number}>{recipes.length}</Text>
+>>>>>>> app_merge
               </View>
             </View>
             <View style={styles.divider}></View>
@@ -149,20 +172,27 @@ const Profile = ({ navigation }) => {
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 {recipes.map((recipe) => (
                   <View key={recipe.id} style={styles.recipe}>
+<<<<<<< HEAD
                     <Image 
                       source={recipe.recipeImage ? { uri: recipe.recipeImage } : require('../assets/default.png')} 
                       style={styles.recipe_photo} 
                     />
+=======
+                    <Image source={{ uri: recipe.recipeImage }} style={styles.recipe_photo} />
+>>>>>>> app_merge
                     <Text style={styles.recipe_photo_text}>{recipe.recipeName}</Text>
                   </View>
                 ))}
               </View>
             </ScrollView>
+<<<<<<< HEAD
             <View style={styles.divider}></View>
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 10 }}
               onPress={() => { navigation.navigate('IngredientChange') }}>
             </TouchableOpacity>
+=======
+>>>>>>> app_merge
           </View>
         </View>
       </SafeAreaView>

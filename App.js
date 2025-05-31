@@ -32,6 +32,10 @@ import Badge from './screens/Badge';
 import RecipeCompletedList from './screens/RecipeCompletedList';
 import ReceiptTake from './screens/ReceiptTake';
 import ReceiptChoose from './screens/ReceiptChoose';
+<<<<<<< HEAD
+=======
+import IngredientChange from './screens/IngredientChange';
+>>>>>>> app_merge
 
 // Context API 추가
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -123,6 +127,7 @@ const RecipeStack = () => (
     />
     <Stack.Screen
       name="IngredientChange"
+<<<<<<< HEAD
       component={require('./screens/IngredientChange').default}
       options={{ 
         title: '식재료 변화량 설정', 
@@ -132,6 +137,10 @@ const RecipeStack = () => (
           height: 60,
         },
       }}
+=======
+      component={IngredientChange}
+      options={{ title: '재료 변동 사항', headerShown: false }}
+>>>>>>> app_merge
     />
   </Stack.Navigator>
 );
