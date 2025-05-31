@@ -9,20 +9,23 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
-  Keyboard
+  Keyboard,
+  Image // Image 추가
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../src/context/AuthContext';
 import apiService from '../src/services/api.service';
 import UnitPicker from './UnitPicker';
 import { useFocusEffect } from '@react-navigation/native';
+import { launchImageLibrary } from 'react-native-image-picker'; // image picker 추가
 
 const AddFood = ({ navigation }) => {
   const [foodName, setFoodName] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState(null); // UnitPicker에 맞게 null 초기화
+  const [unit, setUnit] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const [selectedImage, setSelectedImage] = useState(null); // 선택된 이미지 상태 추가
 
   // 자동완성 관련 상태
   const [userFoods, setUserFoods] = useState([]); // 내 식재료명+단위 목록
@@ -96,6 +99,25 @@ const AddFood = ({ navigation }) => {
   // 식재료명에서 단위/수량/괄호 등 제거 (예: "오렌지 100g(1/2개)" → "오렌지")
   const extractPureName = (name) => name.replace(/\s*\d+[a-zA-Z가-힣()\/\.]*|\([^)]*\)/g, '').trim();
 
+  const handleChoosePhoto = () => {
+    launchImageLibrary({ mediaType: 'photo' }, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.errorCode) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        Alert.alert('오류', '이미지를 선택하는 중 오류가 발생했습니다.');
+      } else if (response.assets && response.assets.length > 0) {
+        const source = { 
+          uri: response.assets[0].uri,
+          name: response.assets[0].fileName,
+          type: response.assets[0].type
+        };
+        setSelectedImage(source);
+        console.log('Selected Image: ', source);
+      }
+    });
+  };
+
   const handleAddFood = async () => {
     console.log('[AddFood] user:', user);
     // access_token이 있으면 항상 등록
@@ -131,16 +153,20 @@ const AddFood = ({ navigation }) => {
     }
     setIsLoading(true);
     try {
-      const foodData = {
+      const foodDetails = { // foodData에서 foodDetails로 변경 또는 API 서비스에 맞게 조정
         foodNameList: [extractPureName(foodName.trim())],
         quantityList: [quantity.trim()],
         unitList: [unit.trim()]
       };
-      // headers 확인용 로그
-      const headers = apiService._getCommonHeaders();
-      console.log('[AddFood] 식재료 추가 요청:', JSON.stringify(foodData));
-      console.log('[AddFood] 요청 헤더:', headers);
-      const response = await apiService.addFood(numericUserId, foodData);
+      
+      // headers 확인용 로그 - FormData 사용 시 api.service.js에서 처리하므로 여기서는 제거 가능
+      // const headers = apiService._getCommonHeaders(); 
+      // console.log('[AddFood] 식재료 추가 요청 (JSON 부분):', JSON.stringify(foodDetails));
+      // console.log('[AddFood] 요청 헤더:', headers); // FormData 사용 시 Content-Type은 자동 설정됨
+
+      // apiService.addFood 호출 시 selectedImage 전달
+      const response = await apiService.addFood(numericUserId, foodDetails, selectedImage); 
+      
       console.log('[AddFood] 응답:', JSON.stringify(response));
       if (response.success) {
         Alert.alert(
@@ -149,6 +175,10 @@ const AddFood = ({ navigation }) => {
           [{ 
             text: '확인', 
             onPress: () => {
+              setSelectedImage(null); // 성공 시 이미지 초기화
+              setFoodName('');
+              setQuantity('');
+              setUnit(null);
               navigation.navigate('FoodList', { 
                 refresh: true, 
                 timestamp: Date.now()
@@ -263,6 +293,23 @@ const AddFood = ({ navigation }) => {
         />
         <Text style={styles.label}>단위</Text>
         <UnitPicker onSelect={setUnit} value={unit} />
+
+        {/* 이미지 선택 버튼 추가 */}
+        <TouchableOpacity style={styles.imagePickerButton} onPress={handleChoosePhoto}>
+          <Icon name="photo-camera" size={20} color="#FFF" />
+          <Text style={styles.imagePickerButtonText}>이미지 선택</Text>
+        </TouchableOpacity>
+
+        {/* 선택된 이미지 미리보기 추가 */}
+        {selectedImage && selectedImage.uri && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
+            <TouchableOpacity onPress={() => setSelectedImage(null)} style={styles.removeImageButton}>
+                <Icon name="close" size={20} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <TouchableOpacity
           style={styles.addButton}
           onPress={handleAddFood}
@@ -312,6 +359,42 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     fontSize: 16,
     marginBottom: 16,
+  },
+  imagePickerButton: { // 이미지 선택 버튼 스타일
+    backgroundColor: '#5cb85c', // 초록색 계열
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 6,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  imagePickerButtonText: { // 이미지 선택 버튼 텍스트 스타일
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  imagePreviewContainer: { // 이미지 미리보기 컨테이너 스타일
+    alignItems: 'center',
+    marginVertical: 10,
+    position: 'relative', // X 버튼을 위한 relative 포지셔닝
+  },
+  imagePreview: { // 이미지 미리보기 스타일
+    width: 150,
+    height: 150,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  removeImageButton: { // 이미지 제거 버튼
+    position: 'absolute',
+    top: 5,
+    right: 55, // 위치 조정 필요 시 수정
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 15,
+    padding: 5,
   },
   addButton: {
     backgroundColor: '#3498db',

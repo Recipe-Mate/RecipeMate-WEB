@@ -100,7 +100,6 @@ const Profile = ({ navigation }) => {
     await fetchUsedRecipes();
     setIsRefreshing(false);
   };
-
   return (
     <ScrollView
       contentContainerStyle={{ flexGrow: 1 }}
@@ -113,7 +112,10 @@ const Profile = ({ navigation }) => {
           style={styles.background}
         />
         <View style={styles.user_info}>
-          <Image source={{ uri: profileImage }} style={styles.photo} />
+          <Image 
+            source={profileImage ? { uri: profileImage } : require('../assets/default.png')} 
+            style={styles.photo} 
+          />
           <Text style={styles.nickname}>{nickname}</Text>
           <Text style={styles.email}>{email}</Text>
         </View>
@@ -125,8 +127,7 @@ const Profile = ({ navigation }) => {
                 <TouchableOpacity
                   style={styles.badge_button}
                   onPress={() => { navigation.navigate('MainStack'); }}>
-                  <Text style={styles.number}>{numOfItems}</Text>
-                </TouchableOpacity>
+                  <Text style={styles.number}>{numOfItems}</Text></TouchableOpacity>
               </View>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <Text style={styles.number_title}>요리한 레시피 수</Text>
@@ -148,12 +149,20 @@ const Profile = ({ navigation }) => {
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 {recipes.map((recipe) => (
                   <View key={recipe.id} style={styles.recipe}>
-                    <Image source={{ uri: recipe.recipeImage }} style={styles.recipe_photo} />
+                    <Image 
+                      source={recipe.recipeImage ? { uri: recipe.recipeImage } : require('../assets/default.png')} 
+                      style={styles.recipe_photo} 
+                    />
                     <Text style={styles.recipe_photo_text}>{recipe.recipeName}</Text>
                   </View>
                 ))}
               </View>
             </ScrollView>
+            <View style={styles.divider}></View>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 10 }}
+              onPress={() => { navigation.navigate('IngredientChange') }}>
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>

@@ -2,10 +2,10 @@
  * API 설정 파일
  * 서버 URL 및 API 관련 설정 관리
  */
+import { SERVER_URL } from '@env'; // .env 파일에서 SERVER_URL 가져오기
 
 // 환경변수에서 API URL을 읽어옴
-const DEFAULT_API_URL = process.env.API_URL || 'http://10.0.2.2:8080'; // 안드로이드 에뮬레이터에서 localhost 대신 사용
-// iOS에서는 localhost 사용: const DEFAULT_API_URL = 'http://127.0.0.1:8080';
+const DEFAULT_API_URL = process.env.API_URL || 'http://10.0.2.2:8080'; // 기존 코드
 
 // API 엔드포인트 정의
 const API_ENDPOINTS_OBJ = {
@@ -21,16 +21,17 @@ const API_ENDPOINTS_OBJ = {
 // API 설정을 관리하는 객체
 const apiConfig = {
   // 현재 API URL
-  apiUrl: DEFAULT_API_URL,
+  apiUrl: SERVER_URL || DEFAULT_API_URL,
   
   // 하위 호환성을 위한 BASE_URL 속성 추가
-  BASE_URL: DEFAULT_API_URL,
+  BASE_URL: SERVER_URL || DEFAULT_API_URL,
   
   // API 엔드포인트 정의 추가
   API_ENDPOINTS: API_ENDPOINTS_OBJ,
   
   // API URL 획득
   getApiUrl() {
+    console.log('[apiConfig] getApiUrl is returning:', this.apiUrl); // 이 로그 추가
     return this.apiUrl;
   },
   

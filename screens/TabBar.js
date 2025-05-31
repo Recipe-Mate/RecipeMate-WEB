@@ -4,11 +4,17 @@ import { StyleSheet, Text, View, FlatList, Button } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import Main from "./Main";
+import AddIngredient from "./AddIngredient";
 import RecipeSearch from './RecipeSearch';
 import RecipeDetail from './RecipeDetail';
 import Bill from "./Receipt";
 import Profile from "./Profile";
+import Badge from "./Badge";
+import CookedRecipes from "./CookedRecipes";
+import RecipeCompletedList from "./RecipeCompletedList";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -98,6 +104,32 @@ const ProfileStack = () => (
                     fontSize: 16,
                 },
                 title: '요리한 레시피 목록',
+                headerTitleStyle: {
+                    fontSize: 20,
+                    fontWeight: "600",
+                    paddingBottom: 10,
+                },
+                headerBackTitle: '뒤로',
+                headerShown: true,                headerLeftContainerStyle: {
+                    paddingBottom: 10,
+                },
+            }}
+        />
+        <Stack.Screen
+            name="RecipeCompletedList"
+            component={RecipeCompletedList}
+            options={{
+                headerBackground: () => (
+                    <LinearGradient
+                        colors={['#2D336B', '#525C99']}
+                        style={{ flex: 1, borderBottomRightRadius: 10, borderBottomLeftRadius: 10, }}
+                    />
+                ),
+                headerTintColor: '#ffffff',
+                headerBackTitleStyle: {
+                    fontSize: 16,
+                },
+                title: '요리한 레시피',
                 headerTitleStyle: {
                     fontSize: 20,
                     fontWeight: "600",

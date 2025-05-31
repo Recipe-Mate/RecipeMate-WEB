@@ -88,23 +88,37 @@ const IngredientChange = ({ route, navigation }) => {
             
             // 단위 표시 우선순위:
             // 1. 사용자 식재료 리스트에 같은 이름의 재료가 있으면 그 단위 사용 (이름만으로 매칭)
-            // 2. 없으면 레시피 단위 사용            let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
+            // 2. 없으면 레시피 단위 사용            
+            let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
             let finalApiUnit = item.unit ? String(item.unit) : ''; // API 전송용 원본 단위
             
             if (userIngredientsRaw && Array.isArray(userIngredientsRaw) && userIngredientsRaw.length > 0) {
-              // 이름이 일치하는 식재료들을 모두 찾기
               const matchedUserIngredients = userIngredientsRaw.filter(
                 uig => (uig.foodName || '').trim().toLowerCase() === itemNameFromRecipe
               );
               
               // amount > 0인 식재료 우선 선택, 없으면 첫 번째 식재료 사용
-              const prioritizedIngredient = matchedUserIngredients.find(
-                uig => uig.amount > 0 && uig.unit
-              ) || matchedUserIngredients.find(uig => uig.unit);
+              // .unit 접근은 나중에 try-catch로 처리
+              const prioritizedUserIngredient = matchedUserIngredients.find(
+                uig => uig.amount > 0
+              ) || matchedUserIngredients[0];
               
-              if (prioritizedIngredient && prioritizedIngredient.unit) {
-                finalDisplayUnit = String(prioritizedIngredient.unit);
-                finalApiUnit = String(prioritizedIngredient.unit); // API용도 사용자 단위 사용
+              if (prioritizedUserIngredient) {
+                try {
+                  // 사용자의 식재료 단위에 접근 시도
+                  const userUnit = prioritizedUserIngredient.unit; 
+                  if (userUnit) { // 단위 정보가 존재하면 해당 단위 사용
+                    finalDisplayUnit = String(userUnit);
+                    finalApiUnit = String(userUnit);
+                  }
+                  // userUnit이 falsy (null, undefined, '', 등)이거나 .unit 접근 시 오류가 없었지만 값이 없는 경우,
+                  // 이미 설정된 레시피 단위(기본값)를 그대로 사용합니다.
+                } catch (e) {
+                  // .unit 접근 중 오류 발생 시 콘솔에 경고를 남기고 레시피 단위 사용
+                  const foodNameToLog = prioritizedUserIngredient.foodName || itemNameFromRecipe;
+                  console.warn(`[IngredientChange] Error accessing unit for user ingredient '${foodNameToLog}'. Defaulting to recipe unit. Error:`, e);
+                  // finalDisplayUnit 및 finalApiUnit은 이미 레시피 단위로 설정되어 있으므로 추가 작업 없음
+                }
               }
             }            
             // 표시용 단위는 영어 소문자로 통일 (시각화 목적)

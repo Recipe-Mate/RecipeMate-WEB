@@ -283,34 +283,87 @@ const apiService = {
   },
 
   /**
-   * 식재료 추가 (서버 DTO에 맞게)
+   * 식재료 추가 (서버 DTO에 맞게, FormData 지원)
    * @param {number} userId
-   * @param {Object} foodData { foodList: [{ foodName, amount, unit }] }
+   * @param {Object} foodDetails - { foodNameList, quantityList, unitList }
+   * @param {Object} imageFile - { uri, name, type } (이미지 파일 정보)
    * @returns {Promise<Object>} 서버 응답
    */
-  async addFood(userId, foodData) {
+  async addFood(userId, foodDetails, imageFile) { // imageFile 파라미터 추가
     const url = `${apiConfig.getApiUrl()}/food`;
+    console.log('[api.service][addFood] Attempting to POST to URL:', url); // 이 로그 추가
     try {
+      const formData = new FormData();
+
+      // 1. JSON 데이터 추가 (requestBody 라는 이름으로)
+      // API 명세에 따라 foodDataList 또는 다른 이름으로 변경 가능
+      const foodDataRequest = {
+        userId: userId,
+        foodNameList: foodDetails.foodNameList,
+        quantityList: foodDetails.quantityList,
+        unitList: foodDetails.unitList,
+      };
+      formData.append('requestBody', JSON.stringify(foodDataRequest));
+
+      // 2. 이미지 파일 추가 (imageFile 이라는 이름으로)
+      // API 명세에 따라 파일 파트 이름 변경 가능
+      if (imageFile && imageFile.uri) {
+        formData.append('imageFile', {
+          uri: imageFile.uri,
+          name: imageFile.name || 'photo.jpg', // 파일 이름이 없다면 기본값 사용
+          type: imageFile.type || 'image/jpeg', // 파일 타입이 없다면 기본값 사용
+        });
+      }
+      
+      // FormData 사용 시 Content-Type은 자동으로 multipart/form-data로 설정됨
+      // _getCommonHeaders에서 Content-Type: application/json을 제거하거나,
+      // 여기서 헤더를 새로 구성해야 함.
+      const headers = this._getCommonHeaders();
+      delete headers['Content-Type']; // 기존 Content-Type 제거
+
+      // 디버깅 로그 추가
+      console.log('[api.service][addFood] FormData 전송 준비. URL:', url);
+      console.log('[api.service][addFood] FormData requestBody:', JSON.stringify(foodDataRequest));
+      if (imageFile && imageFile.uri) {
+        console.log('[api.service][addFood] FormData imageFile:', imageFile.uri.substring(0,100) + "...");
+      } else {
+        console.log('[api.service][addFood] FormData imageFile: 없음');
+      }
+
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: this._getCommonHeaders(),
-        body: JSON.stringify(foodData)
+        headers: headers, // Content-Type이 제거된 헤더 사용
+        body: formData
       });
+
+      // 응답 처리 로직은 기존과 유사하게 유지
+      // _handleApiResponse를 직접 사용하거나, 상태 코드에 따라 직접 처리
       if (response.ok) {
-        return { success: true, data: await response.json() };
-      } else {
-        let errorMsg = '식재료 추가에 실패했습니다';
         try {
-          const text = await response.text();
-          if (text && text.trim().startsWith('{')) {
-            const err = JSON.parse(text);
-            if (err.message) errorMsg = err.message;
+          const responseData = await response.json();
+          console.log('[api.service][addFood] 응답 성공 (JSON 파싱 시도):', responseData);
+          return { success: true, data: responseData };
+        } catch (e) {
+          // JSON 파싱 실패 시 (예: 서버가 빈 응답 또는 텍스트 응답을 보낸 경우)
+          const responseText = await response.text(); // 원본 텍스트 확인
+          console.log('[api.service][addFood] 응답 성공 (JSON 파싱 실패, 텍스트):', responseText);
+          if (response.status === 201 || response.status === 200) { // 생성 성공 또는 OK
+             return { success: true, data: responseText || '성공적으로 추가되었습니다.' };
           }
-        } catch {}
-        return { success: false, error: errorMsg };
+          // 다른 성공 케이스가 있다면 여기에 추가
+          return { success: true, data: responseText };
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('[api.service][addFood] 응답 실패:', response.status, errorText);
+        // _handleApiResponse를 호출하면 내부적으로 에러를 throw하므로, 여기서 바로 에러 객체 반환
+        // throw new Error(`식재료 추가 실패 (상태: ${response.status}): ${errorText}`);
+        return { success: false, error: `식재료 추가 실패 (상태: ${response.status}): ${errorText}` };
       }
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('[api.service][addFood] 요청 중 오류 발생:', error);
+      return { success: false, error: error.message || '식재료 추가 중 알 수 없는 오류가 발생했습니다.' };
     }
   },
 

@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
 
-const UsedRecipes = () => {
+const RecipeCompletedList = () => {
   const [recipes, setRecipes] = useState([]);
 
   const fetchUsedRecipes = async () => {
@@ -87,4 +87,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UsedRecipes;
+export default RecipeCompletedList;

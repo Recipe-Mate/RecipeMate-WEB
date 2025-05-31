@@ -247,10 +247,31 @@ const Receipt = ({ navigation }) => {
       console.error('OCR 실패:', e);
     }
   };
-
   const chooseImage = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response) => {
       if (response.assets && response.assets.length > 0) {
+        processImage(response.assets[0].uri);
+      }
+    });
+  };
+
+  const takePhoto = () => {
+    const options = {
+      mediaType: 'photo',
+      quality: 0.8,
+      saveToPhotos: true,
+    };
+
+    launchCamera(options, (response) => {
+      if (response.didCancel) {
+        console.log('사용자가 카메라를 취소했습니다.');
+        navigation.goBack();
+      } else if (response.errorMessage) {
+        console.error('카메라 오류:', response.errorMessage);
+        alert('카메라 오류가 발생했습니다.');
+        navigation.goBack();
+      } else if (response.assets && response.assets.length > 0) {
+        console.log('카메라로 사진 촬영 완료');
         processImage(response.assets[0].uri);
       }
     });
