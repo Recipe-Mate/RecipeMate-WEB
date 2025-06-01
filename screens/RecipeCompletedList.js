@@ -3,11 +3,7 @@ import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
 
-<<<<<<< HEAD
 const RecipeCompletedList = () => {
-=======
-const UsedRecipes = () => {
->>>>>>> app_merge
   const [recipes, setRecipes] = useState([]);
 
   const fetchUsedRecipes = async () => {
@@ -43,7 +39,6 @@ const UsedRecipes = () => {
   }, []);
 
   return (
-<<<<<<< HEAD
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.box}>
         {recipes.map((recipe) => (
@@ -54,16 +49,6 @@ const UsedRecipes = () => {
         ))}
       </ScrollView>
     </View>
-=======
-    <ScrollView contentContainerStyle={styles.box}>
-      {recipes.map((recipe) => (
-        <View key={recipe.id} style={styles.recipe_view}>
-          <Image source={{ uri: recipe.recipeImage }} style={styles.recipe_photo} />
-          <Text style={styles.recipe_text}>{recipe.recipeName}</Text>
-        </View>
-      ))}
-    </ScrollView>
->>>>>>> app_merge
   );
 };
 
@@ -73,14 +58,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     padding: 10,
     backgroundColor: '#EEF1FA',
-<<<<<<< HEAD
   },
   recipe_photo: {
-=======
-    flex: 1
-  },
- recipe_photo: {
->>>>>>> app_merge
     width: 80,
     height: 80,
     borderWidth: 1,
@@ -96,11 +75,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderRadius: 25,
     alignItems: 'center',
-<<<<<<< HEAD
     width: 340,
-=======
-    width: 340, 
->>>>>>> app_merge
     elevation: 5,
   },
   recipe_text: {
@@ -112,8 +87,4 @@ const styles = StyleSheet.create({
   },
 });
 
-<<<<<<< HEAD
 export default RecipeCompletedList;
-=======
-export default UsedRecipes;
->>>>>>> app_merge

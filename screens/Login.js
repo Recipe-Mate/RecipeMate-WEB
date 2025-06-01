@@ -35,15 +35,26 @@ const Login = () => {
   const sendCodeToBackend = async (code) => {
     try {
       setIsLoading(true);
-      const getTokenResponse = await fetch(`${SERVER_URL}/auth?code=${code}`, {
+
+      const bodyParams = new URLSearchParams();
+      bodyParams.append('grant_type', 'authorization_code');
+      bodyParams.append('client_id', KAKAO_REST_API_KEY);
+      bodyParams.append('redirect_uri', REDIRECT_URI);
+      bodyParams.append('code', code);
+
+      const getTokenResponse = await fetch(`${SERVER_URL}/auth`, { // URL에서 ?code= 제거
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
-        body: JSON.stringify({ code }),
+        body: bodyParams.toString(), // 수정된 body
       });
 
-      if (!getTokenResponse.ok) throw new Error('토큰 요청 실패');
+      if (!getTokenResponse.ok) { // 수정된 부분: getTokenResponse.ok가 false일 때 에러 throw
+        const errorBody = await getTokenResponse.text(); // 에러 내용을 확인하기 위해 추가
+        console.error('Token request failed with status:', getTokenResponse.status, 'and body:', errorBody);
+        throw new Error(`토큰 요청 실패: ${getTokenResponse.status}`);
+      }
 
       const data = await getTokenResponse.json();
       const isRegistered = data.isRegistered;

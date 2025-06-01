@@ -5,6 +5,7 @@
 import apiConfig from '../../config/api.config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
+import { Platform } from 'react-native';
 
 // 인증 토큰 저장
 let authToken = null;
@@ -281,120 +282,127 @@ const apiService = {
       return { success: false, error: error.message };
     }
   },
-
   /**
-<<<<<<< HEAD
-   * 식재료 추가 (서버 DTO에 맞게, FormData 지원)
-   * @param {number} userId
-   * @param {Object} foodDetails - { foodNameList, quantityList, unitList }
-   * @param {Object} imageFile - { uri, name, type } (이미지 파일 정보)
+   * 식재료 추가 (서버 API 스펙에 맞게 수정)
+   * @param {Array} foodList - [{ foodName, amount, unit }]
+   * @param {Array} imageFiles - [{ uri, name, type }, ...] (선택적)
    * @returns {Promise<Object>} 서버 응답
-   */
-  async addFood(userId, foodDetails, imageFile) { // imageFile 파라미터 추가
+   */  async addFood(foodList, imageFiles = []) {
     const url = `${apiConfig.getApiUrl()}/food`;
-    console.log('[api.service][addFood] Attempting to POST to URL:', url); // 이 로그 추가
+    console.log('🔄 [api.service][addFood] === STARTING ADDFOOD FUNCTION ===');
+    console.log('🌐 [api.service][addFood] Attempting to POST to URL:', url);
+    console.log('🍎 [api.service][addFood] foodList:', foodList);
+    console.log('📷 [api.service][addFood] imageFiles:', imageFiles);
+    
     try {
       const formData = new FormData();
 
-      // 1. JSON 데이터 추가 (requestBody 라는 이름으로)
-      // API 명세에 따라 foodDataList 또는 다른 이름으로 변경 가능
-      const foodDataRequest = {
-        userId: userId,
-        foodNameList: foodDetails.foodNameList,
-        quantityList: foodDetails.quantityList,
-        unitList: foodDetails.unitList,
-      };
-      formData.append('requestBody', JSON.stringify(foodDataRequest));
+      // foodDataList를 JSON 파일 형태로 추가 (API 명세 및 AddIngredient.js 방식과 일치)
+      formData.append('foodDataList', {
+        string: JSON.stringify({ foodList }), // foodList를 객체로 한 번 더 감싸서 JSON 문자열로 변환
+        type: 'application/json',
+        name: 'foodDataList.json' // 서버에서 파일로 인식하도록 이름 지정 (선택적이지만 권장)
+      });
 
-      // 2. 이미지 파일 추가 (imageFile 이라는 이름으로)
-      // API 명세에 따라 파일 파트 이름 변경 가능
-      if (imageFile && imageFile.uri) {
-        formData.append('imageFile', {
-          uri: imageFile.uri,
-          name: imageFile.name || 'photo.jpg', // 파일 이름이 없다면 기본값 사용
-          type: imageFile.type || 'image/jpeg', // 파일 타입이 없다면 기본값 사용
+      if (imageFiles && imageFiles.length > 0) {
+        imageFiles.forEach((file) => {
+          if (file && file.uri) {
+            // 안드로이드에서는 'file://' 스킴이 필요하고, iOS에서는 제거해야 할 수 있음
+            // ReceiptTake.js에서 이미 URI 정규화를 수행했으므로 여기서는 그대로 사용
+            const imagePayload = {
+              uri: file.uri,
+              type: file.type || 'image/jpeg', // 기본값 설정
+              name: file.name || 'image.jpg',   // 기본값 설정
+            };
+            formData.append('images', imagePayload);
+            console.log('🖼️ [api.service][addFood] Appended image:', imagePayload.name);
+          } else {
+            console.warn('[api.service][addFood] Invalid file object skipped:', file);
+          }
         });
+      } else {
+        // API 명세에 따라 이미지가 없을 경우 0바이트 'empty.png'를 전송
+        // ReceiptTake.js에서 이미지가 없으면 { uri: 'data:image/png;base64,', type: 'image/png', name: 'empty.png' } 를 보내므로,
+        // 이 빈 이미지가 위 로직을 통해 formData에 추가될 것임.
+        // 만약 AddIngredient.js처럼 이미지가 없을 때 'images' 필드를 아예 보내지 않으려면,
+        // 여기서 추가적인 조건 처리가 필요하지만, 현재는 ReceiptTake.js의 로직을 따름.
+        console.log('[api.service][addFood] imageFiles array is empty or not provided. If an empty image placeholder is present, it will be added.');
+      }
+
+      const token = this.getToken() || await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        console.error('[api.service][addFood] No auth token available.');
+        return { success: false, error: '인증 토큰이 없습니다. 다시 로그인해주세요.' };
+      }
+      console.log('🔑 [api.service][addFood] Using auth token:', token ? 'Token Present' : 'Token Missing');
+
+      const headers = {
+        // 'Content-Type': 'multipart/form-data'는 fetch가 FormData를 사용할 때 자동으로 설정하므로 명시적으로 넣지 않음
+        'Authorization': `Bearer ${token}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Client-Version': '1.0.0',
+        'X-Client-Timestamp': new Date().toISOString()
+        // 'Accept': 'application/json' // 서버 응답 형식을 기대, 필요시 추가
+      };
+      console.log('📋 [api.service][addFood] Request headers (excluding Content-Type):', headers);
+      console.log('📦 [api.service][addFood] FormData to be sent:');
+      // FormData 내용을 직접 로깅하기 어려우므로, 주요 필드 존재 여부만 확인
+      formData.forEach((value, key) => {
+        if (value.uri) { // 파일 객체인 경우
+          console.log(`  ${key}: name=${value.name}, type=${value.type}, uri=${value.uri.substring(0,50)}...`);
+        } else if (typeof value.string === 'string' && value.type === 'application/json') { // JSON 객체인 경우
+           console.log(`  ${key}: name=${value.name}, type=${value.type}, data=${value.string.substring(0,100)}...`);
+        }
+         else {
+          console.log(`  ${key}: ${String(value).substring(0,100)}...`);
+        }
+      });
+
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+      });
+
+      console.log('📡 [api.service][addFood] Response status:', response.status);
+      const responseText = await response.text(); // 응답을 텍스트로 먼저 받음
+      console.log('📄 [api.service][addFood] Raw response text:', responseText);
+
+      if (!response.ok) {
+        console.error(`❌ [api.service][addFood] Server error: ${response.status}`, responseText);
+        // 서버에서 JSON 형태의 에러 메시지를 보낼 수 있으므로 파싱 시도
+        try {
+          const errorJson = JSON.parse(responseText);
+          throw new Error(errorJson.message || errorJson.error || `서버 요청 실패: ${response.status}`);
+        } catch (e) {
+          // JSON 파싱 실패 시 텍스트 그대로 에러 메시지로 사용
+          throw new Error(responseText || `서버 요청 실패: ${response.status}`);
+        }
       }
       
-      // FormData 사용 시 Content-Type은 자동으로 multipart/form-data로 설정됨
-      // _getCommonHeaders에서 Content-Type: application/json을 제거하거나,
-      // 여기서 헤더를 새로 구성해야 함.
-      const headers = this._getCommonHeaders();
-      delete headers['Content-Type']; // 기존 Content-Type 제거
-
-      // 디버깅 로그 추가
-      console.log('[api.service][addFood] FormData 전송 준비. URL:', url);
-      console.log('[api.service][addFood] FormData requestBody:', JSON.stringify(foodDataRequest));
-      if (imageFile && imageFile.uri) {
-        console.log('[api.service][addFood] FormData imageFile:', imageFile.uri.substring(0,100) + "...");
-      } else {
-        console.log('[api.service][addFood] FormData imageFile: 없음');
-      }
-
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers, // Content-Type이 제거된 헤더 사용
-        body: formData
-      });
-
-      // 응답 처리 로직은 기존과 유사하게 유지
-      // _handleApiResponse를 직접 사용하거나, 상태 코드에 따라 직접 처리
-      if (response.ok) {
+      // 성공 응답 처리 (응답이 비어있을 수도 있고, JSON일 수도 있음)
+      let data;
+      if (responseText) {
         try {
-          const responseData = await response.json();
-          console.log('[api.service][addFood] 응답 성공 (JSON 파싱 시도):', responseData);
-          return { success: true, data: responseData };
+          data = JSON.parse(responseText);
+          console.log('✅ [api.service][addFood] Parsed JSON response:', data);
         } catch (e) {
-          // JSON 파싱 실패 시 (예: 서버가 빈 응답 또는 텍스트 응답을 보낸 경우)
-          const responseText = await response.text(); // 원본 텍스트 확인
-          console.log('[api.service][addFood] 응답 성공 (JSON 파싱 실패, 텍스트):', responseText);
-          if (response.status === 201 || response.status === 200) { // 생성 성공 또는 OK
-             return { success: true, data: responseText || '성공적으로 추가되었습니다.' };
-          }
-          // 다른 성공 케이스가 있다면 여기에 추가
-          return { success: true, data: responseText };
+          console.warn('[api.service][addFood] Response was not valid JSON, returning as text:', responseText);
+          data = responseText; // JSON이 아니면 텍스트 그대로 반환
         }
       } else {
-        const errorText = await response.text();
-        console.error('[api.service][addFood] 응답 실패:', response.status, errorText);
-        // _handleApiResponse를 호출하면 내부적으로 에러를 throw하므로, 여기서 바로 에러 객체 반환
-        // throw new Error(`식재료 추가 실패 (상태: ${response.status}): ${errorText}`);
-        return { success: false, error: `식재료 추가 실패 (상태: ${response.status}): ${errorText}` };
+        console.log('[api.service][addFood] Response body is empty.');
+        data = { message: '요청이 성공적으로 처리되었지만, 서버에서 반환된 내용이 없습니다.' }; // 혹은 null 이나 빈 객체
       }
+      
+      return { success: true, data: data };
+
     } catch (error) {
-      console.error('[api.service][addFood] 요청 중 오류 발생:', error);
+      console.error('💥 [api.service][addFood] 요청 중 오류 발생:', error);
+      console.error('💥 [api.service][addFood] Error message:', error.message);
+      console.error('💥 [api.service][addFood] Error stack:', error.stack);
       return { success: false, error: error.message || '식재료 추가 중 알 수 없는 오류가 발생했습니다.' };
-=======
-   * 식재료 추가 (서버 DTO에 맞게)
-   * @param {number} userId
-   * @param {Object} foodData { foodList: [{ foodName, amount, unit }] }
-   * @returns {Promise<Object>} 서버 응답
-   */
-  async addFood(userId, foodData) {
-    const url = `${apiConfig.getApiUrl()}/food`;
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: this._getCommonHeaders(),
-        body: JSON.stringify(foodData)
-      });
-      if (response.ok) {
-        return { success: true, data: await response.json() };
-      } else {
-        let errorMsg = '식재료 추가에 실패했습니다';
-        try {
-          const text = await response.text();
-          if (text && text.trim().startsWith('{')) {
-            const err = JSON.parse(text);
-            if (err.message) errorMsg = err.message;
-          }
-        } catch {}
-        return { success: false, error: errorMsg };
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
->>>>>>> app_merge
     }
   },
 
@@ -475,7 +483,7 @@ const apiService = {
           if (!steps || (Array.isArray(steps) && steps.length === 0)) {
             steps = ['조리법 정보가 없습니다.'];
           }
-          // steps가 배열이면 각 항목에서 앞쪽 중복 번호(예: '1.1. ') 제거
+          // steps가 배열이면 앞쪽 중복 번호(예: '1.1. ') 제거
           if (Array.isArray(steps)) {
             steps = steps.map(step =>
               typeof step === 'string'

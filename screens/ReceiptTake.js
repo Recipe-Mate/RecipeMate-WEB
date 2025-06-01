@@ -19,8 +19,11 @@ import { LinearGradient } from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
+console.log('[ReceiptTake] SERVER_URL from @env:', SERVER_URL);
 import { Image as RNImage } from 'react-native';
 import UnitPicker from "./UnitPicker";
+import apiService from '../src/services/api.service';
+import { useAuth } from '../src/context/AuthContext';
 
 const { width } = Dimensions.get('window');
 const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
@@ -34,6 +37,7 @@ const excludedBrands = [
 ].map((brand) => brand.toLowerCase());
 
 const Receipt = ({ navigation }) => {
+  const { user } = useAuth(); // useAuth 훅을 컴포넌트 최상단에서 호출
   const [imageUri, setImageUri] = useState(null);
   const [groupedLines, setGroupedLines] = useState([]);
   const [normalizedLines, setNormalizedLines] = useState([]);
@@ -49,65 +53,100 @@ const Receipt = ({ navigation }) => {
   const openModalWithItem = (item) => {
     setSelectedItem(item);
     setFoodName(item.name);
-    setAmount(String(item.weight * item.count));
+    setAmount(String(item.weight * item.count)); // count와 weight를 곱한 값을 amount로 설정
     setUnit(item.unit);
     setModalVisible(true);
   };
 
   const sendIngredientsToServer = async (foodName, amount, unit) => {
-    if (!foodName || !amount || !unit) return;
+    if (!foodName || !amount || !unit) {
+      Alert.alert('입력 오류', '모든 필드를 입력해주세요.'); // 사용자에게 명확한 오류 메시지 제공
+      return;
+    }
 
     try {
-      const formData = new FormData();
-
       const foodList = [{
         foodName: foodName,
-        amount: amount,
-        unit: unit,
+        amount: parseFloat(amount) || 0,
+        unit: unit || 'EA'
       }];
 
+      const formData = new FormData();
       formData.append('foodDataList', {
-        string: JSON.stringify({ foodList }),
+        string: JSON.stringify({ foodList }), // 서버 스펙에 맞게 foodList를 JSON 문자열로 변환
         name: 'foodDataList.json',
         type: 'application/json',
       });
 
-      formData.append('images', {
-        uri: Platform.OS === 'android' ? defaultImage.uri : defaultImage.uri.replace('file://', ''),
-        type: 'image/jpeg',
-        name: 'default.jpg',
-      });
+      if (imageUri) {
+        let normalizedUri = imageUri;
+        if (Platform.OS === 'android') {
+          if (!normalizedUri.startsWith('file://') && !normalizedUri.startsWith('content://')) {
+            normalizedUri = `file://${normalizedUri}`;
+          }
+        } else {
+          normalizedUri = normalizedUri.replace('file://', '');
+        }
+        
+        const imageFile = {
+          uri: normalizedUri,
+          type: 'image/jpeg', // 또는 실제 이미지 타입
+          name: imageUri.split('/').pop() || 'uploaded.jpg',
+        };
+        formData.append('images', imageFile);
+      } else {
+        formData.append('images', {
+          uri: Platform.OS === 'android' ? 'file:///dev/null' : '',
+          type: 'image/png',
+          name: 'empty.png',
+        });
+      }
 
       const accessToken = await AsyncStorage.getItem('accessToken');
+      if (!accessToken) {
+        Alert.alert('인증 오류', '로그인이 필요합니다.');
+        // 로그인 화면으로 이동하거나, 다른 적절한 처리를 할 수 있습니다.
+        return;
+      }
 
-      const response = await fetch(`${SERVER_URL}/food`, {
+      const response = await fetch(`${SERVER_URL}/food`, { // SERVER_URL 사용 확인
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
+          // 'Content-Type': 'multipart/form-data' // fetch가 FormData를 사용할 때 자동으로 설정하므로 명시적으로 필요 없을 수 있음
         },
         body: formData,
       });
 
-      console.log('foodName: ', foodName);
-      console.log('amount: ', amount);
-      console.log('unit: ', unit);
-
       if (response.ok) {
+        const responseData = await response.json(); // 서버 응답이 JSON 형태일 경우
         Alert.alert('성공', '서버에 성공적으로 전송되었습니다!', [{ text: '확인' }]);
         setModalVisible(false);
         setSelectedItem(null);
+        // console.log('Upload success:', responseData); // 성공 로그
       } else {
         const errorText = await response.text();
-        console.error('서버 응답 오류:', response.status, errorText);
-        alert('서버 전송 실패');
+        console.error('❌ Server response error:', response.status, errorText);
+        Alert.alert('오류', `서버 전송에 실패했습니다. 상태: ${response.status}, 메시지: ${errorText}`);
       }
     } catch (error) {
-      alert('네트워크 오류가 발생했습니다.');
-      console.error('전송 중 에러 발생:', error);
+      console.error('💥 Error during transmission:', error);
+      let errorMessage = '네트워크 오류가 발생했습니다.';
+      if (error.message && error.message.includes('Network request failed')) {
+        errorMessage = '네트워크 연결을 확인해주세요. 서버에 접근할 수 없습니다.';
+      } else if (error.message && error.message.includes('timeout')) {
+        errorMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';
+      } else if (error instanceof SyntaxError) {
+        errorMessage = '서버 응답을 파싱하는 중 오류가 발생했습니다.';
+        console.error('💥 JSON Parse error:', error);
+      }
+      Alert.alert('전송 오류', errorMessage);
     }
   };
 
   useEffect(() => {
+    console.log('[ReceiptTake useEffect] SERVER_URL from @env:', SERVER_URL); // useEffect 내부에서도 확인
+
     const requestCameraPermission = async () => {
       if (Platform.OS === 'android') {
         try {
@@ -124,7 +163,7 @@ const Receipt = ({ navigation }) => {
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             takePhoto();
           } else {
-            console.log('Camera permission denied');
+            // console.log('Camera permission denied'); // Removed
           }
         } catch (err) {
           console.warn(err);
@@ -247,10 +286,7 @@ const Receipt = ({ navigation }) => {
       console.error('OCR 실패:', e);
     }
   };
-<<<<<<< HEAD
-=======
 
->>>>>>> app_merge
   const chooseImage = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response) => {
       if (response.assets && response.assets.length > 0) {
@@ -259,7 +295,6 @@ const Receipt = ({ navigation }) => {
     });
   };
 
-<<<<<<< HEAD
   const takePhoto = () => {
     const options = {
       mediaType: 'photo',
@@ -269,21 +304,19 @@ const Receipt = ({ navigation }) => {
 
     launchCamera(options, (response) => {
       if (response.didCancel) {
-        console.log('사용자가 카메라를 취소했습니다.');
+        // console.log('사용자가 카메라를 취소했습니다.'); // Removed
         navigation.goBack();
       } else if (response.errorMessage) {
         console.error('카메라 오류:', response.errorMessage);
         alert('카메라 오류가 발생했습니다.');
         navigation.goBack();
       } else if (response.assets && response.assets.length > 0) {
-        console.log('카메라로 사진 촬영 완료');
+        // console.log('카메라로 사진 촬영 완료'); // Removed
         processImage(response.assets[0].uri);
       }
     });
   };
 
-=======
->>>>>>> app_merge
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>

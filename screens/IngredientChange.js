@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ const interpretIngredientAmount = (amountStr) => {
     return 0; // 잘못된 분수 형태
   }
   // 숫자가 아닌 문자(소수점 제외) 제거 후 숫으로 변환
-  const num = parseFloat(str.replace(/[^\\d.]/g, ''));
+  const num = parseFloat(str.replace(/[^\d.]/g, ''));
   return isNaN(num) ? 0 : num;
 };
 
@@ -48,122 +48,32 @@ const normalizeUnit = (unit) => {
 
 const IngredientChange = ({ route, navigation }) => {
   const isFocused = useIsFocused();
-  // const { ingredients: initialIngredients, userId } = route.params || {};
-  const { ingredients: initialIngredients } = route.params || {};
-  const { userIngredientsRaw } = useUserIngredients();
-  const { user } = useAuth();
-  const userId = user?.id || user?.user_id || user?.userId;
+  const { ingredients: recipeIngredients, userIngredientsRaw, recipeId } = route.params;
+  const [userIngredients, setUserIngredients] = useState([]);
+  const [changedIngredients, setChangedIngredients] = useState([]);
 
   useEffect(() => {
-    console.log('[IngredientChange] user:', user);
-    console.log('[IngredientChange] userId:', userId);
-  }, [user]);
+    console.log('IngredientChange: Received recipeIngredients:', JSON.stringify(recipeIngredients, null, 2));
+    console.log('IngredientChange: Received userIngredientsRaw:', JSON.stringify(userIngredientsRaw, null, 2));
+    console.log('IngredientChange: Received recipeId:', recipeId);
 
-  // useEffect를 사용하여 initialIngredients 로깅
-  useEffect(() => {
-    console.log('[IngredientChange] Received initialIngredients from route.params:', JSON.stringify(initialIngredients, null, 2));
-    if (initialIngredients === undefined) {
-      console.warn('[IngredientChange] initialIngredients is undefined. Check navigation parameters.');
-    } else if (!Array.isArray(initialIngredients)) {
-      console.warn('[IngredientChange] initialIngredients is not an array:', initialIngredients);
-    } else if (initialIngredients.length === 0) {
-      console.warn('[IngredientChange] initialIngredients is an empty array.');
+    if (userIngredientsRaw && Array.isArray(userIngredientsRaw)) {
+      const processedUserIngredients = userIngredientsRaw.map(item => ({
+        id: item.id, // Ensure id is included
+        name: item.ingredientName, 
+        quantity: item.quantity,
+        // Add other necessary fields from userIngredientsRaw if they exist
+      }));
+      setUserIngredients(processedUserIngredients);
+      console.log('IngredientChange: Processed userIngredients:', JSON.stringify(processedUserIngredients, null, 2));
+    } else {
+      console.log('IngredientChange: userIngredientsRaw is null, undefined, or not an array');
+      setUserIngredients([]);
     }
-  }, [initialIngredients]);
-
-  const [ingredients, setIngredients] = useState(
-    Array.isArray(initialIngredients) && initialIngredients.length > 0
-      ? initialIngredients
-          .filter(item => {
-            const hasAmount = item.amount !== null && typeof item.amount !== 'undefined';
-            const hasUnit = item.unit && String(item.unit).trim() !== '';
-            if (!(hasAmount || hasUnit)) {
-              console.log('[IngredientChange] Filtering out item due to missing amount/unit:', JSON.stringify(item, null, 2));
-            }
-            return hasAmount || hasUnit;
-          })
-          .map((item) => {
-            const numericAmount = interpretIngredientAmount(item.amount);
-            const itemNameFromRecipe = (item.name || '').trim().toLowerCase();
-            
-            // 단위 표시 우선순위:
-            // 1. 사용자 식재료 리스트에 같은 이름의 재료가 있으면 그 단위 사용 (이름만으로 매칭)
-<<<<<<< HEAD
-            // 2. 없으면 레시피 단위 사용            
-            let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
-            let finalApiUnit = item.unit ? String(item.unit) : ''; // API 전송용 원본 단위
-            
-            if (userIngredientsRaw && Array.isArray(userIngredientsRaw) && userIngredientsRaw.length > 0) {
-=======
-            // 2. 없으면 레시피 단위 사용            let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
-            let finalApiUnit = item.unit ? String(item.unit) : ''; // API 전송용 원본 단위
-            
-            if (userIngredientsRaw && Array.isArray(userIngredientsRaw) && userIngredientsRaw.length > 0) {
-              // 이름이 일치하는 식재료들을 모두 찾기
->>>>>>> app_merge
-              const matchedUserIngredients = userIngredientsRaw.filter(
-                uig => (uig.foodName || '').trim().toLowerCase() === itemNameFromRecipe
-              );
-              
-              // amount > 0인 식재료 우선 선택, 없으면 첫 번째 식재료 사용
-<<<<<<< HEAD
-              // .unit 접근은 나중에 try-catch로 처리
-              const prioritizedUserIngredient = matchedUserIngredients.find(
-                uig => uig.amount > 0
-              ) || matchedUserIngredients[0];
-              
-              if (prioritizedUserIngredient) {
-                try {
-                  // 사용자의 식재료 단위에 접근 시도
-                  const userUnit = prioritizedUserIngredient.unit; 
-                  if (userUnit) { // 단위 정보가 존재하면 해당 단위 사용
-                    finalDisplayUnit = String(userUnit);
-                    finalApiUnit = String(userUnit);
-                  }
-                  // userUnit이 falsy (null, undefined, '', 등)이거나 .unit 접근 시 오류가 없었지만 값이 없는 경우,
-                  // 이미 설정된 레시피 단위(기본값)를 그대로 사용합니다.
-                } catch (e) {
-                  // .unit 접근 중 오류 발생 시 콘솔에 경고를 남기고 레시피 단위 사용
-                  const foodNameToLog = prioritizedUserIngredient.foodName || itemNameFromRecipe;
-                  console.warn(`[IngredientChange] Error accessing unit for user ingredient '${foodNameToLog}'. Defaulting to recipe unit. Error:`, e);
-                  // finalDisplayUnit 및 finalApiUnit은 이미 레시피 단위로 설정되어 있으므로 추가 작업 없음
-                }
-=======
-              const prioritizedIngredient = matchedUserIngredients.find(
-                uig => uig.amount > 0 && uig.unit
-              ) || matchedUserIngredients.find(uig => uig.unit);
-              
-              if (prioritizedIngredient && prioritizedIngredient.unit) {
-                finalDisplayUnit = String(prioritizedIngredient.unit);
-                finalApiUnit = String(prioritizedIngredient.unit); // API용도 사용자 단위 사용
->>>>>>> app_merge
-              }
-            }            
-            // 표시용 단위는 영어 소문자로 통일 (시각화 목적)
-            const displayUnitForUI = finalDisplayUnit.toLowerCase();
-            
-            // item from initialIngredients is { name, amount, unit, original, hasUnitInfo }
-            // item.id and item.foodName are not present on 'item' here.
-            // Using item.original for a more stable key if available.
-            const itemId = item.original || (item.name ? `${item.name}_${Math.random().toString()}` : Math.random().toString());
-
-            return {
-              ...item,
-              changeAmount: numericAmount,
-              displayChangeAmount: String(numericAmount),
-              id: itemId, // Use the new stable itemId
-              displayUnit: displayUnitForUI, // 화면 표시용 (영어 소문자)
-              apiUnit: finalApiUnit, // API 전송용 (원본 단위)
-              recipeAmount: item.amount,
-              recipeUnit: item.unit,
-            };
-          })
-      : []
-  );
-  const [loading, setLoading] = useState(false);
+  }, [recipeIngredients, userIngredientsRaw, recipeId]);
 
   // 화면에 아무것도 안 뜨는 경우: initialIngredients가 undefined/null/빈배열일 때 또는 필터링 후 빈 배열일 때 예외처리
-  if (!Array.isArray(ingredients) || ingredients.length === 0) {
+  if (!Array.isArray(recipeIngredients) || recipeIngredients.length === 0) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>변경할 식재료가 없습니다.</Text>
@@ -177,20 +87,61 @@ const IngredientChange = ({ route, navigation }) => {
     );
   }
 
+  const getMatchingUserIngredient = useCallback((recipeIngredientName) => {
+    // console.log('IngredientChange: Searching for:', recipeIngredientName, 'in', JSON.stringify(userIngredients, null, 2));
+    if (!userIngredients || userIngredients.length === 0) return null;
+    const match = userIngredients.find(userIng => userIng.name.toLowerCase() === recipeIngredientName.toLowerCase());
+    // console.log('IngredientChange: Match found:', match);
+    return match;
+  }, [userIngredients]);
+
+  useEffect(() => {
+    if (!recipeIngredients || !Array.isArray(recipeIngredients) || !userIngredients || userIngredients.length === 0) {
+      console.log('IngredientChange: recipeIngredients or userIngredients are not ready for diffing.');
+      setChangedIngredients([]);
+      return;
+    }
+
+    console.log('IngredientChange: Starting ingredient diffing.');
+    const changes = [];
+    recipeIngredients.forEach(recipeIng => {
+      const matchingUserIng = getMatchingUserIngredient(recipeIng.name);
+      if (matchingUserIng) {
+        const quantityChange = parseFloat(matchingUserIng.quantity) - parseFloat(recipeIng.quantity);
+        console.log(`IngredientChange: Comparing ${recipeIng.name}: UserQ ${matchingUserIng.quantity}, RecipeQ ${recipeIng.quantity}, Change ${quantityChange}`);
+        if (quantityChange !== 0) {
+          changes.push({
+            id: matchingUserIng.id, // Use the id from userIngredients for updates
+            name: recipeIng.name,
+            originalQuantity: parseFloat(matchingUserIng.quantity),
+            consumedQuantity: parseFloat(recipeIng.quantity),
+            remainingQuantity: quantityChange,
+            unit: recipeIng.unit, // Assuming unit comes from recipe ingredient
+          });
+        }
+      } else {
+        // This case should ideally not happen if ingredients are consumed from existing ones
+        // Or it means the user didn't have the ingredient at all.
+        // For now, we are focusing on changes to existing ingredients.
+        console.log(`IngredientChange: No matching user ingredient for ${recipeIng.name}`);
+      }
+    });
+    console.log('IngredientChange: Calculated changes:', JSON.stringify(changes, null, 2));
+    setChangedIngredients(changes.filter(c => c.remainingQuantity < 0 || c.consumedQuantity > 0)); // Filter for actual changes
+  }, [recipeIngredients, userIngredients, getMatchingUserIngredient]);
+
   // 변화량 입력 핸들러 (텍스트 입력)
   const handleAmountChange = (id, textInputValue) => {
-    setIngredients((prevIngredients) =>
+    setChangedIngredients((prevIngredients) =>
       prevIngredients.map((item) => {
         if (item.id === id) {
           let newDisplayValue = textInputValue;
-
           // 1. 숫자와 소수점 하나만 허용하도록 정제
           newDisplayValue = newDisplayValue.replace(/[^\d.]/g, ""); 
           const dotIndex = newDisplayValue.indexOf('.');
           if (dotIndex !== -1) {
             newDisplayValue = newDisplayValue.substring(0, dotIndex + 1) + newDisplayValue.substring(dotIndex + 1).replace(/\./g, '');
           }
-
           // 2. 비정상적인 선행 '0' 처리 (예: "05" -> "5", 단 "0." 또는 "0"은 유지)
           if (newDisplayValue.length > 1 && newDisplayValue.startsWith('0') && !newDisplayValue.startsWith('0.')) {
             newDisplayValue = newDisplayValue.substring(1);
@@ -199,107 +150,42 @@ const IngredientChange = ({ route, navigation }) => {
           if (newDisplayValue.startsWith('.')) {
             newDisplayValue = '0' + newDisplayValue;
           }
-
-          // 3. 숫자 값 결정
-          let numericValue = 0;
-          if (newDisplayValue !== "" && newDisplayValue !== ".") { // 빈 문자열이나 "."만 있는 경우는 0으로 처리
-            const parsed = parseFloat(newDisplayValue);
-            if (!isNaN(parsed) && parsed >= 0) {
-              numericValue = parsed;
-            } else {
-              // newDisplayValue가 "5." 같은 경우, parseFloat는 5를 반환. 이 경우는 위에서 처리됨.
-              // 만약 newDisplayValue가 파싱 불가능한 문자열(거의 없을 것으로 예상)이면 numericValue는 0 유지
-            }
-          }
-          
           return {
             ...item,
-            displayChangeAmount: newDisplayValue, // 정제된 문자열을 화면에 표시
-            changeAmount: numericValue,           // 실제 숫자 값
+            displayChangeAmount: newDisplayValue,
+            changeAmount: parseFloat(newDisplayValue) || 0,
           };
         }
         return item;
       })
     );
   };
-  // +/- 버튼으로 변화량 조절 핸들러
-  const handleChangeAmountWithButtons = (id, operation) => {
-    setIngredients((prev) =>
-      prev.map((item) => {
+
+  // 버튼으로 변화량 조절
+  const handleChangeAmountWithButtons = (id, type) => {
+    setChangedIngredients((prevIngredients) =>
+      prevIngredients.map((item) => {
         if (item.id === id) {
-          const currentNumericAmount = Number(item.changeAmount) || 0;
-          let step = 5; // 모든 단위에 대해 증감량을 5로 고정
-          
-          let newNumericAmount;
-          if (operation === 'increase') {
-            newNumericAmount = currentNumericAmount + step;
-          } else { // decrease
-            newNumericAmount = currentNumericAmount - step;
-          }
-          newNumericAmount = Math.max(0, newNumericAmount); // 0 미만 방지
-
+          let newAmount = parseFloat(item.displayChangeAmount) || 0;
+          if (type === 'increase') newAmount += 1;
+          else if (type === 'decrease' && newAmount > 0) newAmount -= 1;
           return {
-            ...item, 
-            changeAmount: newNumericAmount,
-            displayChangeAmount: String(newNumericAmount), // 버튼 조작 시 display도 업데이트
+            ...item,
+            displayChangeAmount: String(newAmount),
+            changeAmount: newAmount,
           };
         }
         return item;
       })
     );
   };
-  // FIFO 소진 로직: 한 재료(ingredient)에 대해 userIngredientsRaw에서 오래된 foodId부터 차감
-  function getFifoConsumptionList(ingredient, userIngredientsRaw) {
-    if (!userIngredientsRaw) return [];
-    const norm = v => (v || '').replace(/\s/g, '').toLowerCase();    const ingName = norm(ingredient.foodName || ingredient.name);
-    const ingUnit = normalizeUnit(ingredient.apiUnit || ingredient.unit); // API 단위 사용
 
-    // 디버깅: 후보군 추출 전 원본 데이터 로그
-    console.log('[FIFO DEBUG] ingredient:', ingName, ingUnit);
-    console.log('[FIFO DEBUG] userIngredientsRaw 원본:', userIngredientsRaw);
-    userIngredientsRaw.forEach(f => {
-      console.log('[FIFO DEBUG] userRaw:', norm(f.foodName), normalizeUnit(f.unit), f.foodId, f.amount, f.unit, f.foodName);
-    });
-
-    // 일치하는 식재료만 추출 (이름, 단위 모두 표준화해서 비교)
-    const candidates = userIngredientsRaw
-      .filter(f => norm(f.foodName) === ingName && normalizeUnit(f.unit) === ingUnit)
-      .sort((a, b) => (a.foodId || a.id) - (b.foodId || b.id));
-
-    console.log('[FIFO DEBUG] candidates:', candidates);
-
-    let remain = Number(ingredient.changeAmount) || 0;
-    const result = [];
-    for (const batch of candidates) {
-      if (remain <= 0) break;
-      const available = Number(batch.amount || batch.quantity || 0);
-      const consume = Math.min(remain, available);
-      if (consume > 0) {
-        result.push({ foodId: batch.foodId || batch.id, amount: consume });
-        remain -= consume;
-      }
-    }
-    return result;
-  }
-  // AmountUnit enum 변환 함수 (서버와 맞춤)
-  function toAmountUnitEnum(unit) {
-    const normalizedUnit = normalizeUnit(unit);
-    const map = {
-      'g': 'G',
-      'kg': 'KG', 
-      'ml': 'ML',
-      'l': 'L',
-      'ea': 'EA'
-    };
-    return map[normalizedUnit] || 'EA';
-  }
-
-  // 서버에 변경된 식재료 전송
+  // 서버로 변화량 전송
   const handleSendChanges = async () => {
     setLoading(true);
     try {
       // 1. 변화량이 0인 식재료는 제외
-      const ingredientsToUpdate = ingredients.filter(
+      const ingredientsToUpdate = changedIngredients.filter(
         (ingredient) => ingredient.changeAmount > 0
       );
 
@@ -409,19 +295,26 @@ const IngredientChange = ({ route, navigation }) => {
     }
   };
 
+  if (!changedIngredients || changedIngredients.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>변경할 식재료</Text>
+        <Text>변경할 식재료가 없습니다. '요리 완료' 시 레시피에 사용된 식재료가 없었거나, 보유한 식재료와 일치하는 항목이 없었습니다.</Text>
+        <Button title="돌아가기" onPress={() => navigation.goBack()} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-<<<<<<< HEAD
-=======
       <Text style={styles.title}>식재료 변화량 설정</Text>
->>>>>>> app_merge
       <FlatList
-        data={ingredients}
+        data={changedIngredients}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           return (
             <View style={styles.ingredientContainer}>
-              <Text style={styles.ingredientName}>{item.foodName}</Text>
+              <Text style={styles.ingredientName}>{item.name}</Text>
               <View style={styles.amountContainer}>
                 <TouchableOpacity
                   style={styles.changeButton}
@@ -442,7 +335,7 @@ const IngredientChange = ({ route, navigation }) => {
                   <Text style={styles.buttonText}>+</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.ingredientUnit}>{item.displayUnit}</Text>
+              <Text style={styles.ingredientUnit}>{item.unit}</Text>
             </View>
           );
         }}
@@ -465,11 +358,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-<<<<<<< HEAD
     backgroundColor: '#EEF1FA',
-=======
-    backgroundColor: '#fff',
->>>>>>> app_merge
   },
   title: {
     fontSize: 24,
@@ -479,102 +368,66 @@ const styles = StyleSheet.create({
   ingredientContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-<<<<<<< HEAD
-    borderBottomWidth: 0.3,
-    borderBottomColor: '#2D336B',
-=======
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
->>>>>>> app_merge
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 10,
+    elevation: 2,
   },
   ingredientName: {
-    flex: 1,
+    flex: 2,
     fontSize: 18,
+    fontWeight: '500',
+    color: '#2D336B',
   },
   amountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 2,
+    justifyContent: 'center',
   },
   changeButton: {
-<<<<<<< HEAD
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 8,
-    borderWidth: 0.4,
-    borderColor: '#000'
-=======
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 8,
->>>>>>> app_merge
+    backgroundColor: '#D7DDF0',
+    borderRadius: 8,
+    padding: 6,
+    marginHorizontal: 4,
   },
   buttonText: {
-    fontSize: 24,
+    fontSize: 18,
+    color: '#2D336B',
     fontWeight: 'bold',
-    color: '#333',
   },
   amountInput: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-<<<<<<< HEAD
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  ingredientUnit: {
-    width: 40,
-=======
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  ingredientUnit: {
     width: 50,
->>>>>>> app_merge
+    height: 32,
+    borderWidth: 1,
+    borderColor: '#9A9FC3',
+    borderRadius: 6,
     textAlign: 'center',
-    fontSize: 18,
-    color: '#666',
+    fontSize: 16,
+    marginHorizontal: 4,
+    backgroundColor: '#F5F6FA',
+  },
+  ingredientUnit: {
+    flex: 1,
+    fontSize: 16,
+    color: '#525C99',
+    textAlign: 'center',
   },
   listContainer: {
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   confirmButton: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
-    height: 50,
-<<<<<<< HEAD
-    borderRadius: 15,
-    backgroundColor: '#A9B5DF',
-=======
-    borderRadius: 25,
-    backgroundColor: '#007bff',
->>>>>>> app_merge
+    backgroundColor: '#2D336B',
+    borderRadius: 10,
+    paddingVertical: 12,
+    marginTop: 20,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   confirmButtonText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-<<<<<<< HEAD
-    color: '#2D336B',
-=======
-    color: '#fff',
->>>>>>> app_merge
   },
 });
 

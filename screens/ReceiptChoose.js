@@ -19,11 +19,10 @@ import { LinearGradient } from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
-import { Image as RNImage } from 'react-native';
 import UnitPicker from "./UnitPicker";
+import RNFS from 'react-native-fs';
 
 const { width } = Dimensions.get('window');
-const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
 
 const excludedBrands = [
   '해태제과', '오리온', '크라운제과', '농심', '롯데제과', '삼양식품', '빙그레', '포카칩', '롯데푸드',
@@ -72,13 +71,15 @@ const Receipt = ({ navigation }) => {
         type: 'application/json',
       });
 
+      // AddIngredient.js의 이미지 플레이스홀더 로직 적용
       formData.append('images', {
-        uri: Platform.OS === 'android' ? defaultImage.uri : defaultImage.uri.replace('file://', ''),
-        type: 'image/jpeg',
-        name: 'default.jpg',
+        uri: Platform.OS === 'android' ? 'file:///dev/null' : '', // 빈 파일 참조
+        type: 'image/png',
+        name: 'empty.png',
       });
 
       const accessToken = await AsyncStorage.getItem('accessToken');
+      console.log('ReceiptChoose accessToken:', accessToken); // 토큰 값 확인용 로그 추가
 
       const response = await fetch(`${SERVER_URL}/food`, {
         method: 'POST',
