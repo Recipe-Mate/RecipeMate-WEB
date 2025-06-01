@@ -88,7 +88,13 @@ const IngredientChange = ({ route, navigation }) => {
             
             // 단위 표시 우선순위:
             // 1. 사용자 식재료 리스트에 같은 이름의 재료가 있으면 그 단위 사용 (이름만으로 매칭)
-            // 2. 없으면 레시피 단위 사용            let finalDisplayUnit = item.unit ? String(item.unit) : ''; // 기본값: 레시피 단위
+            // 2. 없으면 레시피 단위 사용
+            let finalDisplayUnit;
+            if (item.unit) {
+                finalDisplayUnit = String(item.unit);
+            } else {
+                finalDisplayUnit = "";
+            }
             let finalApiUnit = item.unit ? String(item.unit) : ''; // API 전송용 원본 단위
             
             if (userIngredientsRaw && Array.isArray(userIngredientsRaw) && userIngredientsRaw.length > 0) {
@@ -430,79 +436,134 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff', // 기존 유지 또는 #EEF1FA와 같은 앱 전반적인 배경색으로 변경 가능
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontSize: 24, // 기존 유지
+    fontWeight: 'bold', // 기존 유지
+    marginBottom: 24, // 기존 20에서 증가
+    color: '#333', // 제목 색상 명시
+    textAlign: 'center', // 중앙 정렬 추가
   },
   ingredientContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12, // 기존 10에서 증가
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#e0e0e0', // 약간 더 연한 회색으로 변경
+    backgroundColor: '#fff', // 각 항목 배경색 명시 (선택적)
+    borderRadius: 8, // 각 항목 모서리 둥글게
+    paddingHorizontal: 10, // 좌우 패딩 추가
+    marginBottom: 8, // 항목 간 간격 추가
+    // 그림자 효과 (선택적)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   ingredientName: {
-    flex: 1,
-    fontSize: 18,
+    flex: 1.5, // 기존 유지
+    fontSize: 18, // 기존 유지
+    color: '#333', // 기존 유지
+    fontWeight: '500', // 약간의 굵기 추가
   },
   amountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 2,
+    flex: 2, // 기존 유지
+    justifyContent: 'center', // 내부 요소들 중앙 정렬
   },
   changeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    width: 36, // 크기 약간 줄임
+    height: 36, // 크기 약간 줄임
+    borderRadius: 18, // 원형 버튼으로 변경
+    backgroundColor: '#D0E7FF', // 연한 파란색 계열로 변경
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
+    marginHorizontal: 5, // 좌우 여백 약간 줄임
+    // 그림자 효과 (선택적)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
   buttonText: {
-    fontSize: 24,
+    fontSize: 20, // 기존 22에서 약간 줄임
     fontWeight: 'bold',
-    color: '#333',
+    color: '#007AFF', // 파란색 계열로 변경
   },
   amountInput: {
     flex: 1,
-    height: 40,
+    height: 40, // 기존 유지
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    fontSize: 18,
-    textAlign: 'center',
+    borderColor: '#B0C4DE', // 연한 파란색/회색 테두리로 변경
+    borderRadius: 8, // 기존 유지
+    paddingHorizontal: 10, // 기존 유지
+    fontSize: 17, // 약간 줄임
+    textAlign: 'center', // 기존 유지
+    color: '#2c3e50', // 어두운 회색/파란색 계열로 변경
+    backgroundColor: '#F8F9FA', // 입력 필드 배경색 추가
   },
   ingredientUnit: {
-    width: 50,
-    textAlign: 'center',
-    fontSize: 18,
-    color: '#666',
+    width: 55, // 약간 줄임
+    textAlign: 'right', // 오른쪽 정렬로 변경
+    fontSize: 15, // 약간 줄임
+    color: '#555', // 회색 계열로 변경
+    marginLeft: 8, // 기존 유지
   },
   listContainer: {
-    paddingBottom: 100,
+    paddingBottom: 100, // 기존 유지
   },
   confirmButton: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
+    // position: 'absolute', // 제거하여 일반 플로우에 따르도록 함
+    // bottom: 24,
+    // left: 16,
+    // right: 16,
+    marginTop: 20, // 리스트와의 간격
+    marginHorizontal: 16, // 좌우 여백
     height: 50,
-    borderRadius: 25,
-    backgroundColor: '#007bff',
+    borderRadius: 25, // 더 둥글게
+    backgroundColor: '#007AFF', // 기존 유지 (파란색)
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 3, // 그림자 약간 더 강조
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   confirmButtonText: {
-    fontSize: 18,
+    fontSize: 18, // 기존 유지
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#fff', // 기존 유지
   },
+  // 추가: 로딩 또는 데이터 없음 메시지 스타일
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  goBackButton: { // "돌아가기" 버튼 스타일 (empty state용)
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+  },
+  goBackButtonText: { // "돌아가기" 버튼 텍스트 스타일
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  }
 });
 
 export default IngredientChange;

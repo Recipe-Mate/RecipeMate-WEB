@@ -14,16 +14,13 @@ import {
   Alert
 } from 'react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
-import TextRecognition, { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
-import { LinearGradient } from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SERVER_URL } from '@env';
-import { Image as RNImage } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'react-native-linear-gradient';
 import UnitPicker from "./UnitPicker";
+import TextRecognition, { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
 
 const { width } = Dimensions.get('window');
-const defaultImage = RNImage.resolveAssetSource(require('../assets/default.png'));
 
 const excludedBrands = [
   '해태제과', '오리온', '크라운제과', '농심', '롯데제과', '삼양식품', '빙그레', '포카칩', '롯데푸드',
@@ -72,10 +69,11 @@ const Receipt = ({ navigation }) => {
         type: 'application/json',
       });
 
+      // AddIngredient.js의 이미지 미선택 시 로직 적용
       formData.append('images', {
-        uri: Platform.OS === 'android' ? defaultImage.uri : defaultImage.uri.replace('file://', ''),
-        type: 'image/jpeg',
-        name: 'default.jpg',
+        uri: Platform.OS === 'android' ? 'file:///dev/null' : '',
+        type: 'image/png',
+        name: 'empty.png',
       });
 
       const accessToken = await AsyncStorage.getItem('accessToken');

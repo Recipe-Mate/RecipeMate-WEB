@@ -39,7 +39,7 @@ const UsedRecipes = () => {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.box}>
+    <ScrollView style={styles.scrollViewStyle} contentContainerStyle={styles.box}>
       {recipes.map((recipe) => (
         <View key={recipe.id} style={styles.recipe_view}>
           <Image source={{ uri: recipe.recipeImage }} style={styles.recipe_photo} />
@@ -51,12 +51,16 @@ const UsedRecipes = () => {
 };
 
 const styles = StyleSheet.create({
-  box: {
+  scrollViewStyle: { // ScrollView 자체를 위한 스타일
+    flex: 1,
+    backgroundColor: '#EEF1FA',
+  },
+  box: { // contentContainerStyle을 위한 스타일
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 10,
-    backgroundColor: '#EEF1FA',
-    flex: 1
+    // backgroundColor: '#EEF1FA', // scrollViewStyle로 이동
+    // flex: 1, // 제거됨
   },
  recipe_photo: {
     width: 80,

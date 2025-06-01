@@ -66,9 +66,17 @@ export default function AddIngredient({ route, navigation }) {
                 formData.append('images', {
                     uri: Platform.OS === 'android' ? imageFiles.uri : imageFiles.uri.replace('file://', ''),
                     type: imageFiles.type || 'image/jpeg',
-                    name: imageFiles.fileName || 'image.jpg',
+                    name: imageFiles.name || 'image.jpg',
+                });
+            } else {
+                // 이미지가 없을 때 0바이트 파일을 첨부 (서버 요구사항 대응)
+                formData.append('images', {
+                    uri: Platform.OS === 'android' ? 'file:///dev/null' : '',
+                    type: 'image/png',
+                    name: 'empty.png',
                 });
             }
+            // imageFiles가 null이면 images 필드를 추가하지 않음
 
             const accessToken = await AsyncStorage.getItem('accessToken');
 
@@ -117,7 +125,7 @@ export default function AddIngredient({ route, navigation }) {
         console.log('unit: ', unitState);
         const imageData = image
             ? { uri: image, type: 'image/jpeg', name: 'uploaded.jpg' }
-            : { uri: defaultImage.uri, type: 'image/jpeg', name: 'default.jpg' };
+            : null; // 이미지를 선택하지 않았으면 null
         addFood(foodList, imageData);
 
         navigation.goBack()
@@ -148,7 +156,6 @@ export default function AddIngredient({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
                 <View style={styles.divider}></View>
-
                 <View style={styles.type_view}>
                     <View style={styles.text1_view}>
                         <Text style={styles.text1}>식재료명</Text>
