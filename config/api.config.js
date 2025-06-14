@@ -107,7 +107,7 @@ export const API_ENDPOINTS = API_ENDPOINTS_OBJ; // 다른 변수로부터 내보
 
 // Google Custom Search API 키와 CX(검색 엔진 ID) 추가
 // API 키를 설정하지 않으면 로컬 이미지만 사용합니다
-export const GOOGLE_API_KEY = 'AIzaSyBpgbgZfve77pGsbEbfk6vCvnGVvV8GYTg'; // 실제 키로 교체하거나 비워두세요
+export const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || ''; // 실제 키로 교체하거나 비워두세요
 export const GOOGLE_CX = ''; // 실제 CX로 교체하거나 비워두세요
 
 export default apiConfig;
