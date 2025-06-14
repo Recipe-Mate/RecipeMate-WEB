@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Modal, FlatList } from 'react-native';
 import { LinearGradient } from 'react-native-linear-gradient';
 import { SERVER_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useUserIngredients } from '../src/context/UserIngredientsContext';
 
 // ValueOption enum - 서버 API와 동일한 값 사용
 const ValueOption = {
@@ -23,6 +25,8 @@ const RecipeSearch = ({ navigation }) => {
 
   const [ingredients, setIngredients] = useState([]); // 재료 목록 상태 관리
   const [foodNameState, setFoodName] = useState('');
+  const { userIngredientsRaw } = useUserIngredients();
+  const [modalVisible, setModalVisible] = useState(false);
 
   // 조건 토글 함수 - 순환 형태(NONE -> HIGH -> LOW -> NONE)로 변경
   const toggleCondition = (key) => {
@@ -149,6 +153,14 @@ const RecipeSearch = ({ navigation }) => {
               value={foodNameState}
               onChangeText={setFoodName}
             />
+            {/*
+            <TouchableOpacity
+              style={styles.ingredientListButton}
+              onPress={() => setModalVisible(true)}
+            >
+              <Icon name="list" size={28} color="#2D336B" />
+            </TouchableOpacity>
+            */}
           </View>
           <TouchableOpacity
             style={styles.btnArea}
@@ -157,6 +169,43 @@ const RecipeSearch = ({ navigation }) => {
             <Text style={styles.searchButtonText}>레시피 검색</Text>
           </TouchableOpacity>
         </View>
+        {/* 식재료 리스트 모달 */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>내 식재료 목록</Text>
+              <FlatList
+                data={userIngredientsRaw}
+                keyExtractor={(item, idx) => item.foodName ? item.foodName + idx : String(idx)}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setFoodName(item.foodName);
+                      setModalVisible(false);
+                    }}
+                  >
+                    <View style={styles.modalItemRow}>
+                      <Text style={styles.modalItemText}>{item.foodName}</Text>
+                      {item.amount !== undefined && item.unit ? (
+                        <Text style={styles.modalItemSub}>{`  (${item.amount} ${/^[A-Za-z]+$/.test(item.unit) ? item.unit.toLowerCase() : item.unit})`}</Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={<Text style={styles.modalEmpty}>보유 식재료가 없습니다.</Text>}
+              />
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalCloseText}>닫기</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -245,6 +294,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
+    alignItems: 'flex-end', // 입력창과 버튼 하단 기준 정렬
   },
   input: {
     flex: 1,
@@ -255,6 +305,26 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 18,
     backgroundColor: '#fff',
+    height: 45, // 버튼과 동일한 높이로 고정
+  },
+  ingredientListButton: {
+    marginLeft: 8,
+    marginTop: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 45,
+    width: 45,
+    borderWidth: 1,
+    borderColor: '#A9B5DF',
+    // 그림자 제거
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 1 },
+    // shadowOpacity: 0.08,
+    // shadowRadius: 2,
+    // elevation: 2,
   },
   addButton: {
     height: 45,
@@ -288,6 +358,65 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  // 모달 관련 스타일
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2D336B',
+    marginBottom: 16,
+  },
+  modalItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF1FA',
+    width: '100%',
+  },
+  modalItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalItemText: {
+    fontSize: 18,
+    color: '#2D336B',
+  },
+  modalItemSub: {
+    fontSize: 15,
+    color: '#888',
+    marginLeft: 4,
+  },
+  modalEmpty: {
+    color: '#888',
+    fontSize: 16,
+    marginVertical: 20,
+    textAlign: 'center',
+  },
+  modalCloseBtn: {
+    marginTop: 18,
+    backgroundColor: '#2D336B',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
-export default RecipeSearch; // RecipeSearch 컴포넌트를 외부로 내보냄
+export default RecipeSearch;

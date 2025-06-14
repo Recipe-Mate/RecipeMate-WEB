@@ -72,10 +72,11 @@ const Receipt = ({ navigation }) => {
         type: 'application/json',
       });
 
+      // 이미지 미선택 시와 동일하게 처리 (ReceiptChoose와 동일)
       formData.append('images', {
-        uri: Platform.OS === 'android' ? defaultImage.uri : defaultImage.uri.replace('file://', ''),
-        type: 'image/jpeg',
-        name: 'default.jpg',
+        uri: Platform.OS === 'android' ? 'file:///dev/null' : '',
+        type: 'image/png',
+        name: 'empty.png',
       });
 
       const accessToken = await AsyncStorage.getItem('accessToken');
@@ -175,11 +176,23 @@ const Receipt = ({ navigation }) => {
   };
 
   const processImage = async (uri) => {
+    console.log('processImage uri:', uri);
     setImageUri(uri);
-    Image.getSize(uri, (w, h) => setDisplayedSize({ width: w, height: h }));
+    try {
+      Image.getSize(
+        uri,
+        (w, h) => setDisplayedSize({ width: w, height: h }),
+        (err) => {
+          console.error('Image.getSize error:', err);
+        }
+      );
+    } catch (e) {
+      console.error('Image.getSize exception:', e);
+    }
 
     try {
       const result = await TextRecognition.recognize(uri, TextRecognitionScript.KOREAN);
+      console.log('OCR result:', result);
       if (result?.blocks) {
         const lines = result.blocks.flatMap((block) =>
           block.lines.map((line) => ({
@@ -190,6 +203,7 @@ const Receipt = ({ navigation }) => {
           !/\d{10,}/.test(line.text) &&
           !/\d{1,3}[,.][^\s]{3}(?![^\s])/.test(line.text)
         );
+        console.log('lines:', lines);
 
         const grouped = [];
         lines.sort((a, b) => a.y - b.y);
@@ -201,17 +215,21 @@ const Receipt = ({ navigation }) => {
             lastGroup.push(line);
           }
         });
+        console.log('grouped:', grouped);
 
         const normalized = lines.filter((line) => /^\s*0{0,2}\d{1,2}P?\b/.test(line.text));
+        console.log('normalized:', normalized);
         setGroupedLines(grouped);
         setNormalizedLines(normalized);
 
         const items = normalized.map((line) => line.text);
         let processed = items.map((item) => preprocessName(item)).filter(Boolean);
+        console.log('processed:', processed);
 
         const withText = processed.filter(x => /[a-zA-Z가-힣]/.test(x));
         const onlyDigits = processed.filter(x => /^[0-9]$/.test(x));
         const reordered = [...withText, ...onlyDigits];
+        console.log('withText:', withText, 'onlyDigits:', onlyDigits, 'reordered:', reordered);
 
         setFilteredItems(reordered);
 
@@ -241,6 +259,7 @@ const Receipt = ({ navigation }) => {
             count: onlyDigits[i],
           });
         }
+        console.log('jsonResult:', jsonResult);
         setJsonData(jsonResult);
       }
     } catch (e) {
@@ -248,9 +267,24 @@ const Receipt = ({ navigation }) => {
     }
   };
 
-  const chooseImage = () => {
-    launchImageLibrary({ mediaType: 'photo' }, (response) => {
-      if (response.assets && response.assets.length > 0) {
+
+  const takePhoto = () => {
+    const options = {
+      mediaType: 'photo',
+      quality: 0.8,
+      saveToPhotos: true,
+    };
+
+    launchCamera(options, (response) => {
+      if (response.didCancel) {
+        console.log('사용자가 카메라를 취소했습니다.');
+        navigation.goBack();
+      } else if (response.errorMessage) {
+        console.error('카메라 오류:', response.errorMessage);
+        alert('카메라 오류가 발생했습니다.');
+        navigation.goBack();
+      } else if (response.assets && response.assets.length > 0) {
+        console.log('카메라로 사진 촬영 완료');
         processImage(response.assets[0].uri);
       }
     });
@@ -268,20 +302,42 @@ const Receipt = ({ navigation }) => {
             source={{ uri: imageUri }}
             style={styles.imgStyle}
           />
-          {jsonData.map((item, idx) => (
-            <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, marginVertical: 5 }}>
-              <Text style={{ flex: 1 }}>
-                🔸 {item.name} - {item.weight * item.count} - {item.unit}
-              </Text>
-              <TouchableOpacity
-                style={{ backgroundColor: '#2D336B', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginRight: 10, }}
-                onPress={() => openModalWithItem(item)}
+
+          {jsonData.length === 0 ? (
+            <Text style={{ textAlign: 'center', marginTop: 20, color: '#333', fontSize: 18 }}>
+              인식 결과가 없습니다
+            </Text>
+          ) : (
+            jsonData.map((item, idx) => (
+              <View
+                key={idx}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginLeft: 10,
+                  marginVertical: 5,
+                }}
               >
-                <Text style={{ color: 'white' }}>등록</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+                <Text style={{ flex: 1 }}>
+                  🔸 {item.name} - {item.weight * item.count} - {item.unit}
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#2D336B',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 6,
+                    marginRight: 10,
+                  }}
+                  onPress={() => openModalWithItem(item)}
+                >
+                  <Text style={{ color: 'white' }}>등록</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </ScrollView>
+
         <Modal
           visible={modalVisible}
           animationType="slide"

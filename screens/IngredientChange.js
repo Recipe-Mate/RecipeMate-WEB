@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff', // 기존 유지 또는 #EEF1FA와 같은 앱 전반적인 배경색으로 변경 가능
+    backgroundColor: '#EEF1FA',
   },
   title: {
     fontSize: 24, // 기존 유지
@@ -444,6 +444,7 @@ const styles = StyleSheet.create({
     marginBottom: 24, // 기존 20에서 증가
     color: '#333', // 제목 색상 명시
     textAlign: 'center', // 중앙 정렬 추가
+    marginTop: 10,
   },
   ingredientContainer: {
     flexDirection: 'row',
@@ -479,7 +480,7 @@ const styles = StyleSheet.create({
     width: 36, // 크기 약간 줄임
     height: 36, // 크기 약간 줄임
     borderRadius: 18, // 원형 버튼으로 변경
-    backgroundColor: '#D0E7FF', // 연한 파란색 계열로 변경
+    backgroundColor: '#A9B5DF', // 연한 파란색 계열로 변경
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 5, // 좌우 여백 약간 줄임
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20, // 기존 22에서 약간 줄임
     fontWeight: 'bold',
-    color: '#007AFF', // 파란색 계열로 변경
+    color: '#2D336B', // 파란색 계열로 변경
   },
   amountInput: {
     flex: 1,
@@ -508,25 +509,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA', // 입력 필드 배경색 추가
   },
   ingredientUnit: {
-    width: 55, // 약간 줄임
+    width: 30, // 약간 줄임
     textAlign: 'right', // 오른쪽 정렬로 변경
-    fontSize: 15, // 약간 줄임
+    fontSize: 16, // 약간 줄임
     color: '#555', // 회색 계열로 변경
     marginLeft: 8, // 기존 유지
+    marginRight: 10,
   },
   listContainer: {
     paddingBottom: 100, // 기존 유지
   },
   confirmButton: {
-    // position: 'absolute', // 제거하여 일반 플로우에 따르도록 함
-    // bottom: 24,
-    // left: 16,
-    // right: 16,
-    marginTop: 20, // 리스트와의 간격
-    marginHorizontal: 16, // 좌우 여백
     height: 50,
-    borderRadius: 25, // 더 둥글게
-    backgroundColor: '#007AFF', // 기존 유지 (파란색)
+    borderRadius: 10,
+    backgroundColor: '#6B74A5', // 기존 유지 (파란색)
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3, // 그림자 약간 더 강조

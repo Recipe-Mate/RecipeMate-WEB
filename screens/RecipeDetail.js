@@ -655,7 +655,7 @@ const RecipeDetail = ({ route: propRoute, navigation }) => {
                 style={[
                   styles.ingredientChip,
                   { 
-                    width: '92%', 
+                    width: '100%', 
                     justifyContent: 'space-between',
                     backgroundColor: chipBackgroundColor 
                   }
@@ -864,11 +864,11 @@ const styles = StyleSheet.create({
   ingredientChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 14,
     marginRight: 8,
-    marginBottom: 8,
+    marginBottom: 3,
     backgroundColor: '#F6F8FA',
     // width, justifyContent는 인라인에서 적용
   },
