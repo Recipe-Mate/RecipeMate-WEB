@@ -1,97 +1,82 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# RecipeMate Frontend
 
-# Getting Started
+## 📝 Introduce
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+RecipeMate 모바일 앱 프론트엔드는 사용자가 영수증 이미지를 촬영하거나 갤러리에서 선택하여 AI OCR 기능으로 식재료를 자동 인식하고 관리하는 기능을 제공합니다. 또한, 식재료 기반 레시피 검색, 식재료 관리, 배지 시스템 등 다양한 편의 기능을 제공합니다.
 
-## Step 1: Start Metro
+## 설치 및 실행 방법
+### 요구사항
+- Node.js 18 이상
+- React Native CLI
+- Android Studio / Xcode (에뮬레이터 및 디바이스 빌드용)
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+### 설치 및 실행
+```bash
+npm install
+npx react-native run-android
 ```
 
-## Step 2: Build and run your app
+## ⚙️ Develop Environment
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+<div align="center">
+	<img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB"/>
+</div>
 
-### Android
+## 📝 Feature
 
-```sh
-# Using npm
-npm run android
+### 로그인 / 회원가입
+- 카카오 소셜로그인 구현 (인가코드 발급 → 백엔드 서버로 전송)
+- 자체 회원가입/로그인 지원
 
-# OR using Yarn
-yarn android
+|<img src="assets/스크린샷_로그인1.png" width="150"/>|
+|:-:|
+|첫화면|
+
+### 홈 / 식재료 관리 / 배지
+- 홈화면에서 내 식재료 현황, 배지, 최근 요리 내역 등 확인 가능
+- 식재료 추가/삭제/수정, 보유 식재료 리스트 관리
+- 배지 획득 및 목록 확인
+
+|<img src="assets/스크린샷_홈.png" width="150"/>|<img src="assets/스크린샷_식재료.png" width="150"/>|<img src="assets/스크린샷_프로필.png" width="150"/>|
+|:-:|:-:|:-:|
+|홈 화면|식재료 관리|배지 목록|
+
+### 영수증 OCR 기반 식재료 등록
+- 영수증을 카메라로 촬영하거나, 갤러리에서 이미지를 선택하여 AI OCR로 식재료 자동 인식
+- 인식된 식재료를 편집 후 내 식재료로 등록 가능
+
+|<img src="assets/스크린샷_영수증1.png" width="150"/>|<img src="assets/스크린샷_영수증2.png" width="150"/>|
+|:-:|:-:|
+|영수증 촬영|OCR 결과 및 식재료 등록|
+
+### 레시피 검색 / 상세페이지
+- 보유 식재료 기반 레시피 검색 (영양성분 조건 필터 지원)
+- 레시피 상세 정보, 조리법, 필요한 재료 등 확인 가능
+
+|<img src="assets/스크린샷_검색.png" width="150"/>|<img src="assets/스크린샷_결과.png" width="150"/>|<img src="assets/스크린샷_상세.png" width="150"/>|
+|:-:|:-:|:-:|
+|레시피 검색|결과|상세페이지|
+
+### 기타 기능
+- 네비게이션(탭/스택) 기반 화면 이동
+- 사용자 프로필/정보 관리
+- 앱 내 다양한 안내 및 에러 처리
+
+## 📁 주요 폴더 구조
+
+```
+app_front/
+ ├─ App.js                # 앱 진입점
+ ├─ screens/              # 주요 화면 컴포넌트
+ ├─ src/context/          # Context API (인증, 식재료 등)
+ ├─ src/services/         # API 서비스 모듈
+ ├─ assets/               # 이미지 등 정적 리소스
+ ├─ config/               # 환경설정
+ └─ ...
 ```
 
-### iOS
+## 💡 기타
+- 개발/테스트 시 Android Studio 또는 Xcode 에뮬레이터 사용 권장
+---
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+#codebase
