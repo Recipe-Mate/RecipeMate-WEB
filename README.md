@@ -40,7 +40,7 @@ npx react-native run-android
 - 식재료 추가/삭제/수정, 보유 식재료 리스트 확인
 
 |<img src="assets/스크린샷_홈.png" width="150"/>|<img src="assets/스크린샷_식재료.png" width="150"/>|<img src="assets/스크린샷_프로필.png" width="150"/>|
-|:-:|:-:|
+|:-:|:-:|:=:|
 |홈 화면|식재료 관리|
 
 ### 영수증 OCR 기반 식재료 등록
@@ -55,9 +55,9 @@ npx react-native run-android
 - 보유 식재료 기반 레시피 검색 (영양성분 조건 필터 지원)
 - 레시피 상세 정보, 조리법, 필요한 재료 등 확인 가능
 
-|<img src="assets/스크린샷_검색.png" width="150"/>|<img src="assets/스크린샷_결과.png" width="150"/>|<img src="assets/스크린샷_상세.png" width="150"/>|
-|:-:|:-:|:-:|
-|레시피 검색|결과|상세페이지|
+|<img src="assets/스크린샷_검색.png" width="150"/>|<img src="assets/스크린샷_결과.png" width="150"/>|<img src="assets/스크린샷_상세1.png" width="150"/>|<img src="assets/스크린샷_상세2.png" width="150"/>|
+|:-:|:-:|:-:|:-:|
+|레시피 검색|결과|재료, 영양정보|조리법|
 
 ### 기타 기능
 - 네비게이션(탭/스택) 기반 화면 이동
